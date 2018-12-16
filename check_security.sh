@@ -54,17 +54,13 @@ if [ $# -ge 2 ]; then cases=($2); fi
 trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
 
 cd "$_base"
-# TODO: simplify
-if [ -x ../../code ]; then cd ../../code;
-elif [ -x ../../bin ]; then cd ../../bin;
-elif [ -x ../code ]; then cd ../code;
-elif [ -x ../bin ]; then cd ../bin;
-elif [ -x ../scripts ]; then cd ../scripts;
-elif [ -x code ]; then cd code;
-elif [ -x bin ]; then cd bin; fi
 
 if [ -x ./spectector ]; then
     spectector=./spectector
+elif [ -x ../bin/spectector ]; then
+    spectector=../bin/spectector
+elif [ -x bin/spectector ]; then
+    spectector=bin/spectector
 elif which spectector > /dev/null 2>&1; then
     # spectector in PATH
     spectector=spectector
@@ -77,11 +73,11 @@ fi
 
 # Change the path to run spectector, this works if you are in spectector folder or one of it's subfolders
 
-out=../results/security.txt
+out=results/security.txt
 #echo "Program security evaluation:" > $out
 
 # results for each benchmark
-outdir=../results/out
+outdir=results/out
 mkdir -p "$outdir"
 
 if which gtimeout > /dev/null 2>&1; then
@@ -99,7 +95,7 @@ for app in ${cases[@]}; do
     for case in ${gen[@]}; do
 	    num=$app
 	    [ "$num" == "11ass" ] || [ "$num" == "11gcc" ] || [ "$num" == "11sub" ] || [ "$num" == "11ker" ] && num=11
-	    folder=../target/$case/$app
+	    folder=target/$case/$app
 	    experiments=(any lfence slh)
 	    #optimizations=(o0 o2)
 	    expe=$case
