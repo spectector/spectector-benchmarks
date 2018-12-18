@@ -70,19 +70,18 @@ The script runs Spectector on all the assembly programs (in the folder `target`)
 described in the paper.
 The results of each execution will be stored in the folder `results/out`.
 Additionally, the script produces a textual representation of Figure 9 in the
-file `results/summary.txt`, where L indicates that Spectector identified a
-speculative leak while S denotes that Spectector proved the corresponding program's
-security.
+file `results/summary.txt`.
 Note that both `results/out` and `results/summary.txt` will be overwritten every
 time the script `check_security.sh` is ran.
 
-The results on the file `results/summary.txt` are labeled by the next pattern:
-`L` if there's a leak
-`N` if the program is secure
-`?` if Spectector can't solve the program
-`*` if there's a timeout in the SMT solver, so a seurity condition cannot be given
-`~` if there's a timeout in Spectector, this can be solved by increasing the 
-	timeout (it's a script argument)
+The results in `results/summary.txt` should be interpreted as follows:
+ * `L` indicates that the program contains a leak,
+ * `S` indicates that the program is secure,
+ * `?` indicates that Spectector does not support the program (e.g., unsupported commands),
+ * `*` indicates that the Z3 backend times out (default time-out is XXX), and 
+ * `~` indicates that Spectector times out (this can be solved by increasing the time-out passed as script argument; default value is XXX).
+
+ **For Mac users:** the script `check_security.sh` uses the `gtimeout` command, which can be obtained, for instance, by executing `brew install coreutils`.
 
 ## Obtaining timing measurements
 
