@@ -12,44 +12,46 @@ res () {
     printf $1 >> $out
 }
 
-cases=(01 02 03 04 05 06 07 08 09 10 11gcc 11ker 11sub 12 13 14 15)
+cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15)
 gen=(microsoft intel clang)
 mits=""
 lmi=""
 lop=""
 case "$1" in
     -h )
-	echo "Usage: check_security [compiler] [example number]"
-	echo "Compilers: (intel, microsoft, clang, all)  Example numbers: (1-15)"
-	echo "By default it will be executed with all the compilers and all the example numbers"
+	printf "Usage: check_security [compiler] [example number] [TIMEOUT]\n"
+	printf "\tCompilers: (intel, microsoft, clang, all)  Example numbers: (1-15)\n"
+	printf "\tBy default it will be executed with all the compilers and all the\n"
+	printf "\texample numbers and timeout of 30 seconds\n"
 	exit 0
 	;;
     clang )
 	gen=(clang)
 	mits="$mits\tClang\t\t\t\t\t"
-	lmi="$lmi\tany\t\tlfence\t\tslh"
-	lop="$lop\to0\to2\to0\to2\to0\to2"
+	lmi="$lmi\tUNP\t\tFEN\t\tSLH"
+	lop="$lop\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2"
         ;;
     intel )
         gen=(intel)
-	mits="$mits\tIntel\t\t\t"
-	lmi="$lmi\tany\t\tlfence"
-	lop="$lop\to0\to2\to0\to2"
+	mits="$mits\tICC\t\t\t"
+	lmi="$lmi\tUNP\t\tFEN"
+	lop="$lop\t-O0\t-O2\t-O0\t-O2"
         ;;    
     microsoft )
         gen=(microsoft)
-	mits="$mits\tMicrosoft"
-	lmi="$lmi\tany\t\tlfence"
-	lop="$lop\to0\to2\to0\to2"
+	mits="$mits\tVisual C++"
+	lmi="$lmi\tUNP\t\tFEN"
+	lop="$lop\t-O0\t-O2\t-O0\t-O2"
         ;;
     * )
-	mits="\tMicrosoft\t\t\tIntel\t\t\t\tClang"
-	lmi="\tany\t\tlfence\t\tany\t\tlfence\t\tany\t\tlfence\t\tslh"
-	lop="\to0\to2\to0\to2\to0\to2\to0\to2\to0\to2\to0\to2\to0\to2"
+	mits="\tVisual C++\t\t\tICC\t\t\t\tClang"
+	lmi="\tUNP\t\tFEN\t\tUNP\t\tFEN\t\tUNP\t\tFEN\t\tSLH"
+	lop="\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2"
 	;;
 esac
 
 if [ $# -ge 2 ]; then cases=($2); fi
+if [ $# -ge 3 ]; then timeout=$3; else timeout=30; fi
 
 trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
 
@@ -72,18 +74,15 @@ EOF
 fi
 
 # Change the path to run spectector, this works if you are in spectector folder or one of it's subfolders
-
-out=results/security.txt
-#echo "Program security evaluation:" > $out
-
-# results for each benchmark
+out=results/summary.txt
+# folder with the results for each benchmark
 outdir=results/out
 mkdir -p "$outdir"
 
 if which gtimeout > /dev/null 2>&1; then
-    timeout=gtimeout # for macOS (GNU coreutils)
+    runtimeout=gtimeout # for macOS (GNU coreutils)
 else
-    timeout=timeout
+    runtimeout=timeout
 fi
 
 printf "$mits" > $out
@@ -91,10 +90,10 @@ res "\n$lmi"
 res "\n$lop"
 
 for app in ${cases[@]}; do
-    res "\n\n$app"
+    num=$app
+    [ "$num" == "11ass" ] || [ "$num" == "11gcc" ] || [ "$num" == "11sub" ] || [ "$num" == "11ker" ] && num=11
+    res "\n\n$num"
     for case in ${gen[@]}; do
-	    num=$app
-	    [ "$num" == "11ass" ] || [ "$num" == "11gcc" ] || [ "$num" == "11sub" ] || [ "$num" == "11ker" ] && num=11
 	    folder=target/$case/$app
 	    experiments=(any lfence slh)
 	    #optimizations=(o0 o2)
@@ -115,12 +114,12 @@ for app in ${cases[@]}; do
 		    
 		    printf "$expe-$app-$y\n" # (show progress)
 		    outf="$outdir/${expe}.${app}.${y}.out"
-		    $timeout 30 $spectector $x -c "$config" --low "$low" > $outf
+		    $runtimeout $timeout $spectector $x -c "$config" --low "$low" > $outf # TODO: Time as user input
 		    ret=$?
 		    if [ $ret = 124 ]; then # timeout
 			res "\t~"
 		    else
-			(grep unsafe "$outf" > /dev/null && res '\tL') ||  (grep "timeout..." "$outf" && res '\tif') || (grep "is safe" "$outf" > /dev/null > /dev/null && res '\tS') || (grep checking "$outf" > /dev/null && res '\t""') || res '\t?'
+			(grep unsafe "$outf" > /dev/null && res '\tL') ||  (grep "timeout..." "$outf" && res '\t*') || (grep "is safe" "$outf" > /dev/null > /dev/null && res '\tS') || (grep checking "$outf" > /dev/null && res '\t?') || res '\t?'
 		    fi
 		done
 	    done

@@ -73,14 +73,16 @@ Additionally, the script produces a textual representation of Figure 9 in the
 file `results/summary.txt`, where L indicates that Spectector identified a
 speculative leak while S denotes that Spectector proved the corresponding program's
 security.
-Note that both `results/out` and `results/security.txt` will be overwritten every
+Note that both `results/out` and `results/summary.txt` will be overwritten every
 time the script `check_security.sh` is ran.
 
-[TODO:
-0. check script folder!! summary vs  security
-1. Update the column names to match the paper.
-2. Update the symbols to match the paper.
-3. Update file names (see above).]
+The results on the file `results/summary.txt` are labeled by the next pattern:
+`L` if there's a leak
+`N` if the program is secure
+`?` if Spectector can't solve the program
+`*` if there's a timeout in the SMT solver, so a seurity condition cannot be given
+`~` if there's a timeout in Spectector, this can be solved by increasing the 
+	timeout (it's a script argument)
 
 ## Obtaining timing measurements
 
