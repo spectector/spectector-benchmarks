@@ -77,9 +77,8 @@ time the script `check_security.sh` is ran.
 The results in `results/summary.txt` should be interpreted as follows:
  * `L` indicates that the program contains a leak,
  * `S` indicates that the program is secure,
- * `?` indicates that Spectector does not support the program (e.g., unsupported commands),
- * `*` indicates that the Z3 backend times out (default time-out is XXX), and 
- * `~` indicates that Spectector times out (this can be solved by increasing the time-out passed as script argument; default value is XXX).
+ * `?` indicates that Spectector neither detects a leak nor proves the program secure (e.g, the program may contain unsupported instructions, Spectector or the Z3 backends do not terminate),
+ * `~` indicates that the script terminates the execution due to a time-out (this can be solved by increasing the time-out passed to the script; see [the script](check_security.sh) for more details).
 
  **For Mac users:** the script `check_security.sh` uses the `gtimeout` command, which can be obtained, for instance, by executing `brew install coreutils`.
 
