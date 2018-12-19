@@ -4,6 +4,14 @@
 _base=$(e=$0;while test -L "$e";do d=$(dirname "$e");e=$(readlink "$e");\
     cd "$d";done;cd "$(dirname "$e")";pwd -P)
 
+usage () {
+    printf "Usage: check_security [-m compiler] [-p example_number] [-t timeout]\n"
+    printf "\tCompilers: (intel, microsoft, clang, all)  Example numbers: (1-15)\n"
+    printf "\tBy default it will be executed with all the compilers and all the\n"
+    printf "\texample numbers and timeout of 30 seconds\n"
+    exit 0
+}
+
 makeconf () {
     [ $1 -eq 15 ] && config="c([0xf000000=1000,9100=16,200=0],[pc=victim_function_v$1, sp=0xf000000, bp=0xf00000, temp=200, array1=9000, array1_size=9100, array2=10000, di=9200])" || config="c([0xf000000=1000,9100=16,200=0],[pc=victim_function_v$1, sp=0xf000000, bp=0xf00000, temp=200, array1=9000, array1_size=9100, array2=10000, array_size_mask=9100])"
 }
@@ -14,44 +22,51 @@ res () {
 
 cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15)
 gen=(microsoft intel clang)
-mits=""
-lmi=""
-lop=""
-case "$1" in
-    -h )
-	printf "Usage: check_security [compiler] [example number] [TIMEOUT]\n"
-	printf "\tCompilers: (intel, microsoft, clang, all)  Example numbers: (1-15)\n"
-	printf "\tBy default it will be executed with all the compilers and all the\n"
-	printf "\texample numbers and timeout of 30 seconds\n"
-	exit 0
-	;;
-    clang )
-	gen=(clang)
-	mits="$mits\tClang\t\t\t\t\t"
-	lmi="$lmi\tUNP\t\tFEN\t\tSLH"
-	lop="$lop\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2"
-        ;;
-    intel )
-        gen=(intel)
-	mits="$mits\tICC\t\t\t"
-	lmi="$lmi\tUNP\t\tFEN"
-	lop="$lop\t-O0\t-O2\t-O0\t-O2"
-        ;;    
-    microsoft )
-        gen=(microsoft)
-	mits="$mits\tVisual C++"
-	lmi="$lmi\tUNP\t\tFEN"
-	lop="$lop\t-O0\t-O2\t-O0\t-O2"
-        ;;
-    * )
-	mits="\tVisual C++\t\t\tICC\t\t\t\tClang"
-	lmi="\tUNP\t\tFEN\t\tUNP\t\tFEN\t\tUNP\t\tFEN\t\tSLH"
-	lop="\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2"
-	;;
-esac
+mits="\tVisual C++\t\t\tICC\t\t\t\tClang"
+lmi="\tUNP\t\tFEN\t\tUNP\t\tFEN\t\tUNP\t\tFEN\t\tSLH"
+lop="\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2"
+timeout=30
 
-if [ $# -ge 2 ]; then cases=($2); fi
-if [ $# -ge 3 ]; then timeout=$3; else timeout=30; fi
+while getopts ":m:p:t:" option; do # parsing of the arguments
+    case "${option}" in
+	m)
+	    case $OPTARG in
+		clang )
+		    gen=(clang)
+		    mits="\tClang\t\t\t\t\t"
+		    lmi="\tUNP\t\tFEN\t\tSLH"
+		    lop="\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2"
+		    ;;
+		intel )
+		    gen=(intel)
+		    mits="\tICC\t\t\t"
+		    lmi="\tUNP\t\tFEN"
+		    lop="\t-O0\t-O2\t-O0\t-O2"
+		    ;;    
+		microsoft )
+		    gen=(microsoft)
+		    mits="\tVisual C++"
+		    lmi="\tUNP\t\tFEN"
+		    lop="\t-O0\t-O2\t-O0\t-O2"
+		    ;;
+		all )
+		    ;;
+		* )
+		    usage
+		    ;;
+	    esac
+	    ;;
+	p)
+	    cases=(${OPTARG})
+	    ;;
+	t)
+	    timeout=${OPTARG}
+	    ;;
+	* )
+	    usage
+	    ;;
+    esac
+done
 
 trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
 
@@ -114,12 +129,12 @@ for app in ${cases[@]}; do
 		    
 		    printf "$expe-$app-$y\n" # (show progress)
 		    outf="$outdir/${expe}.${app}.${y}.out"
-		    $runtimeout $timeout $spectector $x -c "$config" --low "$low" > $outf # TODO: Time as user input
+		    $runtimeout $timeout $spectector $x --statistics -c "$config" --low "$low" > $outf # TODO: Time as user input
 		    ret=$?
 		    if [ $ret = 124 ]; then # timeout
 			res "\t~"
 		    else
-			(grep unsafe "$outf" > /dev/null && res '\tL') ||  (grep "timeout..." "$outf" && res '\t*') || (grep "is safe" "$outf" > /dev/null > /dev/null && res '\tS') || (grep checking "$outf" > /dev/null && res '\t?') || res '\t?'
+			(grep unsafe "$outf" > /dev/null && res '\tL') ||  (grep "timeout..." "$outf" && res '\t?') || (grep "is safe" "$outf" > /dev/null > /dev/null && res '\tS') || (grep checking "$outf" > /dev/null && res '\t?') || res '\t?'
 		    fi
 		done
 	    done
@@ -128,6 +143,3 @@ for app in ${cases[@]}; do
 
 	# echo "Comparison with saved results: "
 	# diff ../results/security.txt ../results/security.txt-ok && echo ok
-
-	# echo "Comparison with expected results: "
-	# diff ../results/security.txt ../results/security.txt-expected && echo ok
