@@ -1,7 +1,7 @@
 # Reproducing the results from the paper "Spectector: Principled Detection of Speculative Information Flows"
 
 This repository contains the benchmarks from the paper "Spectector: Principled
-Detection of Speculative Information Flows" (available [here](TODO)). Here we
+Detection of Speculative Information Flows" (available [here](https://spectector.github.org/papers/spectector.pdf)). Here we
 describe how to reproduce the experimental results from the Spectector's paper.
 
 ## <a name="benchmarks"></a> Benchmarks
@@ -26,7 +26,7 @@ levels of optimization and protection against SPECTRE attacks. Specifically, the
 folders `target/clang`, `target/intel`, and `target/microsoft` contain
 respectively the assembly programs obtained using the Clang, Intel icc, and
 Microsoft Visual C++ compilers. We refer the interested reader to Section VII.A
-of the [paper](TODO) for a detailed description of how the assembly programs
+of the [paper](https://spectector.github.org/papers/spectector.pdf) for a detailed description of how the assembly programs
 have been obtained.
 
 ### Compile the files with the Clang compiler
