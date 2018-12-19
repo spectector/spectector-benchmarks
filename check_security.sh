@@ -6,7 +6,7 @@ _base=$(e=$0;while test -L "$e";do d=$(dirname "$e");e=$(readlink "$e");\
 
 usage () {
     printf "Usage: check_security [-m compiler] [-p example_number] [-t timeout]\n"
-    printf "\tCompilers: (intel, microsoft, clang, all)  Example numbers: (1-15)\n"
+    printf "\tCompilers: (intel, microsoft, clang)  Example numbers: (1-15)\n"
     printf "\tBy default it will be executed with all the compilers and all the\n"
     printf "\texample numbers and timeout of 30 seconds\n"
     exit 0
@@ -48,8 +48,6 @@ while getopts ":m:p:t:" option; do # parsing of the arguments
 		    mits="\tVisual C++"
 		    lmi="\tUNP\t\tFEN"
 		    lop="\t-O0\t-O2\t-O0\t-O2"
-		    ;;
-		all )
 		    ;;
 		* )
 		    usage
