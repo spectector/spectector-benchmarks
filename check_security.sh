@@ -66,7 +66,7 @@ while getopts ":m:p:t:" option; do # parsing of the arguments
     esac
 done
 
-trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
+trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM
 
 cd "$_base"
 
