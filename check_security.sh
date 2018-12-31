@@ -21,37 +21,43 @@ res () {
 }
 
 cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15)
-gen=(microsoft intel clang)
-mits="\tVisual C++\t\t\tICC\t\t\t\tClang"
-lmi="\tUNP\t\tFEN\t\tUNP\t\tFEN\t\tUNP\t\tFEN\t\tSLH"
-lop="\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2"
+gen=(microsoft intel clang gcc)
+mits="\tVisual C++\t\t\tICC\t\t\t\tClang\t\t\t\t\t\tGCC"
+lmi="\tUNP\t\tFEN\t\tUNP\t\tFEN\t\tUNP\t\tFEN\t\tSLH\t\tUNP\t\tSLH"
+lop="\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2"
 timeout=30
 
 while getopts ":m:p:t:" option; do # parsing of the arguments
     case "${option}" in
 	m)
 	    case $OPTARG in
-		clang )
-		    gen=(clang)
-		    mits="\tClang\t\t\t\t\t"
-		    lmi="\tUNP\t\tFEN\t\tSLH"
-		    lop="\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2"
-		    ;;
-		intel )
-		    gen=(intel)
-		    mits="\tICC\t\t\t"
-		    lmi="\tUNP\t\tFEN"
-		    lop="\t-O0\t-O2\t-O0\t-O2"
-		    ;;    
-		microsoft )
-		    gen=(microsoft)
-		    mits="\tVisual C++"
-		    lmi="\tUNP\t\tFEN"
-		    lop="\t-O0\t-O2\t-O0\t-O2"
-		    ;;
-		* )
-		    usage
-		    ;;
+	    	clang )
+	    	    gen=(clang)
+	    	    mits="\tClang\t\t\t\t\t"
+	    	    lmi="\tUNP\t\tFEN\t\tSLH"
+	    	    lop="\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2"
+	    	    ;;
+	    	intel )
+	    	    gen=(intel)
+	    	    mits="\tICC\t\t\t"
+	    	    lmi="\tUNP\t\tFEN"
+	    	    lop="\t-O0\t-O2\t-O0\t-O2"
+	    	    ;;    
+	    	microsoft )
+	    	    gen=(microsoft)
+	    	    mits="\tVisual C++"
+	    	    lmi="\tUNP\t\tFEN"
+	    	    lop="\t-O0\t-O2\t-O0\t-O2"
+	    	    ;;
+		gcc )
+	    	    gen=(gcc)
+	    	    mits="\tGCC"
+	    	    lmi="\tUNP\t\tSLH"
+	    	    lop="\t-O0\t-O2\t-O0\t-O2"
+	    	    ;;
+	    	* )
+	    	    usage
+	    	    ;;
 	    esac
 	    ;;
 	p)
@@ -66,7 +72,7 @@ while getopts ":m:p:t:" option; do # parsing of the arguments
     esac
 done
 
-trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
+trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM
 
 cd "$_base"
 
@@ -113,6 +119,7 @@ for app in ${cases[@]}; do
 	    expe=$case
 	    extension=s
 	    [ "$case" == "intel" ] && experiments=(any lfence)
+	    [ "$case" == "gcc" ] && experiments=(any slh)
 	    [ "$case" == "microsoft" ] && experiments=(any lfence) && extension=asm
 	    for ex in ${experiments[@]}; do
 		for x in $folder/$ex.o0.$extension $folder/$ex.o2.$extension; do
@@ -122,7 +129,7 @@ for app in ${cases[@]}; do
 		    type="${name##*.}"
 		    
 		    makeconf $num # Set up the configurations
-		    low="[array1, array2, array1_size, array_size_mask, 'victim_function_v07.last_x', 9100, 9200, di, temp, 200, ImageBase]" # The low addresses (can't change from one path to another)
+		    low="[array1, array2, array1_size, array_size_mask, 'victim_function_v07.last_x', 9000, 9100, 9200, di, temp, 200, ImageBase]" # The low addresses (can't change from one path to another) # first array position for gcc
 		    # '9100' is the address of array1_size (needed for example 07)
 		    
 		    printf "$expe-$app-$y\n" # (show progress)
