@@ -7,7 +7,7 @@ asm="-masm=intel"
 for code in ../sources/intel/*.c; do
     filename=$(basename -- "$code")
     num="${filename%.*}"
-    mkdir -p intel/$num
+    mkdir -p ../target/intel/$num
     for ext in s asm; do
 	ass_flag=${!ext}
 	icc $ass_flag -O0 -S -c $code -o $intel_folder/$num/any.o0.$ext

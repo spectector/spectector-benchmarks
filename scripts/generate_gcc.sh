@@ -17,8 +17,8 @@ for code in ../sources/clang/*.c; do
 
     ~/.gcc/bin/gcc -S $code -o $folder/any.o0.s
     ~/.gcc/bin/gcc -O2 -S $code -o $folder/any.o2.s
-    ~/.gcc/bin/gcc -fspectre-v1 -S $code -o $folder/slh.o0.s
-    ~/.gcc/bin/gcc -fspectre-v1 -O2 -S $code -o $folder/slh.o2.s
+    ~/.gcc/bin/gcc -fspectre-v1=2 -S $code -o $folder/slh.o0.s
+    ~/.gcc/bin/gcc -fspectre-v1=2 -O2 -S $code -o $folder/slh.o2.s
     # Add =3 for TLS tracing
 done
 echo "Files generated correctly"
