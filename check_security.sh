@@ -13,14 +13,18 @@ usage () {
 }
 
 makeconf () {
-    [ $1 -eq 15 ] && config="c([0xf000000=1000,9100=16,200=0],[pc=victim_function_v$1, sp=0xf000000, bp=0xf00000, temp=200, array1=9000, array1_size=9100, array2=10000, di=9200])" || config="c([0xf000000=1000,9100=16,200=0],[pc=victim_function_v$1, sp=0xf000000, bp=0xf00000, temp=200, array1=9000, array1_size=9100, array2=10000, array_size_mask=9100])"
+    if [ "$1" == "access" ]; then config="c([0xf000000=1000],[pc=victim_function_v01, sp=0xf000000, bp=0xf00000, di=9200])" # only pc
+    elif [ $1 -eq 05 ]; then config="c([0xf000000=1000],[pc=victim_function_v$1, sp=0xf000000, bp=0xf00000, dx=0])" # For gcc example, fix
+    elif [ $1 -eq 15 ]; then config="c([0xf000000=1000,9100=16,200=0],[pc=victim_function_v$1, sp=0xf000000, bp=0xf00000, di=9200])"
+    else config="c([0xf000000=1000],[pc=victim_function_v$1, sp=0xf000000, bp=0xf00000])"
+    fi
 }
 
 res () {
     printf $1 >> $out
 }
 
-cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15)
+cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15 access)
 gen=(microsoft intel clang gcc)
 mits="\tVisual C++\t\t\tICC\t\t\t\tClang\t\t\t\t\t\tGCC"
 lmi="\tUNP\t\tFEN\t\tUNP\t\tFEN\t\tUNP\t\tFEN\t\tSLH\t\tUNP\t\tSLH"
@@ -118,8 +122,9 @@ for app in ${cases[@]}; do
 	    #optimizations=(o0 o2)
 	    expe=$case
 	    extension=s
+	    low="[di,9200]" # The low addresses (can't change from one path to another), 9200 is the direction that di points on #15
 	    [ "$case" == "intel" ] && experiments=(any lfence)
-	    [ "$case" == "gcc" ] && experiments=(any slh)
+	    [ "$case" == "gcc" ] && experiments=(any slh) && low="[di, 1024]" #1024 is array1[0] position
 	    [ "$case" == "microsoft" ] && experiments=(any lfence) && extension=asm
 	    for ex in ${experiments[@]}; do
 		for x in $folder/$ex.o0.$extension $folder/$ex.o2.$extension; do
@@ -129,9 +134,6 @@ for app in ${cases[@]}; do
 		    type="${name##*.}"
 		    
 		    makeconf $num # Set up the configurations
-		    low="[array1, array2, array1_size, array_size_mask, 'victim_function_v07.last_x', 9000, 9100, 9200, di, temp, 200, ImageBase]" # The low addresses (can't change from one path to another) # first array position for gcc
-		    # '9100' is the address of array1_size (needed for example 07)
-		    
 		    printf "$expe-$app-$y\n" # (show progress)
 		    outf="$outdir/${expe}.${app}.${y}.out"
 		    $runtimeout $timeout $spectector $x --statistics -c "$config" --low "$low" > $outf # TODO: Time as user input
@@ -139,7 +141,7 @@ for app in ${cases[@]}; do
 		    if [ $ret = 124 ]; then # timeout
 			res "\t~"
 		    else
-			(grep unsafe "$outf" > /dev/null && res '\tL') ||  (grep "timeout..." "$outf" && res '\t?') || (grep "is safe" "$outf" > /dev/null > /dev/null && res '\tS') || (grep checking "$outf" > /dev/null && res '\t?') || res '\t?'
+			(grep unsafe "$outf" > /dev/null && res '\tL') ||  (grep "timeout..." "$outf" && res '\t?') || (grep "program is safe" "$outf" > /dev/null > /dev/null && res '\tS') || (grep checking "$outf" > /dev/null && res '\t?') || res '\t?'
 		    fi
 		done
 	    done
