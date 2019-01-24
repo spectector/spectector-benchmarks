@@ -4,7 +4,7 @@
 intel_folder=../target/intel
 s=""
 asm="-masm=intel"
-for code in ../sources/intel/*.c; do
+for code in ../sources/unix/*.c; do
     filename=$(basename -- "$code")
     num="${filename%.*}"
     mkdir -p ../target/intel/$num

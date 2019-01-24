@@ -30,7 +30,7 @@ leakByteLocalFunction:
         movzx     eax, al                                       #10.41
         movzx     edx, BYTE PTR [-16+rbp]                       #10.56
         movzx     edx, dl                                       #10.56
-        imul      edx, edx, 512                                 #10.62
+        imul      edx, edx, 512                                 #10.61
         movsxd    rdx, edx                                      #10.49
         mov       ecx, offset flat: array2                      #10.49
         add       rcx, rdx                                      #10.49
@@ -38,9 +38,9 @@ leakByteLocalFunction:
         movzx     edx, dl                                       #10.49
         and       eax, edx                                      #10.41
         mov       BYTE PTR temp[rip], al                        #10.41
-        leave                                                   #10.68
+        leave                                                   #10.67
 	.cfi_restore 6
-        ret                                                     #10.68
+        ret                                                     #10.67
                                 # LOE
 	.cfi_endproc
 # mark_end;

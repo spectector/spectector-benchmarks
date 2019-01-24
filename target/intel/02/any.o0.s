@@ -29,7 +29,7 @@ leakByteLocalFunction:
         movzbl    %al, %eax                                     #10.41
         movzbl    -16(%rbp), %edx                               #10.56
         movzbl    %dl, %edx                                     #10.56
-        imull     $512, %edx, %edx                              #10.62
+        imull     $512, %edx, %edx                              #10.61
         movslq    %edx, %rdx                                    #10.49
         movl      $array2, %ecx                                 #10.49
         addq      %rdx, %rcx                                    #10.49
@@ -37,9 +37,9 @@ leakByteLocalFunction:
         movzbl    %dl, %edx                                     #10.49
         andl      %edx, %eax                                    #10.41
         movb      %al, temp(%rip)                               #10.41
-        leave                                                   #10.68
+        leave                                                   #10.67
 	.cfi_restore 6
-        ret                                                     #10.68
+        ret                                                     #10.67
                                 # LOE
 	.cfi_endproc
 # mark_end;

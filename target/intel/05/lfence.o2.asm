@@ -10,70 +10,85 @@
 # mark_begin;
        .align    16,0x90
 	.globl victim_function_v05
-# --- victim_function_v05(int)
+# --- victim_function_v05(size_t)
 victim_function_v05:
-# parameter 1: edi
+# parameter 1: rdi
 ..B1.1:                         # Preds ..B1.0
                                 # Execution count [1.00e+00]
 	.cfi_startproc
 ..___tag_value_victim_function_v05.1:
 ..L2:
-                                                          #10.33
-        cmp       edi, DWORD PTR array1_size[rip]               #12.11
+                                                          #10.36
+        mov       eax, DWORD PTR array1_size[rip]               #12.11
+        cmp       rdi, rax                                      #12.11
         jae       ..B1.10       # Prob 50%                      #12.11
-                                # LOE rbx rbp r12 r13 r14 r15 edi
+                                # LOE rbx rbp rdi r12 r13 r14 r15
 ..B1.2:                         # Preds ..B1.1
                                 # Execution count [4.90e-01]
-        mov       eax, edi                                      #11.3
-        dec       eax                                           #11.3
-        js        ..B1.10       # Prob 0%                       #13.26
-                                # LOE rbx rbp r12 r13 r14 r15 edi
+        dec       rdi                                           #13.18
+        mov       edx, edi                                      #13.18
+        test      edx, edx                                      #13.26
+        jl        ..B1.10       # Prob 0%                       #13.26
+                                # LOE rbx rbp rdi r12 r13 r14 r15 edx
 ..B1.3:                         # Preds ..B1.2
                                 # Execution count [4.90e-01]
-        mov       edx, edi                                      #13.5
-        mov       esi, 1                                        #13.5
-        mov       al, BYTE PTR temp[rip]                        #14.7
-        xor       ecx, ecx                                      #13.5
-        shr       edx, 1                                        #13.5
+        mov       r9b, BYTE PTR temp[rip]                       #14.7
+        lea       esi, DWORD PTR [1+rdx]                        #13.10
+        mov       ecx, esi                                      #13.5
+        mov       eax, 1                                        #13.5
+        xor       r8d, r8d                                      #13.5
+        shr       ecx, 1                                        #13.5
         je        ..B1.7        # Prob 2%                       #13.5
-                                # LOE rdx rcx rbx rbp r12 r13 r14 r15 esi edi al
-..B1.4:                         # Preds ..B1.5 ..B1.3
+                                # LOE rbx rbp rdi r12 r13 r14 r15 eax edx ecx esi r8d r9b
+..B1.4:                         # Preds ..B1.3
                                 # Execution count [4.90e-01]
-        lfence                                                  #10.33
-                                # LOE rdx rcx rbx rbp r12 r13 r14 r15 edi al
-..B1.5:                         # Preds ..B1.4
+        lfence                                                  #10.36
+        movsxd    rax, esi                                      #14.22
+                                # LOE rax rbx rbp rdi r12 r13 r14 r15 edx ecx esi r8d r9b
+..B1.5:                         # Preds ..B1.13 ..B1.4
                                 # Execution count [1.36e+00]
-        movzx     esi, BYTE PTR [array1+rcx*2]                  #14.22
-        shl       rsi, 9                                        #14.34
-        movzx     r8d, BYTE PTR [1+array1+rcx*2]                #14.22
-        inc       rcx                                           #13.5
-        shl       r8, 9                                         #14.34
-        and       al, BYTE PTR [array2+rsi]                     #14.7
-        and       al, BYTE PTR [array2+r8]                      #14.7
-        cmp       rcx, rdx                                      #13.5
-        jb        ..B1.4        # Prob 63%                      #13.5
-                                # LOE rdx rcx rbx rbp r12 r13 r14 r15 edi al
+        lea       r10d, DWORD PTR [rdx+r8*2]                    #14.22
+        inc       r8d                                           #13.5
+        movsxd    r10, r10d                                     #14.22
+        sub       r10, rax                                      #14.22
+        movzx     r11d, BYTE PTR [1+array1+r10]                 #14.22
+        shl       r11, 9                                        #14.34
+        and       r9b, BYTE PTR [array2+r11]                    #14.7
+        movzx     r11d, BYTE PTR [2+array1+r10]                 #14.22
+        shl       r11, 9                                        #14.34
+        and       r9b, BYTE PTR [array2+r11]                    #14.7
+        cmp       r8d, ecx                                      #13.5
+        jae       ..B1.6        # Prob 36%                      #13.5
+                                # LOE rax rbx rbp rdi r12 r13 r14 r15 edx ecx esi r8d r9b
+..B1.13:                        # Preds ..B1.5
+                                # Execution count [8.70e-01]
+        lfence                                                  #10.36
+        jmp       ..B1.5        # Prob 100%                     #10.36
+                                # LOE rax rbx rbp rdi r12 r13 r14 r15 edx ecx esi r8d r9b
 ..B1.6:                         # Preds ..B1.5
                                 # Execution count [4.90e-01]
-        lea       esi, DWORD PTR [1+rcx+rcx]                    #13.5
-                                # LOE rbx rbp r12 r13 r14 r15 esi edi al
+        lea       eax, DWORD PTR [1+r8+r8]                      #13.5
+                                # LOE rbx rbp rdi r12 r13 r14 r15 eax esi r9b
 ..B1.7:                         # Preds ..B1.3 ..B1.6
                                 # Execution count [5.00e-01]
-        lea       edx, DWORD PTR [-1+rsi]                       #13.5
-        cmp       edx, edi                                      #13.5
+        lea       edx, DWORD PTR [-1+rax]                       #13.5
+        cmp       edx, esi                                      #13.5
         jae       ..B1.9        # Prob 2%                       #13.5
-                                # LOE rbx rbp r12 r13 r14 r15 esi al
+                                # LOE rbx rbp rdi r12 r13 r14 r15 eax esi r9b
 ..B1.8:                         # Preds ..B1.7
                                 # Execution count [4.90e-01]
+        movsxd    rdx, edi                                      #14.22
         movsxd    rsi, esi                                      #14.22
-        movzx     edx, BYTE PTR [-1+array1+rsi]                 #14.22
-        shl       rdx, 9                                        #14.34
+        movsxd    rax, eax                                      #14.22
+        sub       rdx, rsi                                      #14.22
+        movzx     ecx, BYTE PTR [array1+rax+rdx]                #14.22
+        shl       rcx, 9                                        #14.34
         lfence                                                  #14.22
-        and       al, BYTE PTR [array2+rdx]                     #14.7
-                                # LOE rbx rbp r12 r13 r14 r15 al
+        and       r9b, BYTE PTR [array2+rcx]                    #14.7
+                                # LOE rbx rbp r12 r13 r14 r15 r9b
 ..B1.9:                         # Preds ..B1.7 ..B1.8
                                 # Execution count [4.84e-01]
-        mov       BYTE PTR temp[rip], al                        #14.7
+        mov       BYTE PTR temp[rip], r9b                       #14.7
                                 # LOE rbx rbp r12 r13 r14 r15
 ..B1.10:                        # Preds ..B1.2 ..B1.1 ..B1.9
                                 # Execution count [1.00e+00]

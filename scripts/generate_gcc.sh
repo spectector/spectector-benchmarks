@@ -8,7 +8,7 @@ slh="-x86-speculative-load-hardening"
 s=""
 asm="--x86-asm-syntax=intel"
 
-for code in ../sources/clang/*.c; do
+for code in ../sources/unix/*.c; do
     filename=$(basename -- "$code")
     num="${filename%.*}"
     folder=../target/gcc/$num

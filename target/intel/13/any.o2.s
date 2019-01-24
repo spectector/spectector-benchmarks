@@ -17,12 +17,12 @@ is_x_safe:
 	.cfi_startproc
 ..___tag_value_is_x_safe.1:
 ..L2:
-                                                          #10.25
-        xorl      %eax, %eax                                    #10.56
-        movl      array1_size(%rip), %edx                       #10.36
-        cmpq      %rdx, %rdi                                    #10.56
-        setb      %al                                           #10.56
-        ret                                                     #10.56
+                                                          #16.38
+        xorl      %eax, %eax                                    #16.68
+        movl      array1_size(%rip), %edx                       #16.48
+        cmpq      %rdx, %rdi                                    #16.68
+        setb      %al                                           #16.68
+        ret                                                     #16.68
         .align    16,0x90
                                 # LOE
 	.cfi_endproc
@@ -47,21 +47,21 @@ victim_function_v13:
 	.cfi_startproc
 ..___tag_value_victim_function_v13.4:
 ..L5:
-                                                          #12.36
-        movl      array1_size(%rip), %eax                       #14.10
-        cmpq      %rax, %rdi                                    #14.10
-        jae       ..B2.3        # Prob 50%                      #14.10
+                                                          #17.36
+        movl      array1_size(%rip), %eax                       #18.10
+        cmpq      %rax, %rdi                                    #18.10
+        jae       ..B2.3        # Prob 50%                      #18.10
                                 # LOE rbx rbp rdi r12 r13 r14 r15
 ..B2.2:                         # Preds ..B2.1
                                 # Execution count [5.00e-01]
-        movzbl    array1(%rdi), %eax                            #15.26
-        shlq      $9, %rax                                      #15.38
-        movb      array2(%rax), %dl                             #15.19
-        andb      %dl, temp(%rip)                               #15.11
+        movzbl    array1(%rdi), %eax                            #19.26
+        shlq      $9, %rax                                      #19.38
+        movb      array2(%rax), %dl                             #19.19
+        andb      %dl, temp(%rip)                               #19.11
                                 # LOE rbx rbp r12 r13 r14 r15
 ..B2.3:                         # Preds ..B2.1 ..B2.2
                                 # Execution count [1.00e+00]
-        ret                                                     #16.1
+        ret                                                     #20.1
         .align    16,0x90
                                 # LOE
 	.cfi_endproc

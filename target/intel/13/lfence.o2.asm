@@ -18,12 +18,12 @@ is_x_safe:
 	.cfi_startproc
 ..___tag_value_is_x_safe.1:
 ..L2:
-                                                          #10.25
-        xor       eax, eax                                      #10.56
-        mov       edx, DWORD PTR array1_size[rip]               #10.36
-        cmp       rdi, rdx                                      #10.56
-        setb      al                                            #10.56
-        ret                                                     #10.56
+                                                          #16.38
+        xor       eax, eax                                      #16.68
+        mov       edx, DWORD PTR array1_size[rip]               #16.48
+        cmp       rdi, rdx                                      #16.68
+        setb      al                                            #16.68
+        ret                                                     #16.68
         .align    16,0x90
                                 # LOE
 	.cfi_endproc
@@ -48,23 +48,23 @@ victim_function_v13:
 	.cfi_startproc
 ..___tag_value_victim_function_v13.4:
 ..L5:
-                                                          #12.36
-        mov       eax, DWORD PTR array1_size[rip]               #14.10
-        cmp       rdi, rax                                      #14.10
-        jae       ..B2.3        # Prob 50%                      #14.10
+                                                          #17.36
+        mov       eax, DWORD PTR array1_size[rip]               #18.10
+        cmp       rdi, rax                                      #18.10
+        jae       ..B2.3        # Prob 50%                      #18.10
                                 # LOE rbx rbp rdi r12 r13 r14 r15
 ..B2.2:                         # Preds ..B2.1
                                 # Execution count [5.00e-01]
-        movzx     edi, BYTE PTR [array1+rdi]                    #15.26
-        shl       rdi, 9                                        #15.38
-        mov       al, BYTE PTR temp[rip]                        #15.11
-        lfence                                                  #15.26
-        and       al, BYTE PTR [array2+rdi]                     #15.11
-        mov       BYTE PTR temp[rip], al                        #15.11
+        movzx     edi, BYTE PTR [array1+rdi]                    #19.26
+        shl       rdi, 9                                        #19.38
+        mov       al, BYTE PTR temp[rip]                        #19.11
+        lfence                                                  #19.26
+        and       al, BYTE PTR [array2+rdi]                     #19.11
+        mov       BYTE PTR temp[rip], al                        #19.11
                                 # LOE rbx rbp r12 r13 r14 r15
 ..B2.3:                         # Preds ..B2.1 ..B2.2
                                 # Execution count [1.00e+00]
-        ret                                                     #16.1
+        ret                                                     #20.1
         .align    16,0x90
                                 # LOE
 	.cfi_endproc

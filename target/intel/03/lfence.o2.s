@@ -17,21 +17,21 @@ victim_function_v03:
 	.cfi_startproc
 ..___tag_value_victim_function_v03.1:
 ..L2:
-                                                          #11.36
-        movl      array1_size(%rip), %eax                       #12.14
-        cmpq      %rax, %rdi                                    #12.14
-        jae       ..B1.3        # Prob 78%                      #12.14
+                                                          #16.36
+        movl      array1_size(%rip), %eax                       #17.14
+        cmpq      %rax, %rdi                                    #17.14
+        jae       ..B1.3        # Prob 78%                      #17.14
                                 # LOE rbx rbp rdi r12 r13 r14 r15
 ..B1.2:                         # Preds ..B1.1
                                 # Execution count [2.20e-01]
-        movzbl    array1(%rdi), %edi                            #13.11
-        lfence                                                  #13.11
+        movzbl    array1(%rdi), %edi                            #18.11
+        lfence                                                  #18.11
 #       leakByteNoinlineFunction(uint8_t)
-        jmp       leakByteNoinlineFunction                      #13.11
+        jmp       leakByteNoinlineFunction                      #18.11
                                 # LOE
 ..B1.3:                         # Preds ..B1.1
                                 # Execution count [1.00e+00]
-        ret                                                     #14.1
+        ret                                                     #19.1
         .align    16,0x90
                                 # LOE
 	.cfi_endproc
@@ -56,15 +56,15 @@ leakByteNoinlineFunction:
 	.cfi_startproc
 ..___tag_value_leakByteNoinlineFunction.4:
 ..L5:
-                                                          #10.63
-        movzbl    %dil, %eax                                    #10.73
-        shlq      $9, %rax                                      #10.86
-        movb      temp(%rip), %cl                               #10.65
-        movb      array2(%rax), %dl                             #10.73
-        andb      %dl, %cl                                      #10.65
-        lfence                                                  #10.73
-        movb      %cl, temp(%rip)                               #10.65
-        ret                                                     #10.92
+                                                          #13.67
+        movzbl    %dil, %eax                                    #13.77
+        shlq      $9, %rax                                      #13.89
+        movb      temp(%rip), %cl                               #13.69
+        movb      array2(%rax), %dl                             #13.77
+        andb      %dl, %cl                                      #13.69
+        lfence                                                  #13.77
+        movb      %cl, temp(%rip)                               #13.69
+        ret                                                     #13.95
         .align    16,0x90
                                 # LOE
 	.cfi_endproc

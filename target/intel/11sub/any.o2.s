@@ -17,21 +17,21 @@ victim_function_v11:
 	.cfi_startproc
 ..___tag_value_victim_function_v11.1:
 ..L2:
-                                                          #14.36
-        movl      array1_size(%rip), %eax                       #15.11
-        cmpq      %rax, %rdi                                    #15.11
-        jae       ..B1.3        # Prob 78%                      #15.11
+                                                          #13.36
+        movl      array1_size(%rip), %eax                       #14.11
+        cmpq      %rax, %rdi                                    #14.11
+        jae       ..B1.3        # Prob 78%                      #14.11
                                 # LOE rbx rbp rdi r12 r13 r14 r15
 ..B1.2:                         # Preds ..B1.1
                                 # Execution count [2.20e-01]
-        movzbl    array1(%rdi), %eax                            #16.38
-        shlq      $9, %rax                                      #16.50
-        movb      array2(%rax), %dl                             #16.28
-        subb      %dl, temp(%rip)                               #16.12
+        movzbl    array1(%rdi), %eax                            #15.38
+        shlq      $9, %rax                                      #15.50
+        movb      array2(%rax), %dl                             #15.28
+        subb      %dl, temp(%rip)                               #15.12
                                 # LOE rbx rbp r12 r13 r14 r15
 ..B1.3:                         # Preds ..B1.1 ..B1.2
                                 # Execution count [1.00e+00]
-        ret                                                     #17.1
+        ret                                                     #16.1
         .align    16,0x90
                                 # LOE
 	.cfi_endproc
@@ -58,44 +58,44 @@ mymemcmp:
 	.cfi_startproc
 ..___tag_value_mymemcmp.4:
 ..L5:
-                                                          #20.60
-        movq      %rdx, %rcx                                    #20.60
-        testq     %rcx, %rcx                                    #23.7
-        je        ..B2.10       # Prob 19%                      #23.7
+                                                          #19.60
+        movq      %rdx, %rcx                                    #19.60
+        testq     %rcx, %rcx                                    #22.7
+        je        ..B2.10       # Prob 19%                      #22.7
                                 # LOE rcx rbx rbp rsi rdi r12 r13 r14 r15
 ..B2.2:                         # Preds ..B2.1
                                 # Execution count [8.08e-01]
-        decq      %rcx                                          #24.12
-        je        ..B2.6        # Prob 10%                      #24.12
+        decq      %rcx                                          #23.12
+        je        ..B2.6        # Prob 10%                      #23.12
                                 # LOE rcx rbx rbp rsi rdi r12 r13 r14 r15
 ..B2.4:                         # Preds ..B2.2 ..B2.5
                                 # Execution count [2.11e+00]
-        movzbl    (%rdi), %eax                                  #24.22
-        movzbl    (%rsi), %edx                                  #24.29
-        cmpl      %edx, %eax                                    #24.29
-        jne       ..B2.7        # Prob 20%                      #24.29
+        movzbl    (%rdi), %eax                                  #23.22
+        movzbl    (%rsi), %edx                                  #23.29
+        cmpl      %edx, %eax                                    #23.29
+        jne       ..B2.7        # Prob 20%                      #23.29
                                 # LOE rcx rbx rbp rsi rdi r12 r13 r14 r15 eax edx
 ..B2.5:                         # Preds ..B2.4
                                 # Execution count [1.69e+00]
-        incq      %rdi                                          #25.5
-        incq      %rsi                                          #26.5
-        decq      %rcx                                          #24.12
-        jne       ..B2.4        # Prob 82%                      #24.12
+        incq      %rdi                                          #24.5
+        incq      %rsi                                          #25.5
+        decq      %rcx                                          #23.12
+        jne       ..B2.4        # Prob 82%                      #23.12
                                 # LOE rcx rbx rbp rsi rdi r12 r13 r14 r15
 ..B2.6:                         # Preds ..B2.2 ..B2.5
                                 # Execution count [3.04e-01]
-        movzbl    (%rdi), %eax                                  #28.12
-        movzbl    (%rsi), %edx                                  #28.16
+        movzbl    (%rdi), %eax                                  #27.12
+        movzbl    (%rsi), %edx                                  #27.16
                                 # LOE rbx rbp r12 r13 r14 r15 eax edx
 ..B2.7:                         # Preds ..B2.4 ..B2.6
                                 # Execution count [8.08e-01]
-        subl      %edx, %eax                                    #28.12
-        ret                                                     #28.16
+        subl      %edx, %eax                                    #27.12
+        ret                                                     #27.16
                                 # LOE
 ..B2.10:                        # Preds ..B2.1
                                 # Execution count [1.92e-01]: Infreq
-        xorl      %eax, %eax                                    #23.21
-        ret                                                     #23.21
+        xorl      %eax, %eax                                    #22.21
+        ret                                                     #22.21
         .align    16,0x90
                                 # LOE
 	.cfi_endproc

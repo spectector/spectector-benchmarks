@@ -18,20 +18,20 @@ victim_function_v03:
 	.cfi_startproc
 ..___tag_value_victim_function_v03.1:
 ..L2:
-                                                          #11.36
-        mov       eax, DWORD PTR array1_size[rip]               #12.14
-        cmp       rdi, rax                                      #12.14
-        jae       ..B1.3        # Prob 78%                      #12.14
+                                                          #16.36
+        mov       eax, DWORD PTR array1_size[rip]               #17.14
+        cmp       rdi, rax                                      #17.14
+        jae       ..B1.3        # Prob 78%                      #17.14
                                 # LOE rbx rbp rdi r12 r13 r14 r15
 ..B1.2:                         # Preds ..B1.1
                                 # Execution count [2.20e-01]
-        movzx     edi, BYTE PTR [array1+rdi]                    #13.11
+        movzx     edi, BYTE PTR [array1+rdi]                    #18.11
 #       leakByteNoinlineFunction(uint8_t)
-        jmp       leakByteNoinlineFunction                      #13.11
+        jmp       leakByteNoinlineFunction                      #18.11
                                 # LOE
 ..B1.3:                         # Preds ..B1.1
                                 # Execution count [1.00e+00]
-        ret                                                     #14.1
+        ret                                                     #19.1
         .align    16,0x90
                                 # LOE
 	.cfi_endproc
@@ -56,12 +56,12 @@ leakByteNoinlineFunction:
 	.cfi_startproc
 ..___tag_value_leakByteNoinlineFunction.4:
 ..L5:
-                                                          #10.63
-        movzx     eax, dil                                      #10.73
-        shl       rax, 9                                        #10.86
-        mov       dl, BYTE PTR [array2+rax]                     #10.73
-        and       BYTE PTR temp[rip], dl                        #10.65
-        ret                                                     #10.92
+                                                          #13.67
+        movzx     eax, dil                                      #13.77
+        shl       rax, 9                                        #13.89
+        mov       dl, BYTE PTR [array2+rax]                     #13.77
+        and       BYTE PTR temp[rip], dl                        #13.69
+        ret                                                     #13.95
         .align    16,0x90
                                 # LOE
 	.cfi_endproc

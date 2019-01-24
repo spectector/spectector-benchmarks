@@ -18,29 +18,29 @@ leakByteNoinlineFunction:
 	.cfi_startproc
 ..___tag_value_leakByteNoinlineFunction.1:
 ..L2:
-                                                          #10.63
-        push      rbp                                           #10.63
+                                                          #13.67
+        push      rbp                                           #13.67
 	.cfi_def_cfa_offset 16
-        mov       rbp, rsp                                      #10.63
+        mov       rbp, rsp                                      #13.67
 	.cfi_def_cfa 6, 16
 	.cfi_offset 6, -16
-        sub       rsp, 16                                       #10.63
-        mov       BYTE PTR [-16+rbp], dil                       #10.63
-        movzx     eax, BYTE PTR temp[rip]                       #10.65
-        movzx     eax, al                                       #10.65
-        movzx     edx, BYTE PTR [-16+rbp]                       #10.80
-        movzx     edx, dl                                       #10.80
-        imul      edx, edx, 512                                 #10.86
-        movsxd    rdx, edx                                      #10.73
-        mov       ecx, offset flat: array2                      #10.73
-        add       rcx, rdx                                      #10.73
-        movzx     edx, BYTE PTR [rcx]                           #10.73
-        movzx     edx, dl                                       #10.73
-        and       eax, edx                                      #10.65
-        mov       BYTE PTR temp[rip], al                        #10.65
-        leave                                                   #10.92
+        sub       rsp, 16                                       #13.67
+        mov       BYTE PTR [-16+rbp], dil                       #13.67
+        movzx     eax, BYTE PTR temp[rip]                       #13.69
+        movzx     eax, al                                       #13.69
+        movzx     edx, BYTE PTR [-16+rbp]                       #13.84
+        movzx     edx, dl                                       #13.84
+        imul      edx, edx, 512                                 #13.89
+        movsxd    rdx, edx                                      #13.77
+        mov       ecx, offset flat: array2                      #13.77
+        add       rcx, rdx                                      #13.77
+        movzx     edx, BYTE PTR [rcx]                           #13.77
+        movzx     edx, dl                                       #13.77
+        and       eax, edx                                      #13.69
+        mov       BYTE PTR temp[rip], al                        #13.69
+        leave                                                   #13.95
 	.cfi_restore 6
-        ret                                                     #10.92
+        ret                                                     #13.95
                                 # LOE
 	.cfi_endproc
 # mark_end;
@@ -64,35 +64,35 @@ victim_function_v03:
 	.cfi_startproc
 ..___tag_value_victim_function_v03.8:
 ..L9:
-                                                          #11.36
-        push      rbp                                           #11.36
+                                                          #16.36
+        push      rbp                                           #16.36
 	.cfi_def_cfa_offset 16
-        mov       rbp, rsp                                      #11.36
+        mov       rbp, rsp                                      #16.36
 	.cfi_def_cfa 6, 16
 	.cfi_offset 6, -16
-        sub       rsp, 16                                       #11.36
-        mov       QWORD PTR [-16+rbp], rdi                      #11.36
-        mov       rax, QWORD PTR [-16+rbp]                      #12.10
-        mov       edx, DWORD PTR array1_size[rip]               #12.14
-        cmp       rax, rdx                                      #12.14
-        jae       ..B2.3        # Prob 50%                      #12.14
+        sub       rsp, 16                                       #16.36
+        mov       QWORD PTR [-16+rbp], rdi                      #16.36
+        mov       rax, QWORD PTR [-16+rbp]                      #17.10
+        mov       edx, DWORD PTR array1_size[rip]               #17.14
+        cmp       rax, rdx                                      #17.14
+        jae       ..B2.3        # Prob 50%                      #17.14
                                 # LOE rbx rbp rsp r12 r13 r14 r15 rip
 ..B2.2:                         # Preds ..B2.1
                                 # Execution count [0.00e+00]
-        mov       eax, offset flat: array1                      #13.11
-        add       rax, QWORD PTR [-16+rbp]                      #13.11
-        movzx     eax, BYTE PTR [rax]                           #13.11
-        mov       edi, eax                                      #13.11
+        mov       eax, offset flat: array1                      #18.11
+        add       rax, QWORD PTR [-16+rbp]                      #18.11
+        movzx     eax, BYTE PTR [rax]                           #18.11
+        mov       edi, eax                                      #18.11
 ..___tag_value_victim_function_v03.13:
 #       leakByteNoinlineFunction(uint8_t)
-        call      leakByteNoinlineFunction                      #13.11
+        call      leakByteNoinlineFunction                      #18.11
 ..___tag_value_victim_function_v03.14:
                                 # LOE rbx rbp rsp r12 r13 r14 r15 rip
 ..B2.3:                         # Preds ..B2.2 ..B2.1
                                 # Execution count [0.00e+00]
-        leave                                                   #14.1
+        leave                                                   #19.1
 	.cfi_restore 6
-        ret                                                     #14.1
+        ret                                                     #19.1
                                 # LOE
 	.cfi_endproc
 # mark_end;

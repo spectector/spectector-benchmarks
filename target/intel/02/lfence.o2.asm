@@ -20,13 +20,13 @@ leakByteLocalFunction:
 ..L2:
                                                           #10.39
         movzx     eax, dil                                      #10.49
-        shl       rax, 9                                        #10.62
+        shl       rax, 9                                        #10.61
         mov       cl, BYTE PTR temp[rip]                        #10.41
         mov       dl, BYTE PTR [array2+rax]                     #10.49
         and       cl, dl                                        #10.41
         lfence                                                  #10.49
         mov       BYTE PTR temp[rip], cl                        #10.41
-        ret                                                     #10.68
+        ret                                                     #10.67
         .align    16,0x90
                                 # LOE
 	.cfi_endproc
