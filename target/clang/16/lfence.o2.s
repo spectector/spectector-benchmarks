@@ -8,19 +8,17 @@ victim_function_v16:                    # @victim_function_v16
 # %bb.0:
 	movl	array1_size(%rip), %eax
 	cmpq	%rdi, %rax
-	jbe	.LBB0_1
-# %bb.2:
+	jbe	.LBB0_2
+# %bb.1:
 	lfence
-	movzbl	array1(%rdi), %ecx
-	shlq	$9, %rcx
-	movb	temp(%rip), %al
-	andb	array2(%rcx), %al
-	movb	%al, temp(%rip)
-	retq
-.LBB0_1:
+	movzbl	array1(%rdi), %eax
+	shlq	$9, %rax
+	movzbl	array2(%rax), %eax
+	shlq	$9, %rax
+	movb	array3(%rax), %al
+	andb	%al, temp(%rip)
+.LBB0_2:
 	lfence
-	xorl	%eax, %eax
-	movb	%al, temp(%rip)
 	retq
 .Lfunc_end0:
 	.size	victim_function_v16, .Lfunc_end0-victim_function_v16
@@ -48,6 +46,8 @@ temp:
 	.byte	0                       # 0x0
 	.size	temp, 1
 
+	.type	array3,@object          # @array3
+	.comm	array3,131072,16
 	.type	array2,@object          # @array2
 	.comm	array2,131072,16
 

@@ -24,14 +24,14 @@ victim_function_v16:                    # @victim_function_v16
 	shl	eax, 9
 	cdqe
 	movzx	eax, byte ptr [rax + array2]
+	shl	eax, 9
+	cdqe
+	movzx	eax, byte ptr [rax + array3]
 	movzx	ecx, byte ptr [temp]
 	and	ecx, eax
 	mov	byte ptr [temp], cl
-	jmp	.LBB0_3
 .LBB0_2:
 	lfence
-	mov	byte ptr [temp], 0
-.LBB0_3:
 	pop	rbp
 	.cfi_def_cfa rsp, 8
 	ret
@@ -61,6 +61,8 @@ temp:
 	.byte	0                       # 0x0
 	.size	temp, 1
 
+	.type	array3,@object          # @array3
+	.comm	array3,131072,16
 	.type	array2,@object          # @array2
 	.comm	array2,131072,16
 

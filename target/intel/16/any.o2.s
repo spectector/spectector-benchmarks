@@ -17,27 +17,23 @@ victim_function_v16:
 	.cfi_startproc
 ..___tag_value_victim_function_v16.1:
 ..L2:
-                                                          #10.36
-        movl      array1_size(%rip), %eax                       #11.11
-        cmpq      %rax, %rdi                                    #11.11
-        jae       ..B1.3        # Prob 50%                      #11.11
+                                                          #11.36
+        movl      array1_size(%rip), %eax                       #12.14
+        cmpq      %rax, %rdi                                    #12.14
+        jae       ..B1.3        # Prob 50%                      #12.14
                                 # LOE rbx rbp rdi r12 r13 r14 r15
 ..B1.2:                         # Preds ..B1.1
                                 # Execution count [5.00e-01]
-        movzbl    array1(%rdi), %eax                            #12.20
-        shlq      $9, %rax                                      #12.32
-        movb      temp(%rip), %dl                               #12.5
-        andb      array2(%rax), %dl                             #12.5
-        jmp       ..B1.4        # Prob 100%                     #12.5
-                                # LOE rbx rbp r12 r13 r14 r15 dl
-..B1.3:                         # Preds ..B1.1
-                                # Execution count [5.00e-01]
-        xorb      %dl, %dl                                      #14.5
-                                # LOE rbx rbp r12 r13 r14 r15 dl
-..B1.4:                         # Preds ..B1.2 ..B1.3
+        movzbl    array1(%rdi), %eax                            #13.33
+        shlq      $9, %rax                                      #13.45
+        movzbl    array2(%rax), %edx                            #13.26
+        shlq      $9, %rdx                                      #13.52
+        movb      array3(%rdx), %cl                             #13.19
+        andb      %cl, temp(%rip)                               #13.11
+                                # LOE rbx rbp r12 r13 r14 r15
+..B1.3:                         # Preds ..B1.1 ..B1.2
                                 # Execution count [1.00e+00]
-        movb      %dl, temp(%rip)                               #12.5
-        ret                                                     #16.1
+        ret                                                     #15.1
         .align    16,0x90
                                 # LOE
 	.cfi_endproc
@@ -86,5 +82,6 @@ array1:
 	.size	array1,16
 	.data
 	.comm array2,131072,32
+	.comm array3,131072,32
 	.section .note.GNU-stack, ""
 # End

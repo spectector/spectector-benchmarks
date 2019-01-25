@@ -18,8 +18,12 @@ victim_function_v16:                    # @victim_function_v16
 	movq	-8(%rbp), %rdx
 	movl	array1_size, %esi
 	cmpq	%rsi, %rdx
-	jae	.LBB0_2
-# %bb.1:
+	jae	.LBB0_1
+	jmp	.LBB0_2
+.LBB0_1:
+	cmovbq	%rcx, %rax
+	jmp	.LBB0_3
+.LBB0_2:
 	cmovaeq	%rcx, %rax
 	movq	-8(%rbp), %rcx
 	movzbl	array1(,%rcx), %ecx
@@ -30,13 +34,14 @@ victim_function_v16:                    # @victim_function_v16
 	movzbl	array2(,%rcx), %ecx
 	movl	%eax, %edx
 	orl	%ecx, %edx
+	shll	$9, %edx
+	movslq	%edx, %rcx
+	movzbl	array3(,%rcx), %ecx
+	movl	%eax, %edx
+	orl	%ecx, %edx
 	movzbl	temp, %ecx
 	andl	%edx, %ecx
 	movb	%cl, temp
-	jmp	.LBB0_3
-.LBB0_2:
-	cmovbq	%rcx, %rax
-	movb	$0, temp
 .LBB0_3:
 	shlq	$47, %rax
 	orq	%rax, %rsp
@@ -69,6 +74,8 @@ temp:
 	.byte	0                       # 0x0
 	.size	temp, 1
 
+	.type	array3,@object          # @array3
+	.comm	array3,131072,16
 	.type	array2,@object          # @array2
 	.comm	array2,131072,16
 

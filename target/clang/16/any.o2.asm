@@ -9,17 +9,15 @@ victim_function_v16:                    # @victim_function_v16
 # %bb.0:
 	mov	eax, dword ptr [rip + array1_size]
 	cmp	rax, rdi
-	jbe	.LBB0_1
-# %bb.2:
-	movzx	ecx, byte ptr [rdi + array1]
-	shl	rcx, 9
-	mov	al, byte ptr [rip + temp]
-	and	al, byte ptr [rcx + array2]
-	mov	byte ptr [rip + temp], al
-	ret
-.LBB0_1:
-	xor	eax, eax
-	mov	byte ptr [rip + temp], al
+	jbe	.LBB0_2
+# %bb.1:
+	movzx	eax, byte ptr [rdi + array1]
+	shl	rax, 9
+	movzx	eax, byte ptr [rax + array2]
+	shl	rax, 9
+	mov	al, byte ptr [rax + array3]
+	and	byte ptr [rip + temp], al
+.LBB0_2:
 	ret
 .Lfunc_end0:
 	.size	victim_function_v16, .Lfunc_end0-victim_function_v16
@@ -47,6 +45,8 @@ temp:
 	.byte	0                       # 0x0
 	.size	temp, 1
 
+	.type	array3,@object          # @array3
+	.comm	array3,131072,16
 	.type	array2,@object          # @array2
 	.comm	array2,131072,16
 

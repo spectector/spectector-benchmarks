@@ -18,46 +18,47 @@ victim_function_v16:
 	.cfi_startproc
 ..___tag_value_victim_function_v16.1:
 ..L2:
-                                                          #10.36
-        push      rbp                                           #10.36
+                                                          #11.36
+        push      rbp                                           #11.36
 	.cfi_def_cfa_offset 16
-        mov       rbp, rsp                                      #10.36
+        mov       rbp, rsp                                      #11.36
 	.cfi_def_cfa 6, 16
 	.cfi_offset 6, -16
-        sub       rsp, 16                                       #10.36
-        mov       QWORD PTR [-16+rbp], rdi                      #10.36
-        mov       rax, QWORD PTR [-16+rbp]                      #11.7
-        mov       edx, DWORD PTR array1_size[rip]               #11.11
-        cmp       rax, rdx                                      #11.11
-        jae       ..B1.3        # Prob 50%                      #11.11
+        sub       rsp, 16                                       #11.36
+        mov       QWORD PTR [-16+rbp], rdi                      #11.36
+        mov       rax, QWORD PTR [-16+rbp]                      #12.10
+        mov       edx, DWORD PTR array1_size[rip]               #12.14
+        cmp       rax, rdx                                      #12.14
+        jae       ..B1.3        # Prob 50%                      #12.14
                                 # LOE rbx rbp rsp r12 r13 r14 r15 rip
 ..B1.2:                         # Preds ..B1.1
                                 # Execution count [0.00e+00]
-        movzx     eax, BYTE PTR temp[rip]                       #12.5
-        movzx     eax, al                                       #12.5
-        mov       edx, offset flat: array1                      #12.20
-        add       rdx, QWORD PTR [-16+rbp]                      #12.20
-        movzx     edx, BYTE PTR [rdx]                           #12.20
-        movzx     edx, dl                                       #12.20
-        imul      edx, edx, 512                                 #12.32
-        movsxd    rdx, edx                                      #12.13
-        mov       ecx, offset flat: array2                      #12.13
-        add       rcx, rdx                                      #12.13
-        movzx     edx, BYTE PTR [rcx]                           #12.13
-        movzx     edx, dl                                       #12.13
-        and       eax, edx                                      #12.5
-        mov       BYTE PTR temp[rip], al                        #12.5
-        jmp       ..B1.4        # Prob 100%                     #12.5
+        movzx     eax, BYTE PTR temp[rip]                       #13.11
+        movzx     eax, al                                       #13.11
+        mov       edx, offset flat: array1                      #13.33
+        add       rdx, QWORD PTR [-16+rbp]                      #13.33
+        movzx     edx, BYTE PTR [rdx]                           #13.33
+        movzx     edx, dl                                       #13.33
+        imul      edx, edx, 512                                 #13.45
+        movsxd    rdx, edx                                      #13.26
+        mov       ecx, offset flat: array2                      #13.26
+        add       rcx, rdx                                      #13.26
+        movzx     edx, BYTE PTR [rcx]                           #13.26
+        movzx     edx, dl                                       #13.26
+        imul      edx, edx, 512                                 #13.52
+        movsxd    rdx, edx                                      #13.19
+        mov       ecx, offset flat: array3                      #13.19
+        add       rcx, rdx                                      #13.19
+        movzx     edx, BYTE PTR [rcx]                           #13.19
+        movzx     edx, dl                                       #13.19
+        and       eax, edx                                      #13.11
+        mov       BYTE PTR temp[rip], al                        #13.11
                                 # LOE rbx rbp rsp r12 r13 r14 r15 rip
-..B1.3:                         # Preds ..B1.1
+..B1.3:                         # Preds ..B1.2 ..B1.1
                                 # Execution count [0.00e+00]
-        mov       BYTE PTR temp[rip], 0                         #14.5
-                                # LOE rbx rbp rsp r12 r13 r14 r15 rip
-..B1.4:                         # Preds ..B1.2 ..B1.3
-                                # Execution count [0.00e+00]
-        leave                                                   #16.1
+        leave                                                   #15.1
 	.cfi_restore 6
-        ret                                                     #16.1
+        ret                                                     #15.1
                                 # LOE
 	.cfi_endproc
 # mark_end;
@@ -105,5 +106,6 @@ array1:
 	.size	array1,16
 	.data
 	.comm array2,131072,32
+	.comm array3,131072,32
 	.section .note.GNU-stack, ""
 # End

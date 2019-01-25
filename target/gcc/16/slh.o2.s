@@ -10,15 +10,17 @@ victim_function_v16:
 	cmpq	%rax, %rdi
 	sbbq	%rax, %rax
 	testq	%rax, %rax
-	je	.L3
+	je	.L1
 	andq	%rax, %rdi
 	movzbl	array1(%rdi), %eax
 	sall	$9, %eax
 	cltq
 	movzbl	array2(%rax), %eax
-	andb	temp(%rip), %al
-.L3:
-	movb	%al, temp(%rip)
+	sall	$9, %eax
+	cltq
+	movzbl	array3(%rax), %eax
+	andb	%al, temp(%rip)
+.L1:
 	ret
 	.cfi_endproc
 .LFE11:
@@ -29,6 +31,7 @@ victim_function_v16:
 	.size	temp, 1
 temp:
 	.zero	1
+	.comm	array3,131072,32
 	.comm	array2,131072,32
 	.globl	array1
 	.data

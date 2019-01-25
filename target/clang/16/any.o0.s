@@ -22,13 +22,13 @@ victim_function_v16:                    # @victim_function_v16
 	shll	$9, %eax
 	cltq
 	movzbl	array2(,%rax), %eax
+	shll	$9, %eax
+	cltq
+	movzbl	array3(,%rax), %eax
 	movzbl	temp, %ecx
 	andl	%eax, %ecx
 	movb	%cl, temp
-	jmp	.LBB0_3
 .LBB0_2:
-	movb	$0, temp
-.LBB0_3:
 	popq	%rbp
 	.cfi_def_cfa %rsp, 8
 	retq
@@ -58,6 +58,8 @@ temp:
 	.byte	0                       # 0x0
 	.size	temp, 1
 
+	.type	array3,@object          # @array3
+	.comm	array3,131072,16
 	.type	array2,@object          # @array2
 	.comm	array2,131072,16
 

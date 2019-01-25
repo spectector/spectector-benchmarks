@@ -17,46 +17,47 @@ victim_function_v16:
 	.cfi_startproc
 ..___tag_value_victim_function_v16.1:
 ..L2:
-                                                          #10.36
-        pushq     %rbp                                          #10.36
+                                                          #11.36
+        pushq     %rbp                                          #11.36
 	.cfi_def_cfa_offset 16
-        movq      %rsp, %rbp                                    #10.36
+        movq      %rsp, %rbp                                    #11.36
 	.cfi_def_cfa 6, 16
 	.cfi_offset 6, -16
-        subq      $16, %rsp                                     #10.36
-        movq      %rdi, -16(%rbp)                               #10.36
-        movq      -16(%rbp), %rax                               #11.7
-        movl      array1_size(%rip), %edx                       #11.11
-        cmpq      %rdx, %rax                                    #11.11
-        jae       ..B1.3        # Prob 50%                      #11.11
+        subq      $16, %rsp                                     #11.36
+        movq      %rdi, -16(%rbp)                               #11.36
+        movq      -16(%rbp), %rax                               #12.10
+        movl      array1_size(%rip), %edx                       #12.14
+        cmpq      %rdx, %rax                                    #12.14
+        jae       ..B1.3        # Prob 50%                      #12.14
                                 # LOE rbx rbp rsp r12 r13 r14 r15 rip
 ..B1.2:                         # Preds ..B1.1
                                 # Execution count [0.00e+00]
-        movzbl    temp(%rip), %eax                              #12.5
-        movzbl    %al, %eax                                     #12.5
-        movl      $array1, %edx                                 #12.20
-        addq      -16(%rbp), %rdx                               #12.20
-        movzbl    (%rdx), %edx                                  #12.20
-        movzbl    %dl, %edx                                     #12.20
-        imull     $512, %edx, %edx                              #12.32
-        movslq    %edx, %rdx                                    #12.13
-        movl      $array2, %ecx                                 #12.13
-        addq      %rdx, %rcx                                    #12.13
-        movzbl    (%rcx), %edx                                  #12.13
-        movzbl    %dl, %edx                                     #12.13
-        andl      %edx, %eax                                    #12.5
-        movb      %al, temp(%rip)                               #12.5
-        jmp       ..B1.4        # Prob 100%                     #12.5
+        movzbl    temp(%rip), %eax                              #13.11
+        movzbl    %al, %eax                                     #13.11
+        movl      $array1, %edx                                 #13.33
+        addq      -16(%rbp), %rdx                               #13.33
+        movzbl    (%rdx), %edx                                  #13.33
+        movzbl    %dl, %edx                                     #13.33
+        imull     $512, %edx, %edx                              #13.45
+        movslq    %edx, %rdx                                    #13.26
+        movl      $array2, %ecx                                 #13.26
+        addq      %rdx, %rcx                                    #13.26
+        movzbl    (%rcx), %edx                                  #13.26
+        movzbl    %dl, %edx                                     #13.26
+        imull     $512, %edx, %edx                              #13.52
+        movslq    %edx, %rdx                                    #13.19
+        movl      $array3, %ecx                                 #13.19
+        addq      %rdx, %rcx                                    #13.19
+        movzbl    (%rcx), %edx                                  #13.19
+        movzbl    %dl, %edx                                     #13.19
+        andl      %edx, %eax                                    #13.11
+        movb      %al, temp(%rip)                               #13.11
                                 # LOE rbx rbp rsp r12 r13 r14 r15 rip
-..B1.3:                         # Preds ..B1.1
+..B1.3:                         # Preds ..B1.2 ..B1.1
                                 # Execution count [0.00e+00]
-        movb      $0, temp(%rip)                                #14.5
-                                # LOE rbx rbp rsp r12 r13 r14 r15 rip
-..B1.4:                         # Preds ..B1.2 ..B1.3
-                                # Execution count [0.00e+00]
-        leave                                                   #16.1
+        leave                                                   #15.1
 	.cfi_restore 6
-        ret                                                     #16.1
+        ret                                                     #15.1
                                 # LOE
 	.cfi_endproc
 # mark_end;
@@ -104,5 +105,6 @@ array1:
 	.size	array1,16
 	.data
 	.comm array2,131072,32
+	.comm array3,131072,32
 	.section .note.GNU-stack, ""
 # End

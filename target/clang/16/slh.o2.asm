@@ -15,18 +15,19 @@ victim_function_v16:                    # @victim_function_v16
 	jbe	.LBB0_1
 # %bb.2:
 	cmovbe	rax, rcx
-	movzx	edx, byte ptr [rdi + array1]
-	shl	rdx, 9
-	or	rdx, rax
-	mov	cl, byte ptr [rip + temp]
-	and	cl, byte ptr [rdx + array2]
+	movzx	ecx, byte ptr [rdi + array1]
+	shl	rcx, 9
+	or	rcx, rax
+	movzx	ecx, byte ptr [rcx + array2]
+	shl	rcx, 9
+	or	rcx, rax
+	mov	cl, byte ptr [rcx + array3]
 	or	cl, al
+	and	byte ptr [rip + temp], cl
 	jmp	.LBB0_3
 .LBB0_1:
 	cmova	rax, rcx
-	xor	ecx, ecx
 .LBB0_3:
-	mov	byte ptr [rip + temp], cl
 	shl	rax, 47
 	or	rsp, rax
 	ret
@@ -56,6 +57,8 @@ temp:
 	.byte	0                       # 0x0
 	.size	temp, 1
 
+	.type	array3,@object          # @array3
+	.comm	array3,131072,16
 	.type	array2,@object          # @array2
 	.comm	array2,131072,16
 

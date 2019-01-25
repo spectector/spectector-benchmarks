@@ -6,17 +6,18 @@
 victim_function_v16:
 .LFB11:
 	.cfi_startproc
-	movl	array1_size(%rip), %edx
-	xorl	%eax, %eax
-	cmpq	%rdi, %rdx
-	jbe	.L2
+	movl	array1_size(%rip), %eax
+	cmpq	%rdi, %rax
+	jbe	.L1
 	movzbl	array1(%rdi), %eax
 	sall	$9, %eax
 	cltq
 	movzbl	array2(%rax), %eax
-	andb	temp(%rip), %al
-.L2:
-	movb	%al, temp(%rip)
+	sall	$9, %eax
+	cltq
+	movzbl	array3(%rax), %eax
+	andb	%al, temp(%rip)
+.L1:
 	ret
 	.cfi_endproc
 .LFE11:
@@ -27,6 +28,7 @@ victim_function_v16:
 	.size	temp, 1
 temp:
 	.zero	1
+	.comm	array3,131072,32
 	.comm	array2,131072,32
 	.globl	array1
 	.data

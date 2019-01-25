@@ -14,18 +14,19 @@ victim_function_v16:                    # @victim_function_v16
 	jbe	.LBB0_1
 # %bb.2:
 	cmovbeq	%rcx, %rax
-	movzbl	array1(%rdi), %edx
-	shlq	$9, %rdx
-	orq	%rax, %rdx
-	movb	temp(%rip), %cl
-	andb	array2(%rdx), %cl
+	movzbl	array1(%rdi), %ecx
+	shlq	$9, %rcx
+	orq	%rax, %rcx
+	movzbl	array2(%rcx), %ecx
+	shlq	$9, %rcx
+	orq	%rax, %rcx
+	movb	array3(%rcx), %cl
 	orb	%al, %cl
+	andb	%cl, temp(%rip)
 	jmp	.LBB0_3
 .LBB0_1:
 	cmovaq	%rcx, %rax
-	xorl	%ecx, %ecx
 .LBB0_3:
-	movb	%cl, temp(%rip)
 	shlq	$47, %rax
 	orq	%rax, %rsp
 	retq
@@ -55,6 +56,8 @@ temp:
 	.byte	0                       # 0x0
 	.size	temp, 1
 
+	.type	array3,@object          # @array3
+	.comm	array3,131072,16
 	.type	array2,@object          # @array2
 	.comm	array2,131072,16
 
