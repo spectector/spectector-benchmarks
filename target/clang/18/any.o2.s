@@ -6,11 +6,12 @@
 victim_function_v18:                    # @victim_function_v18
 	.cfi_startproc
 # %bb.0:
-	movzbl	array2(%rdi), %eax
+	movzbl	array3(%rdi), %eax
 	cmpl	%eax, array1_size(%rip)
 	jbe	.LBB0_2
 # %bb.1:
-	movb	array1(%rax), %al
+	movzbl	array1(%rax), %eax
+	movb	array2(%rax), %al
 	andb	%al, temp(%rip)
 .LBB0_2:
 	retq
@@ -40,6 +41,8 @@ temp:
 	.byte	0                       # 0x0
 	.size	temp, 1
 
+	.type	array3,@object          # @array3
+	.comm	array3,131072,16
 	.type	array2,@object          # @array2
 	.comm	array2,131072,16
 

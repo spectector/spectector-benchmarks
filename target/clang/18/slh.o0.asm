@@ -17,7 +17,7 @@ victim_function_v18:                    # @victim_function_v18
 	sar	rax, 63
 	mov	qword ptr [rbp - 8], rdi
 	mov	rdx, qword ptr [rbp - 8]
-	movzx	edx, byte ptr [rdx + array2]
+	movzx	edx, byte ptr [rdx + array3]
 	mov	esi, eax
 	or	esi, edx
 	cmp	esi, dword ptr [array1_size]
@@ -29,10 +29,13 @@ victim_function_v18:                    # @victim_function_v18
 .LBB0_2:
 	cmovae	rax, rcx
 	mov	rcx, qword ptr [rbp - 8]
-	movzx	ecx, byte ptr [rcx + array2]
+	movzx	ecx, byte ptr [rcx + array3]
 	mov	rdx, rax
 	or	rdx, rcx
 	movzx	ecx, byte ptr [rdx + array1]
+	mov	rdx, rax
+	or	rdx, rcx
+	movzx	ecx, byte ptr [rdx + array2]
 	mov	edx, eax
 	or	edx, ecx
 	movzx	ecx, byte ptr [temp]
@@ -70,6 +73,8 @@ temp:
 	.byte	0                       # 0x0
 	.size	temp, 1
 
+	.type	array3,@object          # @array3
+	.comm	array3,131072,16
 	.type	array2,@object          # @array2
 	.comm	array2,131072,16
 

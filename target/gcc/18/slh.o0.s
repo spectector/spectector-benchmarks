@@ -14,6 +14,7 @@ array1_size:
 array1:
 	.ascii	"\001\002\003\004\005\006\007\b\t\n\013\f\r\016\017\020"
 	.comm	array2,131072,32
+	.comm	array3,131072,32
 	.globl	temp
 	.bss
 	.type	temp, @object
@@ -35,7 +36,7 @@ victim_function_v18:
 	movq	$-1, %rdx
 	movq	%rdx, %rax
 	andq	-8(%rbp), %rax
-	movzbl	array2(%rax), %eax
+	movzbl	array3(%rax), %eax
 	movzbl	%al, %ecx
 	movl	array1_size(%rip), %eax
 	cmpl	%eax, %ecx
@@ -44,10 +45,13 @@ victim_function_v18:
 	je	.L4
 	andq	%rdx, %rax
 	andq	-8(%rbp), %rax
-	movzbl	array2(%rax), %eax
+	movzbl	array3(%rax), %eax
 	movzbl	%al, %eax
 	cltq
-	movzbl	array1(%rax), %edx
+	movzbl	array1(%rax), %eax
+	movzbl	%al, %eax
+	cltq
+	movzbl	array2(%rax), %edx
 	movzbl	temp(%rip), %eax
 	andl	%edx, %eax
 	movb	%al, temp(%rip)

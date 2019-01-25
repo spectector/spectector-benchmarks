@@ -14,6 +14,7 @@ array1_size:
 array1:
 	.ascii	"\001\002\003\004\005\006\007\b\t\n\013\f\r\016\017\020"
 	.comm	array2,131072,32
+	.comm	array3,131072,32
 	.globl	temp
 	.bss
 	.type	temp, @object
@@ -33,18 +34,21 @@ victim_function_v18:
 	.cfi_def_cfa_register 6
 	movq	%rdi, -8(%rbp)
 	movq	-8(%rbp), %rax
-	addq	$array2, %rax
+	addq	$array3, %rax
 	movzbl	(%rax), %eax
 	movzbl	%al, %edx
 	movl	array1_size(%rip), %eax
 	cmpl	%eax, %edx
 	jnb	.L3
 	movq	-8(%rbp), %rax
-	addq	$array2, %rax
+	addq	$array3, %rax
 	movzbl	(%rax), %eax
 	movzbl	%al, %eax
 	cltq
-	movzbl	array1(%rax), %edx
+	movzbl	array1(%rax), %eax
+	movzbl	%al, %eax
+	cltq
+	movzbl	array2(%rax), %edx
 	movzbl	temp(%rip), %eax
 	andl	%edx, %eax
 	movb	%al, temp(%rip)

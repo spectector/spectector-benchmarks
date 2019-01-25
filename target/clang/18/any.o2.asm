@@ -7,11 +7,12 @@
 victim_function_v18:                    # @victim_function_v18
 	.cfi_startproc
 # %bb.0:
-	movzx	eax, byte ptr [rdi + array2]
+	movzx	eax, byte ptr [rdi + array3]
 	cmp	dword ptr [rip + array1_size], eax
 	jbe	.LBB0_2
 # %bb.1:
-	mov	al, byte ptr [rax + array1]
+	movzx	eax, byte ptr [rax + array1]
+	mov	al, byte ptr [rax + array2]
 	and	byte ptr [rip + temp], al
 .LBB0_2:
 	ret
@@ -41,6 +42,8 @@ temp:
 	.byte	0                       # 0x0
 	.size	temp, 1
 
+	.type	array3,@object          # @array3
+	.comm	array3,131072,16
 	.type	array2,@object          # @array2
 	.comm	array2,131072,16
 

@@ -6,7 +6,7 @@
 victim_function_v18:
 .LFB11:
 	.cfi_startproc
-	movzbl	array2(%rdi), %eax
+	movzbl	array3(%rdi), %eax
 	cmpl	array1_size(%rip), %eax
 	sbbq	%rdx, %rdx
 	testq	%rdx, %rdx
@@ -14,6 +14,7 @@ victim_function_v18:
 	andl	%edx, %eax
 	cltq
 	movzbl	array1(%rax), %eax
+	movzbl	array2(%rax), %eax
 	andb	%al, temp(%rip)
 .L1:
 	ret
@@ -26,6 +27,7 @@ victim_function_v18:
 	.size	temp, 1
 temp:
 	.zero	1
+	.comm	array3,131072,32
 	.comm	array2,131072,32
 	.globl	array1
 	.data

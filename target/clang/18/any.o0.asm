@@ -14,13 +14,14 @@ victim_function_v18:                    # @victim_function_v18
 	.cfi_def_cfa_register rbp
 	mov	qword ptr [rbp - 8], rdi
 	mov	rax, qword ptr [rbp - 8]
-	movzx	eax, byte ptr [rax + array2]
+	movzx	eax, byte ptr [rax + array3]
 	cmp	eax, dword ptr [array1_size]
 	jae	.LBB0_2
 # %bb.1:
 	mov	rax, qword ptr [rbp - 8]
-	movzx	eax, byte ptr [rax + array2]
+	movzx	eax, byte ptr [rax + array3]
 	movzx	eax, byte ptr [rax + array1]
+	movzx	eax, byte ptr [rax + array2]
 	movzx	ecx, byte ptr [temp]
 	and	ecx, eax
 	mov	byte ptr [temp], cl
@@ -54,6 +55,8 @@ temp:
 	.byte	0                       # 0x0
 	.size	temp, 1
 
+	.type	array3,@object          # @array3
+	.comm	array3,131072,16
 	.type	array2,@object          # @array2
 	.comm	array2,131072,16
 

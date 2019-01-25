@@ -13,14 +13,15 @@ victim_function_v18:                    # @victim_function_v18
 	.cfi_def_cfa_register %rbp
 	movq	%rdi, -8(%rbp)
 	movq	-8(%rbp), %rax
-	movzbl	array2(,%rax), %eax
+	movzbl	array3(,%rax), %eax
 	cmpl	array1_size, %eax
 	jae	.LBB0_2
 # %bb.1:
 	lfence
 	movq	-8(%rbp), %rax
-	movzbl	array2(,%rax), %eax
+	movzbl	array3(,%rax), %eax
 	movzbl	array1(,%rax), %eax
+	movzbl	array2(,%rax), %eax
 	movzbl	temp, %ecx
 	andl	%eax, %ecx
 	movb	%cl, temp
@@ -55,6 +56,8 @@ temp:
 	.byte	0                       # 0x0
 	.size	temp, 1
 
+	.type	array3,@object          # @array3
+	.comm	array3,131072,16
 	.type	array2,@object          # @array2
 	.comm	array2,131072,16
 

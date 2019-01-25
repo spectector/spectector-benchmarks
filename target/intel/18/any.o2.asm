@@ -18,20 +18,21 @@ victim_function_v18:
 	.cfi_startproc
 ..___tag_value_victim_function_v18.1:
 ..L2:
-                                                          #10.36
-        movzx     edx, BYTE PTR [array2+rdi]                    #11.10
-        mov       eax, DWORD PTR array1_size[rip]               #11.22
-        cmp       rdx, rax                                      #11.22
-        jae       ..B1.3        # Prob 50%                      #11.22
+                                                          #11.36
+        movzx     edx, BYTE PTR [array3+rdi]                    #12.10
+        mov       eax, DWORD PTR array1_size[rip]               #12.22
+        cmp       rdx, rax                                      #12.22
+        jae       ..B1.3        # Prob 50%                      #12.22
                                 # LOE rdx rbx rbp r12 r13 r14 r15
 ..B1.2:                         # Preds ..B1.1
                                 # Execution count [5.00e-01]
-        mov       al, BYTE PTR [array1+rdx]                     #12.19
-        and       BYTE PTR temp[rip], al                        #12.11
+        movzx     eax, BYTE PTR [array1+rdx]                    #13.26
+        mov       dl, BYTE PTR [array2+rax]                     #13.19
+        and       BYTE PTR temp[rip], dl                        #13.11
                                 # LOE rbx rbp r12 r13 r14 r15
 ..B1.3:                         # Preds ..B1.1 ..B1.2
                                 # Execution count [1.00e+00]
-        ret                                                     #14.1
+        ret                                                     #15.1
         .align    16,0x90
                                 # LOE
 	.cfi_endproc
@@ -80,5 +81,6 @@ array1:
 	.size	array1,16
 	.data
 	.comm array2,131072,32
+	.comm array3,131072,32
 	.section .note.GNU-stack, ""
 # End
