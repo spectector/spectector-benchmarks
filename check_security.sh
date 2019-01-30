@@ -5,7 +5,7 @@ _base=$(e=$0;while test -L "$e";do d=$(dirname "$e");e=$(readlink "$e");\
     cd "$d";done;cd "$(dirname "$e")";pwd -P)
 
 usage () {
-    printf "Usage: check_security [-m compiler] [-p example_number] [-t timeout]\n"
+    printf "Usage: check_security [-m compiler] [-p example_number] [-t timeout] [-d test/benchmarks]\n"
     printf "\tCompilers: (intel, microsoft, clang)  Example numbers: (1-15)\n"
     printf "\tBy default it will be executed with all the compilers and all the\n"
     printf "\texample numbers and timeout of 30 seconds\n"
@@ -13,9 +13,10 @@ usage () {
 }
 
 makeconf () {
-    if [ "$1" == "access" ]; then config="c([0xf000000=1000],[pc=victim_function_v01, sp=0xf000000, bp=0xf00000, di=9200])" # only pc
+    if [ -n "$1" ] && ! [ "$1" -eq "$1" ] 2>/dev/null; then config="c([0xf000000=1000],[pc=0, sp=0xf000000, bp=0xf00000])" # Check if it's a numeric argument (test suite or benchmarks suite)
     elif [ $1 -eq 05 ]; then config="c([0xf000000=1000],[pc=victim_function_v$1, sp=0xf000000, bp=0xf00000, dx=0])" # For gcc example, fix
-    elif [ $1 -eq 15 ]; then config="c([0xf000000=1000,9100=16,200=0],[pc=victim_function_v$1, sp=0xf000000, bp=0xf00000, di=9200])"
+    elif [ $1 -eq 15 ]; then config="c([0xf000000=1000],[pc=victim_function_v$1, sp=0xf000000, bp=0xf00000, di=256])"
+    elif [ $1 -eq 19 ]; then config="c([0xf000000=1000],[pc=main, sp=0xf000000, bp=0xf00000, di=256])"
     else config="c([0xf000000=1000],[pc=victim_function_v$1, sp=0xf000000, bp=0xf00000])"
     fi
 }
@@ -24,14 +25,14 @@ res () {
     printf $1 >> $out
 }
 
-cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15 access)
+cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15 16 17 18 19 20 21)
 gen=(microsoft intel clang gcc)
 mits="\tVisual C++\t\t\tICC\t\t\t\tClang\t\t\t\t\t\tGCC"
 lmi="\tUNP\t\tFEN\t\tUNP\t\tFEN\t\tUNP\t\tFEN\t\tSLH\t\tUNP\t\tSLH"
 lop="\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2"
 timeout=30
 
-while getopts ":m:p:t:" option; do # parsing of the arguments
+while getopts ":m:p:t:d:" option; do # parsing of the arguments
     case "${option}" in
 	m)
 	    case $OPTARG in
@@ -69,6 +70,16 @@ while getopts ":m:p:t:" option; do # parsing of the arguments
 	    ;;
 	t)
 	    timeout=${OPTARG}
+	    ;;
+	d)
+	    case $OPTARG in
+		benchmarks)
+		    cases=(bubblesort insertionsort selectionsort crscat crschr crscmp cbzero cstrncat cstrpbrk)
+		    ;;
+		test)
+		    cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15 16 17 18 19 20 21)
+		    ;;
+	    esac
 	    ;;
 	* )
 	    usage
@@ -108,23 +119,23 @@ else
     runtimeout=timeout
 fi
 
+# Write the results/summary.txt file
 printf "$mits" > $out
 res "\n$lmi"
 res "\n$lop"
 
+low="[256]" # The low addresses (can't change from one path to another), 256 is the direction that di points on #15
 for app in ${cases[@]}; do
     num=$app
     [ "$num" == "11ass" ] || [ "$num" == "11gcc" ] || [ "$num" == "11sub" ] || [ "$num" == "11ker" ] && num=11
-    res "\n\n$num"
+    makeconf $num # Set up the configurations
+    res "\n\n$app"
     for case in ${gen[@]}; do
 	    folder=target/$case/$app
 	    experiments=(any lfence slh)
-	    #optimizations=(o0 o2)
-	    expe=$case
 	    extension=s
-	    low="[di,9200]" # The low addresses (can't change from one path to another), 9200 is the direction that di points on #15
 	    [ "$case" == "intel" ] && experiments=(any lfence)
-	    [ "$case" == "gcc" ] && experiments=(any slh) && low="[di, 1024]" #1024 is array1[0] position
+	    [ "$case" == "gcc" ] && experiments=(any slh)
 	    [ "$case" == "microsoft" ] && experiments=(any lfence) && extension=asm
 	    for ex in ${experiments[@]}; do
 		for x in $folder/$ex.o0.$extension $folder/$ex.o2.$extension; do
@@ -133,15 +144,17 @@ for app in ${cases[@]}; do
 		    mitigation="${name%.*}"
 		    type="${name##*.}"
 		    
-		    makeconf $num # Set up the configurations
-		    printf "$expe-$app-$y\n" # (show progress)
-		    outf="$outdir/${expe}.${app}.${y}.out"
-		    $runtimeout $timeout $spectector $x --statistics -c "$config" --low "$low" > $outf # TODO: Time as user input
+		    printf "$case-$app-$y\n" # (show progress)
+		    outf="$outdir/${case}.${app}.${y}.out"
+		    $runtimeout $timeout $spectector $x --statistics -w 200 -c "$config" --conf-file default_conf --low "$low" > $outf
 		    ret=$?
 		    if [ $ret = 124 ]; then # timeout
 			res "\t~"
 		    else
-			(grep unsafe "$outf" > /dev/null && res '\tL') ||  (grep "timeout..." "$outf" && res '\t?') || (grep "program is safe" "$outf" > /dev/null > /dev/null && res '\tS') || (grep checking "$outf" > /dev/null && res '\t?') || res '\t?'
+			(grep unsafe "$outf" > /dev/null && res '\tL') || # Leak
+			    (grep "timeout..." "$outf" && res '\t?') || # SMT timeout
+			    (grep "program is safe" "$outf" > /dev/null > /dev/null && res '\tS') || # S
+			    (grep checking "$outf" > /dev/null && res '\t?') || res '\t?' # Maybe a bug
 		    fi
 		done
 	    done
@@ -149,4 +162,4 @@ for app in ${cases[@]}; do
     done
 
 	# echo "Comparison with saved results: "
-	# diff ../results/security.txt ../results/security.txt-ok && echo ok
+	# diff ../results/summary.txt ../results/summary.txt-ok && echo ok
