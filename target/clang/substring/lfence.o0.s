@@ -1,5 +1,5 @@
 	.text
-	.file	"subtring.c"
+	.file	"substring.c"
 	.globl	substring               # -- Begin function substring
 	.p2align	4, 0x90
 	.type	substring,@function
@@ -22,6 +22,7 @@ substring:                              # @substring
 	cmpl	$0, %eax
 	je	.LBB0_10
 # %bb.2:                                #   in Loop: Header=BB0_1 Depth=1
+	lfence
 	movq	-24(%rbp), %rax
 	movq	%rax, -32(%rbp)
 	movq	-40(%rbp), %rax
@@ -34,6 +35,7 @@ substring:                              # @substring
 	cmpl	$0, %ecx
 	je	.LBB0_5
 # %bb.4:                                #   in Loop: Header=BB0_3 Depth=2
+	lfence
 	movq	-8(%rbp), %rax
 	movsbl	(%rax), %eax
 	movq	-32(%rbp), %rcx
@@ -41,10 +43,12 @@ substring:                              # @substring
 	cmpl	%ecx, %eax
 	sete	%al
 .LBB0_5:                                #   in Loop: Header=BB0_3 Depth=2
+	lfence
 	testb	$1, %al
 	jne	.LBB0_6
 	jmp	.LBB0_7
 .LBB0_6:                                #   in Loop: Header=BB0_3 Depth=2
+	lfence
 	movq	-8(%rbp), %rax
 	addq	$1, %rax
 	movq	%rax, -8(%rbp)
@@ -53,19 +57,23 @@ substring:                              # @substring
 	movq	%rax, -32(%rbp)
 	jmp	.LBB0_3
 .LBB0_7:                                #   in Loop: Header=BB0_1 Depth=1
+	lfence
 	movq	-8(%rbp), %rax
 	movsbl	(%rax), %eax
 	cmpl	$0, %eax
 	jne	.LBB0_9
 # %bb.8:
+	lfence
 	movl	$1, -12(%rbp)
 	jmp	.LBB0_11
 .LBB0_9:                                #   in Loop: Header=BB0_1 Depth=1
+	lfence
 	movq	-24(%rbp), %rax
 	addq	$1, %rax
 	movq	%rax, -24(%rbp)
 	jmp	.LBB0_1
 .LBB0_10:
+	lfence
 	movl	$0, -12(%rbp)
 .LBB0_11:
 	movl	-12(%rbp), %eax

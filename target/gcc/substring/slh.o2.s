@@ -1,4 +1,4 @@
-	.file	"subtring.c"
+	.file	"substring.c"
 	.text
 	.p2align 4
 	.globl	substring

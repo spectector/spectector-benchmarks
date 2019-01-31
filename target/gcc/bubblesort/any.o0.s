@@ -1,19 +1,5 @@
 	.file	"bubblesort.c"
 	.text
-	.globl	numbers
-	.data
-	.align 4
-	.type	numbers, @object
-	.size	numbers, 4
-numbers:
-	.long	1
-	.globl	array_size
-	.align 4
-	.type	array_size, @object
-	.size	array_size, 4
-array_size:
-	.long	1
-	.text
 	.globl	bubbleSort
 	.type	bubbleSort, @function
 bubbleSort:
@@ -24,7 +10,9 @@ bubbleSort:
 	.cfi_offset 6, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register 6
-	movl	array_size(%rip), %eax
+	movq	%rdi, -24(%rbp)
+	movl	%esi, -28(%rbp)
+	movl	-28(%rbp), %eax
 	subl	$1, %eax
 	movl	%eax, -4(%rbp)
 	jmp	.L2
@@ -33,30 +21,48 @@ bubbleSort:
 	jmp	.L3
 .L5:
 	movl	-8(%rbp), %eax
-	subl	$1, %eax
 	cltq
-	movl	numbers(,%rax,4), %edx
+	salq	$2, %rax
+	leaq	-4(%rax), %rdx
+	movq	-24(%rbp), %rax
+	addq	%rdx, %rax
+	movl	(%rax), %edx
 	movl	-8(%rbp), %eax
 	cltq
-	movl	numbers(,%rax,4), %eax
+	leaq	0(,%rax,4), %rcx
+	movq	-24(%rbp), %rax
+	addq	%rcx, %rax
+	movl	(%rax), %eax
 	cmpl	%eax, %edx
 	jle	.L4
 	movl	-8(%rbp), %eax
-	subl	$1, %eax
 	cltq
-	movl	numbers(,%rax,4), %eax
+	salq	$2, %rax
+	leaq	-4(%rax), %rdx
+	movq	-24(%rbp), %rax
+	addq	%rdx, %rax
+	movl	(%rax), %eax
 	movl	%eax, -12(%rbp)
 	movl	-8(%rbp), %eax
-	leal	-1(%rax), %ecx
+	cltq
+	leaq	0(,%rax,4), %rdx
+	movq	-24(%rbp), %rax
+	addq	%rdx, %rax
+	movl	-8(%rbp), %edx
+	movslq	%edx, %rdx
+	salq	$2, %rdx
+	leaq	-4(%rdx), %rcx
+	movq	-24(%rbp), %rdx
+	addq	%rcx, %rdx
+	movl	(%rax), %eax
+	movl	%eax, (%rdx)
 	movl	-8(%rbp), %eax
 	cltq
-	movl	numbers(,%rax,4), %edx
-	movslq	%ecx, %rax
-	movl	%edx, numbers(,%rax,4)
-	movl	-8(%rbp), %eax
-	cltq
-	movl	-12(%rbp), %edx
-	movl	%edx, numbers(,%rax,4)
+	leaq	0(,%rax,4), %rdx
+	movq	-24(%rbp), %rax
+	addq	%rax, %rdx
+	movl	-12(%rbp), %eax
+	movl	%eax, (%rdx)
 .L4:
 	addl	$1, -8(%rbp)
 .L3:

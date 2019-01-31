@@ -1,5 +1,5 @@
 	.text
-	.file	"subtring.c"
+	.file	"substring.c"
 	.globl	substring               # -- Begin function substring
 	.p2align	4, 0x90
 	.type	substring,@function

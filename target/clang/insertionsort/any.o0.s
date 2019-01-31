@@ -11,16 +11,19 @@ insertionSort:                          # @insertionSort
 	.cfi_offset %rbp, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
+	movq	%rdi, -16(%rbp)
+	movl	%esi, -24(%rbp)
 	movl	$1, -8(%rbp)
 .LBB0_1:                                # =>This Loop Header: Depth=1
                                         #     Child Loop BB0_3 Depth 2
 	movl	-8(%rbp), %eax
-	cmpl	array_size, %eax
+	cmpl	-24(%rbp), %eax
 	jge	.LBB0_10
 # %bb.2:                                #   in Loop: Header=BB0_1 Depth=1
-	movslq	-8(%rbp), %rax
-	movl	a(,%rax,4), %eax
-	movl	%eax, -12(%rbp)
+	movq	-16(%rbp), %rax
+	movslq	-8(%rbp), %rcx
+	movl	(%rax,%rcx,4), %eax
+	movl	%eax, -20(%rbp)
 	movl	-8(%rbp), %eax
 	movl	%eax, -4(%rbp)
 .LBB0_3:                                #   Parent Loop BB0_1 Depth=1
@@ -29,32 +32,36 @@ insertionSort:                          # @insertionSort
 	cmpl	$0, -4(%rbp)
 	jle	.LBB0_5
 # %bb.4:                                #   in Loop: Header=BB0_3 Depth=2
-	movl	-4(%rbp), %eax
-	subl	$1, %eax
-	cltq
-	movl	a(,%rax,4), %eax
-	cmpl	-12(%rbp), %eax
+	movq	-16(%rbp), %rax
+	movl	-4(%rbp), %ecx
+	subl	$1, %ecx
+	movslq	%ecx, %rcx
+	movl	(%rax,%rcx,4), %eax
+	cmpl	-20(%rbp), %eax
 	setg	%al
 .LBB0_5:                                #   in Loop: Header=BB0_3 Depth=2
 	testb	$1, %al
 	jne	.LBB0_6
 	jmp	.LBB0_8
 .LBB0_6:                                #   in Loop: Header=BB0_3 Depth=2
-	movl	-4(%rbp), %eax
-	subl	$1, %eax
-	cltq
-	movl	a(,%rax,4), %eax
-	movslq	-4(%rbp), %rcx
-	movl	%eax, a(,%rcx,4)
+	movq	-16(%rbp), %rax
+	movl	-4(%rbp), %ecx
+	subl	$1, %ecx
+	movslq	%ecx, %rcx
+	movl	(%rax,%rcx,4), %eax
+	movq	-16(%rbp), %rcx
+	movslq	-4(%rbp), %rdx
+	movl	%eax, (%rcx,%rdx,4)
 # %bb.7:                                #   in Loop: Header=BB0_3 Depth=2
 	movl	-4(%rbp), %eax
 	addl	$-1, %eax
 	movl	%eax, -4(%rbp)
 	jmp	.LBB0_3
 .LBB0_8:                                #   in Loop: Header=BB0_1 Depth=1
-	movl	-12(%rbp), %eax
-	movslq	-4(%rbp), %rcx
-	movl	%eax, a(,%rcx,4)
+	movl	-20(%rbp), %eax
+	movq	-16(%rbp), %rcx
+	movslq	-4(%rbp), %rdx
+	movl	%eax, (%rcx,%rdx,4)
 # %bb.9:                                #   in Loop: Header=BB0_1 Depth=1
 	movl	-8(%rbp), %eax
 	addl	$1, %eax
@@ -68,21 +75,6 @@ insertionSort:                          # @insertionSort
 	.size	insertionSort, .Lfunc_end0-insertionSort
 	.cfi_endproc
                                         # -- End function
-	.type	a,@object               # @a
-	.data
-	.globl	a
-	.p2align	2
-a:
-	.long	1                       # 0x1
-	.size	a, 4
-
-	.type	array_size,@object      # @array_size
-	.globl	array_size
-	.p2align	2
-array_size:
-	.long	1                       # 0x1
-	.size	array_size, 4
-
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits

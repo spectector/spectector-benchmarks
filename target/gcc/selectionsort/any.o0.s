@@ -1,19 +1,5 @@
 	.file	"selectionsort.c"
 	.text
-	.globl	a
-	.data
-	.align 4
-	.type	a, @object
-	.size	a, 4
-a:
-	.long	1
-	.globl	array_size
-	.align 4
-	.type	array_size, @object
-	.size	array_size, 4
-array_size:
-	.long	1
-	.text
 	.globl	SelectionSort
 	.type	SelectionSort, @function
 SelectionSort:
@@ -24,6 +10,8 @@ SelectionSort:
 	.cfi_offset 6, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register 6
+	movq	%rdi, -24(%rbp)
+	movl	%esi, -28(%rbp)
 	movl	$0, -4(%rbp)
 	jmp	.L2
 .L6:
@@ -36,10 +24,16 @@ SelectionSort:
 .L5:
 	movl	-8(%rbp), %eax
 	cltq
-	movl	a(,%rax,4), %edx
+	leaq	0(,%rax,4), %rdx
+	movq	-24(%rbp), %rax
+	addq	%rdx, %rax
+	movl	(%rax), %edx
 	movl	-12(%rbp), %eax
 	cltq
-	movl	a(,%rax,4), %eax
+	leaq	0(,%rax,4), %rcx
+	movq	-24(%rbp), %rax
+	addq	%rcx, %rax
+	movl	(%rax), %eax
 	cmpl	%eax, %edx
 	jge	.L4
 	movl	-8(%rbp), %eax
@@ -47,26 +41,38 @@ SelectionSort:
 .L4:
 	addl	$1, -8(%rbp)
 .L3:
-	movl	array_size(%rip), %eax
-	cmpl	%eax, -8(%rbp)
+	movl	-8(%rbp), %eax
+	cmpl	-28(%rbp), %eax
 	jl	.L5
 	movl	-4(%rbp), %eax
 	cltq
-	movl	a(,%rax,4), %eax
+	leaq	0(,%rax,4), %rdx
+	movq	-24(%rbp), %rax
+	addq	%rdx, %rax
+	movl	(%rax), %eax
 	movl	%eax, -16(%rbp)
 	movl	-12(%rbp), %eax
 	cltq
-	movl	a(,%rax,4), %edx
-	movl	-4(%rbp), %eax
-	cltq
-	movl	%edx, a(,%rax,4)
+	leaq	0(,%rax,4), %rdx
+	movq	-24(%rbp), %rax
+	addq	%rdx, %rax
+	movl	-4(%rbp), %edx
+	movslq	%edx, %rdx
+	leaq	0(,%rdx,4), %rcx
+	movq	-24(%rbp), %rdx
+	addq	%rcx, %rdx
+	movl	(%rax), %eax
+	movl	%eax, (%rdx)
 	movl	-12(%rbp), %eax
 	cltq
-	movl	-16(%rbp), %edx
-	movl	%edx, a(,%rax,4)
+	leaq	0(,%rax,4), %rdx
+	movq	-24(%rbp), %rax
+	addq	%rax, %rdx
+	movl	-16(%rbp), %eax
+	movl	%eax, (%rdx)
 	addl	$1, -4(%rbp)
 .L2:
-	movl	array_size(%rip), %eax
+	movl	-28(%rbp), %eax
 	subl	$1, %eax
 	cmpl	%eax, -4(%rbp)
 	jl	.L6

@@ -1,7 +1,4 @@
-int numbers[] = {1};
-int array_size = 1;
-
-void bubbleSort(){
+void bubbleSort(int numbers[], int array_size){
     int i, j, temp;
      
     for (i = (array_size - 1); i >= 0; i--) {

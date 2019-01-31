@@ -8,107 +8,166 @@ SelectionSort:                          # @SelectionSort
 # %bb.0:
 	pushq	%rbp
 	.cfi_def_cfa_offset 16
-	pushq	%r14
+	pushq	%r15
 	.cfi_def_cfa_offset 24
-	pushq	%rbx
+	pushq	%r14
 	.cfi_def_cfa_offset 32
-	.cfi_offset %rbx, -32
-	.cfi_offset %r14, -24
+	pushq	%r13
+	.cfi_def_cfa_offset 40
+	pushq	%r12
+	.cfi_def_cfa_offset 48
+	pushq	%rbx
+	.cfi_def_cfa_offset 56
+	.cfi_offset %rbx, -56
+	.cfi_offset %r12, -48
+	.cfi_offset %r13, -40
+	.cfi_offset %r14, -32
+	.cfi_offset %r15, -24
 	.cfi_offset %rbp, -16
-	movslq	array_size(%rip), %r10
-	cmpq	$2, %r10
-	jl	.LBB0_16
+                                        # kill: def $esi killed $esi def $rsi
+	cmpl	$2, %esi
+	jl	.LBB0_25
 # %bb.1:
 	lfence
-	leaq	-1(%r10), %r9
-	movl	%r10d, %edx
-	leaq	-2(%rdx), %r8
-	movl	$1, %eax
-	xorl	%r11d, %r11d
+	movslq	%esi, %r9
+	movl	%esi, %r12d
+	addl	$-1, %esi
+	leaq	-2(%r12), %r8
+	movl	$1, %r11d
+	xorl	%r10d, %r10d
 	.p2align	4, 0x90
 .LBB0_2:                                # =>This Loop Header: Depth=1
-                                        #     Child Loop BB0_9 Depth 2
-	movq	%r11, %r14
+                                        #     Child Loop BB0_7 Depth 2
+                                        #     Child Loop BB0_12 Depth 2
+	movq	%r10, %r15
 	lfence
-	leaq	1(%r11), %r11
-	cmpq	%r10, %r11
+	leaq	1(%r10), %r10
+	cmpq	%r9, %r10
 	jge	.LBB0_3
 # %bb.4:                                #   in Loop: Header=BB0_2 Depth=1
 	lfence
-	movl	%r14d, %ecx
-	notl	%ecx
-	leal	(%rdx,%rcx), %ecx
-	testb	$1, %cl
-	jne	.LBB0_6
-# %bb.5:                                #   in Loop: Header=BB0_2 Depth=1
-                                        # implicit-def: $ecx
-	movq	%rax, %rdi
-	movl	%r14d, %ebx
-	jmp	.LBB0_7
+	movq	%r8, %r14
+	subq	%r15, %r14
+	movl	%r15d, %eax
+	notl	%eax
+	leal	(%r12,%rax), %ebx
+	andq	$3, %rbx
+	je	.LBB0_5
+# %bb.6:                                # %.preheader1
+                                        #   in Loop: Header=BB0_2 Depth=1
+	lfence
+	negq	%rbx
+	movq	%r11, %rdx
+	movl	%r15d, %ebp
+	.p2align	4, 0x90
+.LBB0_7:                                #   Parent Loop BB0_2 Depth=1
+                                        # =>  This Inner Loop Header: Depth=2
+	lfence
+	movl	(%rdi,%rdx,4), %r13d
+	movslq	%ebp, %rcx
+	movl	%edx, %eax
+	cmpl	(%rdi,%rcx,4), %r13d
+	jl	.LBB0_9
+# %bb.8:                                #   in Loop: Header=BB0_7 Depth=2
+	lfence
+	movl	%ebp, %eax
+.LBB0_9:                                #   in Loop: Header=BB0_7 Depth=2
+	lfence
+	addq	$1, %rdx
+	movl	%eax, %ebp
+	addq	$1, %rbx
+	jne	.LBB0_7
+	jmp	.LBB0_10
 	.p2align	4, 0x90
 .LBB0_3:                                #   in Loop: Header=BB0_2 Depth=1
-	movl	%r14d, %ecx
-	jmp	.LBB0_15
-	.p2align	4, 0x90
-.LBB0_6:                                #   in Loop: Header=BB0_2 Depth=1
+	movl	%r15d, %ebx
+	jmp	.LBB0_24
+.LBB0_5:                                #   in Loop: Header=BB0_2 Depth=1
+	movq	%r11, %rdx
+	movl	%r15d, %eax
+.LBB0_10:                               #   in Loop: Header=BB0_2 Depth=1
 	lfence
-	movl	a(,%rax,4), %ecx
-	movslq	%r14d, %rdi
-	cmpl	a(,%rdi,4), %ecx
-	movl	%r14d, %ecx
-	cmovll	%eax, %ecx
-	leaq	1(%rax), %rdi
-	movl	%ecx, %ebx
-.LBB0_7:                                #   in Loop: Header=BB0_2 Depth=1
-	lfence
-	cmpq	%r14, %r8
-	je	.LBB0_15
-# %bb.8:                                # %.preheader
+	movl	%eax, %ebx
+	cmpq	$3, %r14
+	jb	.LBB0_24
+# %bb.11:                               # %.preheader
                                         #   in Loop: Header=BB0_2 Depth=1
 	lfence
 	.p2align	4, 0x90
-.LBB0_9:                                #   Parent Loop BB0_2 Depth=1
+.LBB0_12:                               #   Parent Loop BB0_2 Depth=1
                                         # =>  This Inner Loop Header: Depth=2
 	lfence
-	movl	a(,%rdi,4), %ebp
-	movslq	%ebx, %rsi
-	movl	%edi, %ecx
-	cmpl	a(,%rsi,4), %ebp
-	jl	.LBB0_11
-# %bb.10:                               #   in Loop: Header=BB0_9 Depth=2
+	movslq	%eax, %rcx
+	movl	(%rdi,%rdx,4), %ebp
+	movl	4(%rdi,%rdx,4), %r14d
+	movl	%edx, %ebx
+	cmpl	(%rdi,%rcx,4), %ebp
+	jl	.LBB0_14
+# %bb.13:                               #   in Loop: Header=BB0_12 Depth=2
 	lfence
-	movl	%ebx, %ecx
-.LBB0_11:                               #   in Loop: Header=BB0_9 Depth=2
+	movl	%eax, %ebx
+.LBB0_14:                               #   in Loop: Header=BB0_12 Depth=2
 	lfence
-	movl	a+4(,%rdi,4), %esi
-	movslq	%ecx, %rbx
-	cmpl	a(,%rbx,4), %esi
-	jl	.LBB0_12
-# %bb.13:                               #   in Loop: Header=BB0_9 Depth=2
+	movslq	%ebx, %rax
+	cmpl	(%rdi,%rax,4), %r14d
+	jl	.LBB0_15
+# %bb.16:                               #   in Loop: Header=BB0_12 Depth=2
 	lfence
-	jmp	.LBB0_14
+	jmp	.LBB0_17
 	.p2align	4, 0x90
-.LBB0_12:                               #   in Loop: Header=BB0_9 Depth=2
+.LBB0_15:                               #   in Loop: Header=BB0_12 Depth=2
 	lfence
-	leal	1(%rdi), %ecx
-.LBB0_14:                               #   in Loop: Header=BB0_9 Depth=2
-	addq	$2, %rdi
-	movl	%ecx, %ebx
-	cmpq	%rdx, %rdi
-	jne	.LBB0_9
-.LBB0_15:                               #   in Loop: Header=BB0_2 Depth=1
+	leal	1(%rdx), %ebx
+.LBB0_17:                               #   in Loop: Header=BB0_12 Depth=2
+	movl	8(%rdi,%rdx,4), %eax
+	movslq	%ebx, %rcx
+	cmpl	(%rdi,%rcx,4), %eax
+	jl	.LBB0_18
+# %bb.19:                               #   in Loop: Header=BB0_12 Depth=2
 	lfence
-	movl	a(,%r14,4), %esi
-	movslq	%ecx, %rcx
-	movl	%esi, a(,%rcx,4)
-	addq	$1, %rax
-	cmpq	%r9, %r11
-	jl	.LBB0_2
-.LBB0_16:
+	jmp	.LBB0_20
+	.p2align	4, 0x90
+.LBB0_18:                               #   in Loop: Header=BB0_12 Depth=2
+	lfence
+	leal	2(%rdx), %ebx
+.LBB0_20:                               #   in Loop: Header=BB0_12 Depth=2
+	movl	12(%rdi,%rdx,4), %eax
+	movslq	%ebx, %rcx
+	cmpl	(%rdi,%rcx,4), %eax
+	jl	.LBB0_21
+# %bb.22:                               #   in Loop: Header=BB0_12 Depth=2
+	lfence
+	jmp	.LBB0_23
+	.p2align	4, 0x90
+.LBB0_21:                               #   in Loop: Header=BB0_12 Depth=2
+	lfence
+	leal	3(%rdx), %ebx
+.LBB0_23:                               #   in Loop: Header=BB0_12 Depth=2
+	addq	$4, %rdx
+	movl	%ebx, %eax
+	cmpq	%r12, %rdx
+	jne	.LBB0_12
+.LBB0_24:                               #   in Loop: Header=BB0_2 Depth=1
+	lfence
+	movl	(%rdi,%r15,4), %eax
+	movslq	%ebx, %rcx
+	movl	(%rdi,%rcx,4), %edx
+	movl	%edx, (%rdi,%r15,4)
+	movl	%eax, (%rdi,%rcx,4)
+	addq	$1, %r11
+	cmpq	%rsi, %r10
+	jne	.LBB0_2
+.LBB0_25:
 	lfence
 	popq	%rbx
-	.cfi_def_cfa_offset 24
+	.cfi_def_cfa_offset 48
+	popq	%r12
+	.cfi_def_cfa_offset 40
+	popq	%r13
+	.cfi_def_cfa_offset 32
 	popq	%r14
+	.cfi_def_cfa_offset 24
+	popq	%r15
 	.cfi_def_cfa_offset 16
 	popq	%rbp
 	.cfi_def_cfa_offset 8
@@ -117,21 +176,6 @@ SelectionSort:                          # @SelectionSort
 	.size	SelectionSort, .Lfunc_end0-SelectionSort
 	.cfi_endproc
                                         # -- End function
-	.type	a,@object               # @a
-	.data
-	.globl	a
-	.p2align	2
-a:
-	.long	1                       # 0x1
-	.size	a, 4
-
-	.type	array_size,@object      # @array_size
-	.globl	array_size
-	.p2align	2
-array_size:
-	.long	1                       # 0x1
-	.size	array_size, 4
-
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits

@@ -9,112 +9,110 @@
 # mark_begin;
 
 	.globl bubbleSort
-# --- bubbleSort()
+# --- bubbleSort(int *, int)
 bubbleSort:
+# parameter 1: %rdi
+# parameter 2: %esi
 ..B1.1:                         # Preds ..B1.0
                                 # Execution count [0.00e+00]
 	.cfi_startproc
 ..___tag_value_bubbleSort.1:
 ..L2:
-                                                          #4.18
-        pushq     %rbp                                          #4.18
+                                                          #1.47
+        pushq     %rbp                                          #1.47
 	.cfi_def_cfa_offset 16
-        movq      %rsp, %rbp                                    #4.18
+        movq      %rsp, %rbp                                    #1.47
 	.cfi_def_cfa 6, 16
 	.cfi_offset 6, -16
-        subq      $16, %rsp                                     #4.18
-        movl      $-1, %eax                                     #7.10
-        addl      array_size(%rip), %eax                        #7.28
-        movl      %eax, -16(%rbp)                               #7.10
+        subq      $32, %rsp                                     #1.47
+        movq      %rdi, -16(%rbp)                               #1.47
+        movl      %esi, -8(%rbp)                                #1.47
+        movl      $-1, %eax                                     #4.10
+        addl      -8(%rbp), %eax                                #4.28
+        movl      %eax, -32(%rbp)                               #4.10
                                 # LOE rbx rbp rsp r12 r13 r14 r15 rip
 ..B1.2:                         # Preds ..B1.3 ..B1.1
                                 # Execution count [0.00e+00]
-        movl      -16(%rbp), %eax                               #7.32
-        testl     %eax, %eax                                    #7.37
-        jge       ..B1.4        # Prob 50%                      #7.37
-        jmp       ..B1.9        # Prob 100%                     #7.37
+        movl      -32(%rbp), %eax                               #4.32
+        testl     %eax, %eax                                    #4.37
+        jge       ..B1.4        # Prob 50%                      #4.37
+        jmp       ..B1.9        # Prob 100%                     #4.37
                                 # LOE rbx rbp rsp r12 r13 r14 r15 rip
 ..B1.3:                         # Preds ..B1.5
                                 # Execution count [0.00e+00]
-        movl      $-1, %eax                                     #7.40
-        addl      -16(%rbp), %eax                               #7.40
-        movl      %eax, -16(%rbp)                               #7.40
-        jmp       ..B1.2        # Prob 100%                     #7.40
+        movl      $-1, %eax                                     #4.40
+        addl      -32(%rbp), %eax                               #4.40
+        movl      %eax, -32(%rbp)                               #4.40
+        jmp       ..B1.2        # Prob 100%                     #4.40
                                 # LOE rbx rbp rsp r12 r13 r14 r15 rip
 ..B1.4:                         # Preds ..B1.2
                                 # Execution count [0.00e+00]
-        movl      $1, -12(%rbp)                                 #8.14
+        movl      $1, -28(%rbp)                                 #5.14
                                 # LOE rbx rbp rsp r12 r13 r14 r15 rip
 ..B1.5:                         # Preds ..B1.6 ..B1.4
                                 # Execution count [0.00e+00]
-        movl      -12(%rbp), %eax                               #8.21
-        movl      -16(%rbp), %edx                               #8.26
-        cmpl      %edx, %eax                                    #8.26
-        jle       ..B1.7        # Prob 50%                      #8.26
-        jmp       ..B1.3        # Prob 100%                     #8.26
+        movl      -28(%rbp), %eax                               #5.21
+        movl      -32(%rbp), %edx                               #5.26
+        cmpl      %edx, %eax                                    #5.26
+        jle       ..B1.7        # Prob 50%                      #5.26
+        jmp       ..B1.3        # Prob 100%                     #5.26
                                 # LOE rbx rbp rsp r12 r13 r14 r15 rip
 ..B1.6:                         # Preds ..B1.8 ..B1.7
                                 # Execution count [0.00e+00]
-        movl      $1, %eax                                      #8.29
-        addl      -12(%rbp), %eax                               #8.29
-        movl      %eax, -12(%rbp)                               #8.29
-        jmp       ..B1.5        # Prob 100%                     #8.29
+        movl      $1, %eax                                      #5.29
+        addl      -28(%rbp), %eax                               #5.29
+        movl      %eax, -28(%rbp)                               #5.29
+        jmp       ..B1.5        # Prob 100%                     #5.29
                                 # LOE rbx rbp rsp r12 r13 r14 r15 rip
 ..B1.7:                         # Preds ..B1.5
                                 # Execution count [0.00e+00]
-        movl      $-1, %eax                                     #9.13
-        addl      -12(%rbp), %eax                               #9.27
-        movslq    %eax, %rax                                    #9.17
-        imulq     $4, %rax, %rax                                #9.17
-        movl      $numbers, %edx                                #9.17
-        addq      %rax, %rdx                                    #9.17
-        movl      (%rdx), %eax                                  #9.17
-        movl      -12(%rbp), %edx                               #9.40
-        movslq    %edx, %rdx                                    #9.32
-        imulq     $4, %rdx, %rdx                                #9.32
-        movl      $numbers, %ecx                                #9.32
-        addq      %rdx, %rcx                                    #9.32
-        movl      (%rcx), %edx                                  #9.32
-        cmpl      %edx, %eax                                    #9.32
-        jle       ..B1.6        # Prob 50%                      #9.32
+        movl      $-1, %eax                                     #6.13
+        addl      -28(%rbp), %eax                               #6.27
+        movslq    %eax, %rax                                    #6.17
+        imulq     $4, %rax, %rax                                #6.17
+        addq      -16(%rbp), %rax                               #6.17
+        movl      (%rax), %eax                                  #6.17
+        movl      -28(%rbp), %edx                               #6.40
+        movslq    %edx, %rdx                                    #6.32
+        imulq     $4, %rdx, %rdx                                #6.32
+        addq      -16(%rbp), %rdx                               #6.32
+        movl      (%rdx), %edx                                  #6.32
+        cmpl      %edx, %eax                                    #6.32
+        jle       ..B1.6        # Prob 50%                      #6.32
                                 # LOE rbx rbp rsp r12 r13 r14 r15 rip
 ..B1.8:                         # Preds ..B1.7
                                 # Execution count [0.00e+00]
-        movl      $-1, %eax                                     #10.17
-        addl      -12(%rbp), %eax                               #10.34
-        movslq    %eax, %rax                                    #10.24
-        imulq     $4, %rax, %rax                                #10.24
-        movl      $numbers, %edx                                #10.24
-        addq      %rax, %rdx                                    #10.24
-        movl      (%rdx), %eax                                  #10.24
-        movl      %eax, -8(%rbp)                                #10.17
-        movl      -12(%rbp), %eax                               #11.40
-        movslq    %eax, %rax                                    #11.32
-        imulq     $4, %rax, %rax                                #11.32
-        movl      $numbers, %edx                                #11.32
-        addq      %rax, %rdx                                    #11.32
-        movl      $-1, %eax                                     #11.17
-        addl      -12(%rbp), %eax                               #11.27
-        movslq    %eax, %rax                                    #11.17
-        imulq     $4, %rax, %rax                                #11.17
-        movl      $numbers, %ecx                                #11.17
-        addq      %rax, %rcx                                    #11.17
-        movl      (%rdx), %eax                                  #11.32
-        movl      %eax, (%rcx)                                  #11.17
-        movl      -12(%rbp), %eax                               #12.25
-        movslq    %eax, %rax                                    #12.17
-        imulq     $4, %rax, %rax                                #12.17
-        movl      $numbers, %edx                                #12.17
-        addq      %rax, %rdx                                    #12.17
-        movl      -8(%rbp), %eax                                #12.30
-        movl      %eax, (%rdx)                                  #12.17
-        jmp       ..B1.6        # Prob 100%                     #12.17
+        movl      $-1, %eax                                     #7.17
+        addl      -28(%rbp), %eax                               #7.34
+        movslq    %eax, %rax                                    #7.24
+        imulq     $4, %rax, %rax                                #7.24
+        addq      -16(%rbp), %rax                               #7.24
+        movl      (%rax), %eax                                  #7.24
+        movl      %eax, -24(%rbp)                               #7.17
+        movl      -28(%rbp), %eax                               #8.40
+        movslq    %eax, %rax                                    #8.32
+        imulq     $4, %rax, %rax                                #8.32
+        addq      -16(%rbp), %rax                               #8.32
+        movl      $-1, %edx                                     #8.17
+        addl      -28(%rbp), %edx                               #8.27
+        movslq    %edx, %rdx                                    #8.17
+        imulq     $4, %rdx, %rdx                                #8.17
+        addq      -16(%rbp), %rdx                               #8.17
+        movl      (%rax), %eax                                  #8.32
+        movl      %eax, (%rdx)                                  #8.17
+        movl      -28(%rbp), %eax                               #9.25
+        movslq    %eax, %rax                                    #9.17
+        imulq     $4, %rax, %rax                                #9.17
+        addq      -16(%rbp), %rax                               #9.17
+        movl      -24(%rbp), %edx                               #9.30
+        movl      %edx, (%rax)                                  #9.17
+        jmp       ..B1.6        # Prob 100%                     #9.17
                                 # LOE rbx rbp rsp r12 r13 r14 r15 rip
 ..B1.9:                         # Preds ..B1.2
                                 # Execution count [0.00e+00]
-        leave                                                   #16.1
+        leave                                                   #13.1
 	.cfi_restore 6
-        ret                                                     #16.1
+        ret                                                     #13.1
                                 # LOE
 	.cfi_endproc
 # mark_end;
@@ -123,20 +121,6 @@ bubbleSort:
 ..LNbubbleSort.0:
 	.data
 # -- End  bubbleSort
-	.data
-	.align 4
-	.align 4
-	.globl numbers
-numbers:
-	.long	1
-	.type	numbers,@object
-	.size	numbers,4
-	.align 4
-	.globl array_size
-array_size:
-	.long	1
-	.type	array_size,@object
-	.size	array_size,4
 	.data
 	.section .note.GNU-stack, ""
 # End

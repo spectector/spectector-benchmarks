@@ -5,10 +5,11 @@ _base=$(e=$0;while test -L "$e";do d=$(dirname "$e");e=$(readlink "$e");\
     cd "$d";done;cd "$(dirname "$e")";pwd -P)
 
 usage () {
-    printf "Usage: check_security [-m compiler] [-p example_number] [-t timeout] [-d test/benchmarks]\n"
-    printf "\tCompilers: (intel, microsoft, clang)  Example numbers: (1-15)\n"
-    printf "\tBy default it will be executed with all the compilers and all the\n"
-    printf "\texample numbers and timeout of 30 seconds\n"
+    printf "Usage: check_security [-m compiler] [-p example_number] [-t timeout] [-d suite]\n"
+    printf "\tCompilers: (intel, microsoft, clang)  Example numbers: (1-21)\n"
+    printf "\tSuites: (test, benchmarks)\n"
+    printf "\tBy default it will be executed with all the compilers, all the\n"
+    printf "\ttest example numbers and a timeout of 30 seconds\n"
     exit 0
 }
 
@@ -25,7 +26,6 @@ res () {
     printf $1 >> $out
 }
 
-cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15 16 17 18 19 20 21)
 gen=(microsoft intel clang gcc)
 mits="\tVisual C++\t\t\tICC\t\t\t\tClang\t\t\t\t\t\tGCC"
 lmi="\tUNP\t\tFEN\t\tUNP\t\tFEN\t\tUNP\t\tFEN\t\tSLH\t\tUNP\t\tSLH"
@@ -36,54 +36,32 @@ while getopts ":m:p:t:d:" option; do # parsing of the arguments
     case "${option}" in
 	m)
 	    case $OPTARG in
-	    	clang )
-	    	    gen=(clang)
-	    	    mits="\tClang\t\t\t\t\t"
-	    	    lmi="\tUNP\t\tFEN\t\tSLH"
-	    	    lop="\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2"
-	    	    ;;
-	    	intel )
-	    	    gen=(intel)
-	    	    mits="\tICC\t\t\t"
-	    	    lmi="\tUNP\t\tFEN"
-	    	    lop="\t-O0\t-O2\t-O0\t-O2"
-	    	    ;;    
-	    	microsoft )
-	    	    gen=(microsoft)
-	    	    mits="\tVisual C++"
-	    	    lmi="\tUNP\t\tFEN"
-	    	    lop="\t-O0\t-O2\t-O0\t-O2"
-	    	    ;;
-		gcc )
-	    	    gen=(gcc)
-	    	    mits="\tGCC"
-	    	    lmi="\tUNP\t\tSLH"
-	    	    lop="\t-O0\t-O2\t-O0\t-O2"
-	    	    ;;
-	    	* )
-	    	    usage
-	    	    ;;
-	    esac
-	    ;;
-	p)
-	    cases=(${OPTARG})
-	    ;;
-	t)
-	    timeout=${OPTARG}
-	    ;;
+	    	clang ) gen=(clang)
+	    		mits="\tClang\t\t\t\t\t"
+	    		lmi="\tUNP\t\tFEN\t\tSLH"
+	    		lop="\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2" ;;
+	    	intel ) gen=(intel)
+	    		mits="\tICC\t\t\t"
+	    		lmi="\tUNP\t\tFEN"
+	    		lop="\t-O0\t-O2\t-O0\t-O2" ;;    
+	    	microsoft ) gen=(microsoft)
+	    		    mits="\tVisual C++"
+	    		    lmi="\tUNP\t\tFEN"
+	    		    lop="\t-O0\t-O2\t-O0\t-O2" ;;
+		gcc ) gen=(gcc)
+	    	      mits="\tGCC"
+	    	      lmi="\tUNP\t\tSLH"
+	    	      lop="\t-O0\t-O2\t-O0\t-O2" ;;
+	    	* ) usage ;;
+	    esac ;;
+	p) cases=(${OPTARG}) ;;
+	t) timeout=${OPTARG} ;;
 	d)
 	    case $OPTARG in
-		benchmarks)
-		    cases=(bubblesort insertionsort selectionsort crscat crschr crscmp cbzero cstrncat cstrpbrk)
-		    ;;
-		test)
-		    cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15 16 17 18 19 20 21)
-		    ;;
-	    esac
-	    ;;
-	* )
-	    usage
-	    ;;
+		benchmarks) cases=(bubblesort insertionsort selectionsort crscat crschr crscmp cbzero cstrncat cstrpbrk substring sumofthird) ;;
+		*) cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15 16 17 18 19 20 21) ;;
+	    esac ;;
+	* ) usage ;;
     esac
 done
 

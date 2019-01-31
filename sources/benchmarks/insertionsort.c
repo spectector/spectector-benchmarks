@@ -1,8 +1,4 @@
-int a[] = {1};
-int array_size = 1;
-
-void insertionSort()
-{
+void insertionSort(int a[], int array_size){
     int i, j, index;
     for (i = 1; i < array_size; ++i)
     {

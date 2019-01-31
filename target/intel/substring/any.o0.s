@@ -1,6 +1,6 @@
 # mark_description "Intel(R) C Intel(R) 64 Compiler for applications running on Intel(R) 64, Version 19.0.0.117 Build 20180804";
-# mark_description "-O0 -mconditional-branch=all-fix -S -c -o ../target/intel/subtring/lfence.o0.s";
-	.file "subtring.c"
+# mark_description "-O0 -S -c -o ../target/intel/substring/any.o0.s";
+	.file "substring.c"
 	.text
 ..TXTST0:
 .L_2__routine_start_substring_0:
@@ -25,7 +25,6 @@ substring:
 	.cfi_def_cfa 6, 16
 	.cfi_offset 6, -16
         subq      $48, %rsp                                     #1.34
-        lfence                                                  #1.34
         movq      %rdi, -48(%rbp)                               #1.34
         movq      %rsi, -40(%rbp)                               #1.34
         movq      -48(%rbp), %rax                               #2.17
@@ -41,7 +40,6 @@ substring:
                                 # LOE rbx rbp rsp r12 r13 r14 r15 rip
 ..B1.3:                         # Preds ..B1.2
                                 # Execution count [0.00e+00]
-        lfence                                                  #1.34
         movq      -32(%rbp), %rax                               #4.20
         movq      %rax, -24(%rbp)                               #4.18
         movq      -40(%rbp), %rax                               #5.19
@@ -59,7 +57,6 @@ substring:
                                 # Execution count [0.00e+00]
         movq      -16(%rbp), %rax                               #6.31
         movsbl    (%rax), %eax                                  #6.31
-        lfence                                                  #6.31
         movsbq    %al, %rax                                     #6.31
         movq      -24(%rbp), %rdx                               #6.38
         movsbl    (%rdx), %edx                                  #6.38
@@ -69,7 +66,6 @@ substring:
                                 # LOE rbx rbp rsp r12 r13 r14 r15 rip
 ..B1.6:                         # Preds ..B1.5
                                 # Execution count [0.00e+00]
-        lfence                                                  #1.34
         movl      $1, %eax                                      #7.10
         addq      -16(%rbp), %rax                               #7.10
         movq      %rax, -16(%rbp)                               #7.10
@@ -82,7 +78,6 @@ substring:
                                 # Execution count [0.00e+00]
         movq      -16(%rbp), %rax                               #10.13
         movsbl    (%rax), %eax                                  #10.13
-        lfence                                                  #10.13
         movsbq    %al, %rax                                     #10.13
         testl     %eax, %eax                                    #10.19
         jne       ..B1.9        # Prob 50%                      #10.19
@@ -97,7 +92,6 @@ substring:
                                 # LOE
 ..B1.9:                         # Preds ..B1.7
                                 # Execution count [0.00e+00]
-        lfence                                                  #1.34
         movl      $1, %eax                                      #11.8
         addq      -32(%rbp), %rax                               #11.8
         movq      %rax, -32(%rbp)                               #11.8

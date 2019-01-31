@@ -11,10 +11,12 @@ bubbleSort:                             # @bubbleSort
 	.cfi_offset %rbp, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
-	movq	$-1, %rcx
+	movq	$-1, %r8
 	movq	%rsp, %rax
 	sarq	$63, %rax
-	movl	array_size, %edx
+	movq	%rdi, -16(%rbp)
+	movl	%esi, -24(%rbp)
+	movl	-24(%rbp), %edx
 	subl	$1, %edx
 	movl	%edx, -8(%rbp)
 .LBB0_1:                                # =>This Loop Header: Depth=1
@@ -22,7 +24,7 @@ bubbleSort:                             # @bubbleSort
 	cmpl	$0, -8(%rbp)
 	jl	.LBB0_11
 # %bb.2:                                #   in Loop: Header=BB0_1 Depth=1
-	cmovlq	%rcx, %rax
+	cmovlq	%r8, %rax
 	movl	$1, -4(%rbp)
 .LBB0_3:                                #   Parent Loop BB0_1 Depth=1
                                         # =>  This Inner Loop Header: Depth=2
@@ -30,59 +32,67 @@ bubbleSort:                             # @bubbleSort
 	cmpl	-8(%rbp), %edx
 	jg	.LBB0_9
 # %bb.4:                                #   in Loop: Header=BB0_3 Depth=2
-	cmovgq	%rcx, %rax
-	movl	-4(%rbp), %edx
-	subl	$1, %edx
-	movslq	%edx, %rdx
-	movl	numbers(,%rdx,4), %edx
+	cmovgq	%r8, %rax
+	movq	-16(%rbp), %rdx
+	movl	-4(%rbp), %esi
+	subl	$1, %esi
+	movslq	%esi, %rsi
+	movl	(%rdx,%rsi,4), %edx
 	movl	%eax, %esi
 	orl	%edx, %esi
-	movslq	-4(%rbp), %rdx
-	movq	%rax, %rdi
-	orq	%rdx, %rdi
-	cmpl	numbers(,%rdi,4), %esi
+	movq	-16(%rbp), %rdx
+	movslq	-4(%rbp), %rdi
+	movq	%rax, %rcx
+	orq	%rdx, %rcx
+	movq	%rax, %rdx
+	orq	%rdi, %rdx
+	cmpl	(%rcx,%rdx,4), %esi
 	jle	.LBB0_5
 	jmp	.LBB0_6
 .LBB0_5:                                #   in Loop: Header=BB0_3 Depth=2
-	cmovgq	%rcx, %rax
+	cmovgq	%r8, %rax
 	jmp	.LBB0_7
 .LBB0_6:                                #   in Loop: Header=BB0_3 Depth=2
-	cmovleq	%rcx, %rax
+	cmovleq	%r8, %rax
+	movq	-16(%rbp), %rcx
 	movl	-4(%rbp), %edx
 	subl	$1, %edx
 	movslq	%edx, %rdx
-	movl	numbers(,%rdx,4), %edx
-	movl	%eax, %esi
-	orl	%edx, %esi
-	movl	%esi, -12(%rbp)
+	movl	(%rcx,%rdx,4), %ecx
+	movl	%eax, %edx
+	orl	%ecx, %edx
+	movl	%edx, -20(%rbp)
+	movq	-16(%rbp), %rcx
 	movslq	-4(%rbp), %rdx
-	movl	numbers(,%rdx,4), %edx
-	movl	%eax, %esi
-	orl	%edx, %esi
-	movl	-4(%rbp), %edx
-	subl	$1, %edx
-	movslq	%edx, %rdx
-	movl	%esi, numbers(,%rdx,4)
-	movl	-12(%rbp), %edx
+	movl	(%rcx,%rdx,4), %ecx
+	movl	%eax, %edx
+	orl	%ecx, %edx
+	movq	-16(%rbp), %rcx
+	movl	-4(%rbp), %esi
+	subl	$1, %esi
+	movslq	%esi, %rsi
+	movl	%edx, (%rcx,%rsi,4)
+	movl	-20(%rbp), %ecx
+	movq	-16(%rbp), %rdx
 	movslq	-4(%rbp), %rsi
-	movl	%edx, numbers(,%rsi,4)
+	movl	%ecx, (%rdx,%rsi,4)
 .LBB0_7:                                #   in Loop: Header=BB0_3 Depth=2
 	jmp	.LBB0_8
 .LBB0_8:                                #   in Loop: Header=BB0_3 Depth=2
-	movl	-4(%rbp), %edx
-	addl	$1, %edx
-	movl	%edx, -4(%rbp)
+	movl	-4(%rbp), %ecx
+	addl	$1, %ecx
+	movl	%ecx, -4(%rbp)
 	jmp	.LBB0_3
 .LBB0_9:                                #   in Loop: Header=BB0_1 Depth=1
-	cmovleq	%rcx, %rax
+	cmovleq	%r8, %rax
 	jmp	.LBB0_10
 .LBB0_10:                               #   in Loop: Header=BB0_1 Depth=1
-	movl	-8(%rbp), %edx
-	addl	$-1, %edx
-	movl	%edx, -8(%rbp)
+	movl	-8(%rbp), %ecx
+	addl	$-1, %ecx
+	movl	%ecx, -8(%rbp)
 	jmp	.LBB0_1
 .LBB0_11:
-	cmovgeq	%rcx, %rax
+	cmovgeq	%r8, %rax
 	shlq	$47, %rax
 	orq	%rax, %rsp
 	popq	%rbp
@@ -92,21 +102,6 @@ bubbleSort:                             # @bubbleSort
 	.size	bubbleSort, .Lfunc_end0-bubbleSort
 	.cfi_endproc
                                         # -- End function
-	.type	numbers,@object         # @numbers
-	.data
-	.globl	numbers
-	.p2align	2
-numbers:
-	.long	1                       # 0x1
-	.size	numbers, 4
-
-	.type	array_size,@object      # @array_size
-	.globl	array_size
-	.p2align	2
-array_size:
-	.long	1                       # 0x1
-	.size	array_size, 4
-
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits

@@ -1,4 +1,4 @@
-	.file	"subtring.c"
+	.file	"substring.c"
 	.text
 	.globl	substring
 	.type	substring, @function

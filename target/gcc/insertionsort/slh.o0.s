@@ -1,19 +1,5 @@
 	.file	"insertionsort.c"
 	.text
-	.globl	a
-	.data
-	.align 4
-	.type	a, @object
-	.size	a, 4
-a:
-	.long	1
-	.globl	array_size
-	.align 4
-	.type	array_size, @object
-	.size	array_size, 4
-array_size:
-	.long	1
-	.text
 	.globl	insertionSort
 	.type	insertionSort, @function
 insertionSort:
@@ -24,29 +10,41 @@ insertionSort:
 	.cfi_offset 6, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register 6
+	movq	%rdi, -24(%rbp)
+	movl	%esi, -28(%rbp)
 	movq	$-1, %rdx
 	movl	$1, -4(%rbp)
 	jmp	.L2
 .L7:
 	andq	%rdx, %rax
-	movl	%eax, %edx
-	andl	-4(%rbp), %edx
-	movslq	%edx, %rcx
-	movl	a(,%rcx,4), %ecx
-	movl	%ecx, -12(%rbp)
+	movl	-4(%rbp), %edx
+	movslq	%edx, %rdx
+	leaq	0(,%rdx,4), %rcx
+	movq	-24(%rbp), %rdx
+	addq	%rcx, %rdx
+	andq	%rax, %rdx
+	movl	(%rdx), %edx
+	movl	%edx, -12(%rbp)
+	movl	-4(%rbp), %edx
 	movl	%edx, -8(%rbp)
 	jmp	.L3
 .L6:
 	andq	%rdx, %rax
 	movl	-8(%rbp), %edx
-	subl	$1, %edx
-	movl	%eax, %ecx
-	andl	%ecx, %edx
 	movslq	%edx, %rdx
-	movl	a(,%rdx,4), %ecx
+	salq	$2, %rdx
+	leaq	-4(%rdx), %rcx
+	movq	-24(%rbp), %rdx
+	leaq	(%rcx,%rdx), %rsi
 	movl	-8(%rbp), %edx
 	movslq	%edx, %rdx
-	movl	%ecx, a(,%rdx,4)
+	leaq	0(,%rdx,4), %rcx
+	movq	-24(%rbp), %rdx
+	addq	%rdx, %rcx
+	andq	%rax, %rsi
+	movq	%rsi, %rdx
+	movl	(%rdx), %edx
+	movl	%edx, (%rcx)
 	subl	$1, -8(%rbp)
 .L3:
 	cmpl	$0, -8(%rbp)
@@ -61,11 +59,13 @@ insertionSort:
 .L4:
 	andq	%rax, %rdx
 	movl	-8(%rbp), %eax
-	subl	$1, %eax
-	movl	%edx, %ecx
-	andl	%ecx, %eax
 	cltq
-	movl	a(,%rax,4), %eax
+	salq	$2, %rax
+	leaq	-4(%rax), %rcx
+	movq	-24(%rbp), %rax
+	addq	%rcx, %rax
+	andq	%rdx, %rax
+	movl	(%rax), %eax
 	cmpl	%eax, -12(%rbp)
 	setge	%al
 	movzbl	%al, %eax
@@ -77,12 +77,15 @@ insertionSort:
 .L5:
 	movl	-8(%rbp), %eax
 	cltq
-	movl	-12(%rbp), %ecx
-	movl	%ecx, a(,%rax,4)
+	leaq	0(,%rax,4), %rcx
+	movq	-24(%rbp), %rax
+	addq	%rax, %rcx
+	movl	-12(%rbp), %eax
+	movl	%eax, (%rcx)
 	addl	$1, -4(%rbp)
 .L2:
-	movl	array_size(%rip), %eax
-	cmpl	%eax, -4(%rbp)
+	movl	-4(%rbp), %eax
+	cmpl	-28(%rbp), %eax
 	setge	%al
 	movzbl	%al, %eax
 	subq	$1, %rax

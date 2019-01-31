@@ -1,19 +1,5 @@
 	.file	"bubblesort.c"
 	.text
-	.globl	numbers
-	.data
-	.align 4
-	.type	numbers, @object
-	.size	numbers, 4
-numbers:
-	.long	1
-	.globl	array_size
-	.align 4
-	.type	array_size, @object
-	.size	array_size, 4
-array_size:
-	.long	1
-	.text
 	.globl	bubbleSort
 	.type	bubbleSort, @function
 bubbleSort:
@@ -24,8 +10,10 @@ bubbleSort:
 	.cfi_offset 6, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register 6
+	movq	%rdi, -24(%rbp)
+	movl	%esi, -28(%rbp)
 	movq	$-1, %rdx
-	movl	array_size(%rip), %eax
+	movl	-28(%rbp), %eax
 	subl	$1, %eax
 	movl	%eax, -4(%rbp)
 	jmp	.L2
@@ -36,15 +24,20 @@ bubbleSort:
 .L6:
 	andq	%rdx, %rax
 	movl	-8(%rbp), %edx
-	subl	$1, %edx
-	movl	%eax, %ecx
-	andl	%ecx, %edx
 	movslq	%edx, %rdx
-	movl	numbers(,%rdx,4), %ecx
-	movl	%eax, %edx
-	andl	-8(%rbp), %edx
+	salq	$2, %rdx
+	leaq	-4(%rdx), %rcx
+	movq	-24(%rbp), %rdx
+	addq	%rcx, %rdx
+	andq	%rax, %rdx
+	movl	(%rdx), %ecx
+	movl	-8(%rbp), %edx
 	movslq	%edx, %rdx
-	movl	numbers(,%rdx,4), %edx
+	leaq	0(,%rdx,4), %rsi
+	movq	-24(%rbp), %rdx
+	addq	%rsi, %rdx
+	andq	%rax, %rdx
+	movl	(%rdx), %edx
 	cmpl	%edx, %ecx
 	setle	%dl
 	movzbl	%dl, %edx
@@ -57,23 +50,36 @@ bubbleSort:
 .L4:
 	andq	%rdx, %rax
 	movl	-8(%rbp), %edx
-	subl	$1, %edx
-	movl	%eax, %ecx
-	andl	%ecx, %edx
 	movslq	%edx, %rdx
-	movl	numbers(,%rdx,4), %edx
+	salq	$2, %rdx
+	leaq	-4(%rdx), %rcx
+	movq	-24(%rbp), %rdx
+	addq	%rcx, %rdx
+	andq	%rax, %rdx
+	movl	(%rdx), %edx
 	movl	%edx, -12(%rbp)
 	movl	-8(%rbp), %edx
-	leal	-1(%rdx), %edi
-	movl	%eax, %edx
-	andl	-8(%rbp), %edx
-	movslq	%edx, %rcx
-	movl	numbers(,%rcx,4), %esi
-	movslq	%edi, %rcx
-	movl	%esi, numbers(,%rcx,4)
 	movslq	%edx, %rdx
-	movl	-12(%rbp), %ecx
-	movl	%ecx, numbers(,%rdx,4)
+	leaq	0(,%rdx,4), %rcx
+	movq	-24(%rbp), %rdx
+	leaq	(%rcx,%rdx), %rsi
+	movl	-8(%rbp), %edx
+	movslq	%edx, %rdx
+	salq	$2, %rdx
+	leaq	-4(%rdx), %rcx
+	movq	-24(%rbp), %rdx
+	addq	%rdx, %rcx
+	andq	%rax, %rsi
+	movq	%rsi, %rdx
+	movl	(%rdx), %edx
+	movl	%edx, (%rcx)
+	movl	-8(%rbp), %edx
+	movslq	%edx, %rdx
+	leaq	0(,%rdx,4), %rcx
+	movq	-24(%rbp), %rdx
+	addq	%rdx, %rcx
+	movl	-12(%rbp), %edx
+	movl	%edx, (%rcx)
 .L5:
 	addl	$1, -8(%rbp)
 .L3:

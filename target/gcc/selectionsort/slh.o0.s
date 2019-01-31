@@ -1,19 +1,5 @@
 	.file	"selectionsort.c"
 	.text
-	.globl	a
-	.data
-	.align 4
-	.type	a, @object
-	.size	a, 4
-a:
-	.long	1
-	.globl	array_size
-	.align 4
-	.type	array_size, @object
-	.size	array_size, 4
-array_size:
-	.long	1
-	.text
 	.globl	SelectionSort
 	.type	SelectionSort, @function
 SelectionSort:
@@ -24,6 +10,8 @@ SelectionSort:
 	.cfi_offset 6, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register 6
+	movq	%rdi, -24(%rbp)
+	movl	%esi, -28(%rbp)
 	movq	$-1, %rdx
 	movl	$0, -4(%rbp)
 	jmp	.L2
@@ -37,14 +25,20 @@ SelectionSort:
 	jmp	.L3
 .L6:
 	andq	%rdx, %rax
-	movl	%eax, %edx
-	andl	-8(%rbp), %edx
+	movl	-8(%rbp), %edx
 	movslq	%edx, %rdx
-	movl	a(,%rdx,4), %ecx
-	movl	%eax, %edx
-	andl	-12(%rbp), %edx
+	leaq	0(,%rdx,4), %rcx
+	movq	-24(%rbp), %rdx
+	addq	%rcx, %rdx
+	andq	%rax, %rdx
+	movl	(%rdx), %ecx
+	movl	-12(%rbp), %edx
 	movslq	%edx, %rdx
-	movl	a(,%rdx,4), %edx
+	leaq	0(,%rdx,4), %rsi
+	movq	-24(%rbp), %rdx
+	addq	%rsi, %rdx
+	andq	%rax, %rdx
+	movl	(%rdx), %edx
 	cmpl	%edx, %ecx
 	setge	%dl
 	movzbl	%dl, %edx
@@ -61,8 +55,8 @@ SelectionSort:
 .L5:
 	addl	$1, -8(%rbp)
 .L3:
-	movl	array_size(%rip), %edx
-	cmpl	%edx, -8(%rbp)
+	movl	-8(%rbp), %edx
+	cmpl	-28(%rbp), %edx
 	setge	%dl
 	movzbl	%dl, %edx
 	subq	$1, %rdx
@@ -70,24 +64,38 @@ SelectionSort:
 	jne	.L6
 	notq	%rdx
 	andq	%rax, %rdx
-	movl	%edx, %eax
-	andl	-4(%rbp), %eax
-	movslq	%eax, %rcx
-	movl	a(,%rcx,4), %ecx
-	movl	%ecx, -16(%rbp)
-	movl	%edx, %ecx
-	andl	-12(%rbp), %ecx
-	movslq	%ecx, %rsi
-	movl	a(,%rsi,4), %edi
-	movslq	%eax, %rsi
-	movl	%edi, a(,%rsi,4)
-	movslq	%ecx, %rcx
-	movl	-16(%rbp), %esi
-	movl	%esi, a(,%rcx,4)
-	addl	$1, %eax
-	movl	%eax, -4(%rbp)
+	movl	-4(%rbp), %eax
+	cltq
+	leaq	0(,%rax,4), %rcx
+	movq	-24(%rbp), %rax
+	addq	%rcx, %rax
+	andq	%rdx, %rax
+	movl	(%rax), %eax
+	movl	%eax, -16(%rbp)
+	movl	-12(%rbp), %eax
+	cltq
+	leaq	0(,%rax,4), %rcx
+	movq	-24(%rbp), %rax
+	leaq	(%rcx,%rax), %rsi
+	movl	-4(%rbp), %eax
+	cltq
+	leaq	0(,%rax,4), %rcx
+	movq	-24(%rbp), %rax
+	addq	%rax, %rcx
+	movq	%rsi, %rax
+	andq	%rdx, %rax
+	movl	(%rax), %eax
+	movl	%eax, (%rcx)
+	movl	-12(%rbp), %eax
+	cltq
+	leaq	0(,%rax,4), %rcx
+	movq	-24(%rbp), %rax
+	addq	%rax, %rcx
+	movl	-16(%rbp), %eax
+	movl	%eax, (%rcx)
+	addl	$1, -4(%rbp)
 .L2:
-	movl	array_size(%rip), %eax
+	movl	-28(%rbp), %eax
 	subl	$1, %eax
 	cmpl	%eax, -4(%rbp)
 	setge	%al
