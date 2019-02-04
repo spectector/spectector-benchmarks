@@ -6,12 +6,13 @@ _base=$(e=$0;while test -L "$e";do d=$(dirname "$e");e=$(readlink "$e");\
 
 usage () {
     printf "Usage: check_security [-m compiler] [-p targets] [-t timeout] [-d suite] [-o output] [-s ignore]\n"
-    printf "\tCompilers: (intel, microsoft, clang)  Example numbers: (1-24)\n"
+    printf "\tCompilers: (intel, microsoft, clang, gcc)  Example numbers: (1-24)\n"
     printf "\tSuites: (test, benchmarks, new, all)\n"
     printf "\tBy default it will be executed with all the compilers, all the\n"
     printf "\ttest example numbers and a timeout of 30 seconds\n"
     printf "\tThe output must be a directory where the summary.txt and results will be stored\n"
-    printf "\tWhen declaring the cases, they must be quoted and separated by spaces\n"
+    printf "\tWhen declaring the cases, they must be quoted and separated by spaces,\n"
+    printf "\tthe same with the compilers\n"
     exit 0
 }
 
@@ -31,9 +32,6 @@ res () {
 }
 
 gen=(microsoft intel clang gcc)
-mits="\tVisual C++\t\t\tICC\t\t\t\tClang\t\t\t\t\t\tGCC"
-lmi="\tUNP\t\tFEN\t\tUNP\t\tFEN\t\tUNP\t\tFEN\t\tSLH\t\tUNP\t\tSLH"
-lop="\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2"
 timeout=30
 IFS=' '
 cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15 16 17 18 19 20 21 23 24)
@@ -41,37 +39,39 @@ results=results
 
 while getopts ":m:p:t:d:o:s:" option; do # parsing of the arguments
     case "${option}" in
-	m)
-	    case $OPTARG in
-	    	clang ) gen=(clang)
-	    		mits="\tClang\t\t\t\t\t"
-	    		lmi="\tUNP\t\tFEN\t\tSLH"
-	    		lop="\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2" ;;
-	    	intel ) gen=(intel)
-	    		mits="\tICC\t\t\t"
-	    		lmi="\tUNP\t\tFEN"
-	    		lop="\t-O0\t-O2\t-O0\t-O2" ;;    
-	    	microsoft ) gen=(microsoft)
-	    		    mits="\tVisual C++"
-	    		    lmi="\tUNP\t\tFEN"
-	    		    lop="\t-O0\t-O2\t-O0\t-O2" ;;
-		gcc ) gen=(gcc)
-	    	      mits="\tGCC"
-	    	      lmi="\tUNP\t\tSLH"
-	    	      lop="\t-O0\t-O2\t-O0\t-O2" ;;
-	    	* ) usage ;;
-	    esac ;;
+	m) gen=($OPTARG) ;;
 	p) cases=($OPTARG) ;;
 	t) timeout=${OPTARG} ;;
-	d)
-	    case $OPTARG in
-		benchmarks) cases=(bubblesort  cbzero  crscat  crschr  crscmp  cstrcspn  cstrncat  cstrpbrk  insertionsort  selectionsort  substring  sumofthird  wildcard);;
-		new) cases=(16 17 18 19 20 21 22 23 24);;
-		all) cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15 16 17 18 19 20 21 22 23 24 bubblesort  cbzero  crscat  crschr  crscmp  cstrcspn  cstrncat  cstrpbrk  insertionsort  selectionsort  substring  sumofthird  wildcard);;
-		*) cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15 16 17 18 19 20 21 22 23 24) ;;
-	    esac ;;
+	d) case $OPTARG in
+	       benchmarks) cases=(bubblesort  cbzero  crscat  crschr  crscmp  cstrcspn  cstrncat  cstrpbrk  insertionsort  selectionsort  substring  sumofthird  wildcard);;
+	       new) cases=(16 17 18 19 20 21 22 23 24);;
+	       all) cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15 16 17 18 19 20 21 22 23 24 bubblesort  cbzero  crscat  crschr  crscmp  cstrcspn  cstrncat  cstrpbrk  insertionsort  selectionsort  substring  sumofthird  wildcard);;
+	       *) cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15 16 17 18 19 20 21 22 23 24) ;;
+	   esac ;;
 	o) results=$OPTARG;;
 	s) delete=($OPTARG);;
+	* ) usage ;;
+    esac
+done
+
+# Parsing of compilers
+mits=""
+lmi=""
+lop=""
+for compiler in ${gen[@]}; do
+    case $compiler in
+	clang ) mits+="\tClang\t\t\t\t\t"
+	    	lmi+="\tUNP\t\tFEN\t\tSLH\t"
+	    	lop+="\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2" ;;
+	intel ) mits+="\tICC\t\t\t"
+	    	lmi+="\tUNP\t\tFEN\t"
+	    	lop+="\t-O0\t-O2\t-O0\t-O2" ;;    
+	microsoft ) mits+="\tVisual C++\t\t\t"
+	    	    lmi+="\tUNP\t\tFEN\t"
+	    	    lop+="\t-O0\t-O2\t-O0\t-O2" ;;
+	gcc ) mits+="\tGCC\t\t\t"
+	      lmi+="\tUNP\t\tSLH\t"
+	      lop+="\t-O0\t-O2\t-O0\t-O2" ;;
 	* ) usage ;;
     esac
 done
@@ -97,14 +97,13 @@ EOF
     exit 1
 fi
 
-for del in ${delete[@]}
-do
+for del in ${delete[@]}; do
    cases=("${cases[@]/$del}")
 done
 
 # Check if the output is a directory
 if ! [ -d $results ]; then
-    printf "$results is not a directory"
+    printf "$results is not a directory\n"
     exit 1
 fi
 
@@ -119,7 +118,7 @@ else
     runtimeout=timeout
 fi
 
-# Write the results/summary.txt file
+# Write the output summary file
 printf "$mits" > $out
 res "\n$lmi"
 res "\n$lop"
@@ -139,22 +138,26 @@ for app in ${cases[@]}; do
 	    [ "$case" == "microsoft" ] && experiments=(any lfence) && extension=asm
 	    for ex in ${experiments[@]}; do
 		for x in $folder/$ex.o0.$extension $folder/$ex.o2.$extension; do
-		    y=$(basename $x)
-		    name="${y%.*}"
-		    mitigation="${name%.*}"
-		    type="${name##*.}"
-		    
-		    printf "$case-$app-$y\n" # (show progress)
-		    outf="$outdir/${case}.${app}.${y}.out"
-		    $runtimeout $timeout $spectector $x --statistics -w 200 -c "$config" --conf-file default_conf --low "$low" > $outf
-		    ret=$?
-		    if [ $ret = 124 ]; then # timeout
-			res "\t~"
+		    if ! [ -f $x ]; then
+			printf "$x doesn't exist\n"
+			res '\t¬'
 		    else
-			(grep unsafe "$outf" > /dev/null && res '\tL') || # Leak
-			    (grep "timeout..." "$outf" && res '\t?') || # SMT timeout
-			    (grep "program is safe" "$outf" > /dev/null > /dev/null && res '\tS') || # S
-			    (grep checking "$outf" > /dev/null && res '\t?') || res '\t?' # Maybe a bug
+			y=$(basename $x)
+			name="${y%.*}"
+			mitigation="${name%.*}"
+			type="${name##*.}"
+			printf "$case-$app-$y\n" # (show progress)
+			outf="$outdir/${case}.${app}.${y}.out"
+			$runtimeout $timeout $spectector $x --statistics -w 200 -c "$config" --conf-file default_conf --low "$low" > $outf
+			ret=$?
+			if [ $ret = 124 ]; then # timeout
+			    res "\t~"
+			else
+			    (grep unsafe "$outf" > /dev/null && res '\tL') || # Leak
+				(grep "timeout..." "$outf" && res '\t?') || # SMT timeout
+				(grep "program is safe" "$outf" > /dev/null > /dev/null && res '\tS') || # S
+				(grep checking "$outf" > /dev/null && res '\t?') || res '\t?' # Maybe a bug
+			fi
 		    fi
 		done
 	    done
