@@ -121,48 +121,48 @@ fi
 # Write the output summary file
 printf "$mits" > $out
 res "\n$lmi"
-res "\n$lop"
+res "\n$lop\n"
 
 low="[256]" # The low addresses (can't change from one path to another), 256 is the direction that di points on #15
 for app in ${cases[@]}; do
     num=$app
     [ "$num" == "11ass" ] || [ "$num" == "11gcc" ] || [ "$num" == "11sub" ] || [ "$num" == "11ker" ] && num=11
     makeconf $num # Set up the configurations
-    res "\n\n$app"
-    for case in ${gen[@]}; do
-	    folder=target/$case/$app
-	    experiments=(any lfence slh)
-	    extension=s
-	    [ "$case" == "intel" ] && experiments=(any lfence)
-	    [ "$case" == "gcc" ] && experiments=(any slh)
-	    [ "$case" == "microsoft" ] && experiments=(any lfence) && extension=asm
-	    for ex in ${experiments[@]}; do
-		for x in $folder/$ex.o0.$extension $folder/$ex.o2.$extension; do
-		    if ! [ -f $x ]; then
-			printf "$x doesn't exist\n"
-			res '\t¬'
+    res "\n$app"
+    for comp in ${gen[@]}; do
+	folder=target/$comp/$app
+	experiments=(any lfence slh)
+	extension=s
+	[ "$comp" == "intel" ] && experiments=(any lfence)
+	[ "$comp" == "gcc" ] && experiments=(any slh)
+	[ "$comp" == "microsoft" ] && experiments=(any lfence) && extension=asm
+	for ex in ${experiments[@]}; do
+	    for x in $folder/$ex.o0.$extension $folder/$ex.o2.$extension; do
+		if ! [ -f $x ]; then
+		    printf "$x doesn't exist\n"
+		    res '\t¬'
+		else
+		    y=$(basename $x)
+		    name="${y%.*}"
+		    mitigation="${name%.*}"
+		    type="${name##*.}"
+		    printf "$comp-$app-$y\n" # (show progress)
+		    outf="$outdir/${comp}.${app}.${y}.out"
+		    $runtimeout $timeout $spectector $x --statistics -w 200 -c "$config" --conf-file default_conf --low "$low" > $outf
+		    ret=$?
+		    if [ $ret = 124 ]; then # timeout
+			res "\t~"
 		    else
-			y=$(basename $x)
-			name="${y%.*}"
-			mitigation="${name%.*}"
-			type="${name##*.}"
-			printf "$case-$app-$y\n" # (show progress)
-			outf="$outdir/${case}.${app}.${y}.out"
-			$runtimeout $timeout $spectector $x --statistics -w 200 -c "$config" --conf-file default_conf --low "$low" > $outf
-			ret=$?
-			if [ $ret = 124 ]; then # timeout
-			    res "\t~"
-			else
-			    (grep unsafe "$outf" > /dev/null && res '\tL') || # Leak
-				(grep "timeout..." "$outf" && res '\t?') || # SMT timeout
-				(grep "program is safe" "$outf" > /dev/null > /dev/null && res '\tS') || # S
-				(grep checking "$outf" > /dev/null && res '\t?') || res '\t?' # Maybe a bug
-			fi
+			(grep unsafe "$outf" > /dev/null && res '\tL') || # Leak
+			    (grep "timeout..." "$outf" && res '\t?') || # SMT timeout
+			    (grep "program is safe" "$outf" > /dev/null > /dev/null && res '\tS') || # S
+			    (grep checking "$outf" > /dev/null && res '\t?') || res '\t?' # Maybe a bug
 		    fi
-		done
+		fi
 	    done
 	done
     done
-
-	# echo "Comparison with saved results: "
-	# diff ../results/summary.txt ../results/summary.txt-ok && echo ok
+    res "\n"
+done
+# echo "Comparison with saved results: "
+# diff ../results/summary.txt ../results/summary.txt-ok && echo ok
