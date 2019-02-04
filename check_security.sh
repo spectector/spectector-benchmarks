@@ -5,19 +5,23 @@ _base=$(e=$0;while test -L "$e";do d=$(dirname "$e");e=$(readlink "$e");\
     cd "$d";done;cd "$(dirname "$e")";pwd -P)
 
 usage () {
-    printf "Usage: check_security [-m compiler] [-p example_number] [-t timeout] [-d suite]\n"
-    printf "\tCompilers: (intel, microsoft, clang)  Example numbers: (1-21)\n"
-    printf "\tSuites: (test, benchmarks)\n"
+    printf "Usage: check_security [-m compiler] [-p targets] [-t timeout] [-d suite] [-o output] [-s ignore]\n"
+    printf "\tCompilers: (intel, microsoft, clang)  Example numbers: (1-24)\n"
+    printf "\tSuites: (test, benchmarks, new, all)\n"
     printf "\tBy default it will be executed with all the compilers, all the\n"
     printf "\ttest example numbers and a timeout of 30 seconds\n"
+    printf "\tThe output must be a directory where the summary.txt and results will be stored\n"
+    printf "\tWhen declaring the cases, they must be quoted and separated by spaces\n"
     exit 0
 }
 
 makeconf () {
     if [ -n "$1" ] && ! [ "$1" -eq "$1" ] 2>/dev/null; then config="c([0xf000000=1000],[pc=0, sp=0xf000000, bp=0xf00000])" # Check if it's a numeric argument (test suite or benchmarks suite)
-    elif [ $1 -eq 05 ]; then config="c([0xf000000=1000],[pc=victim_function_v$1, sp=0xf000000, bp=0xf00000, dx=0])" # For gcc example, fix
+    elif [ $1 -eq 05 ]; then config="c([0xf000000=1000],[pc=victim_function_v$1, sp=0xf000000, bp=0xf00000, dx=0])" # TODO dx=0 because gcc example
     elif [ $1 -eq 15 ]; then config="c([0xf000000=1000],[pc=victim_function_v$1, sp=0xf000000, bp=0xf00000, di=256])"
-    elif [ $1 -eq 19 ]; then config="c([0xf000000=1000],[pc=main, sp=0xf000000, bp=0xf00000, di=256])"
+    elif [ $1 -eq 19 ]; then config="c([0xf000000=1000],[pc=main, sp=0xf000000, bp=0xf00000])"
+    elif [ $1 -eq 23 ]; then config="c([0xf000000=1000],[pc=attacker_function, sp=0xf000000, bp=0xf00000])"
+    elif [ $1 -eq 24 ]; then config="c([0xf000000=1000],[pc=another, sp=0xf000000, bp=0xf00000])"
     else config="c([0xf000000=1000],[pc=victim_function_v$1, sp=0xf000000, bp=0xf00000])"
     fi
 }
@@ -31,8 +35,11 @@ mits="\tVisual C++\t\t\tICC\t\t\t\tClang\t\t\t\t\t\tGCC"
 lmi="\tUNP\t\tFEN\t\tUNP\t\tFEN\t\tUNP\t\tFEN\t\tSLH\t\tUNP\t\tSLH"
 lop="\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t-O0\t-O2"
 timeout=30
+IFS=' '
+cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15 16 17 18 19 20 21 23 24)
+results=results
 
-while getopts ":m:p:t:d:" option; do # parsing of the arguments
+while getopts ":m:p:t:d:o:s:" option; do # parsing of the arguments
     case "${option}" in
 	m)
 	    case $OPTARG in
@@ -54,13 +61,17 @@ while getopts ":m:p:t:d:" option; do # parsing of the arguments
 	    	      lop="\t-O0\t-O2\t-O0\t-O2" ;;
 	    	* ) usage ;;
 	    esac ;;
-	p) cases=(${OPTARG}) ;;
+	p) cases=($OPTARG) ;;
 	t) timeout=${OPTARG} ;;
 	d)
 	    case $OPTARG in
-		benchmarks) cases=(bubblesort insertionsort selectionsort crscat crschr crscmp cbzero cstrncat cstrpbrk substring sumofthird) ;;
-		*) cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15 16 17 18 19 20 21) ;;
+		benchmarks) cases=(bubblesort  cbzero  crscat  crschr  crscmp  cstrcspn  cstrncat  cstrpbrk  insertionsort  selectionsort  substring  sumofthird  wildcard);;
+		new) cases=(16 17 18 19 20 21 22 23 24);;
+		all) cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15 16 17 18 19 20 21 22 23 24 bubblesort  cbzero  crscat  crschr  crscmp  cstrcspn  cstrncat  cstrpbrk  insertionsort  plan9-cat  selectionsort  sha1  substring  sumofthird  wildcard);;
+		*) cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15 16 17 18 19 20 21 22 23 24) ;;
 	    esac ;;
+	o) results=$OPTARG;;
+	s) delete=($OPTARG);;
 	* ) usage ;;
     esac
 done
@@ -69,6 +80,7 @@ trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM
 
 cd "$_base"
 
+# Change the path to run spectector, this works if you are in spectector folder or one of it's subfolders
 if [ -x ./spectector ]; then
     spectector=./spectector
 elif [ -x ../bin/spectector ]; then
@@ -85,10 +97,20 @@ EOF
     exit 1
 fi
 
-# Change the path to run spectector, this works if you are in spectector folder or one of it's subfolders
-out=results/summary.txt
+for del in ${delete[@]}
+do
+   cases=("${cases[@]/$del}")
+done
+
+# Check if the output is a directory
+if ! [ -d $results ]; then
+    printf "$results is not a directory"
+    exit 1
+fi
+
+out=$results/summary.txt
 # folder with the results for each benchmark
-outdir=results/out
+outdir=$results/out
 mkdir -p "$outdir"
 
 if which gtimeout > /dev/null 2>&1; then
