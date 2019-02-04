@@ -19,15 +19,13 @@ while getopts ":d:" option; do # parsing of the arguments
     esac
 done
 
-printf "Suite: $suite \n"
+printf "clang generating: $suite \n"
 
 sources=../sources/$suite
 
 lfence="-x86-speculative-load-hardening -x86-speculative-load-hardening-lfence"
-any=""
 slh="-x86-speculative-load-hardening"
-s=""
-# asm="--x86-asm-syntax=intel"
+any=""
 
 for code in $sources/*.c; do
     filename=$(basename -- "$code")
@@ -49,12 +47,8 @@ for code in $sources/*.c; do
 	ext="${bfile%.*}"
 	for mit in lfence any slh; do
 	    flag_mit=${!mit}
-	    # for type in s asm; do
-	    # 	flag_type=${!type}
-	    # 	llc $flag_mit $flag_type $bcode -o $folder/$mit.$ext.$type
-	    # done
 	    llc $flag_mit $bcode -o $folder/$mit.$ext.s
 	done
+	rm $bcode
     done
 done
-echo "Files generated correctly"

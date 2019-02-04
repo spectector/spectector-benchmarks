@@ -19,7 +19,7 @@ while getopts ":d:" option; do # parsing of the arguments
     esac
 done
 
-printf "Suite: $suite \n"
+printf "gcc generating: $suite \n"
 sources=../sources/$suite
 
 lfence="-x86-speculative-load-hardening -x86-speculative-load-hardening-lfence"
@@ -41,4 +41,3 @@ for code in $sources/*.c; do
     ~/.gcc/bin/gcc -fspectre-v1=2 -O2 -S $code -o $folder/slh.o2.s
     # Add =3 for TLS tracing
 done
-echo "Files generated correctly"
