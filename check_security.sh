@@ -67,7 +67,7 @@ while getopts ":m:p:t:d:o:s:" option; do # parsing of the arguments
 	    case $OPTARG in
 		benchmarks) cases=(bubblesort  cbzero  crscat  crschr  crscmp  cstrcspn  cstrncat  cstrpbrk  insertionsort  selectionsort  substring  sumofthird  wildcard);;
 		new) cases=(16 17 18 19 20 21 22 23 24);;
-		all) cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15 16 17 18 19 20 21 22 23 24 bubblesort  cbzero  crscat  crschr  crscmp  cstrcspn  cstrncat  cstrpbrk  insertionsort  plan9-cat  selectionsort  sha1  substring  sumofthird  wildcard);;
+		all) cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15 16 17 18 19 20 21 22 23 24 bubblesort  cbzero  crscat  crschr  crscmp  cstrcspn  cstrncat  cstrpbrk  insertionsort  selectionsort  substring  sumofthird  wildcard);;
 		*) cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15 16 17 18 19 20 21 22 23 24) ;;
 	    esac ;;
 	o) results=$OPTARG;;
