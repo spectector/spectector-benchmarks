@@ -14,10 +14,12 @@ victim_function_v19:                    # @victim_function_v19
 	jbe	.LBB0_1
 # %bb.2:
 	cmovbeq	%rcx, %rax
-	movzbl	array1(%rdi), %ecx
+	leaq	array1(%rip), %rcx
+	movzbl	(%rdi,%rcx), %ecx
 	shlq	$9, %rcx
 	orq	%rax, %rcx
-	movb	array2(%rcx), %cl
+	leaq	array2(%rip), %rdx
+	movb	(%rcx,%rdx), %cl
 	orb	%al, %cl
 	andb	%cl, temp(%rip)
 	jmp	.LBB0_3
@@ -47,8 +49,9 @@ main:                                   # @main
 	cmoveq	%rax, %rcx
 	movzbl	array1(%rip), %edi
 	shlq	$9, %rdi
+	leaq	array2(%rip), %r8
 	movb	temp(%rip), %dl
-	andb	array2(%rdi), %dl
+	andb	(%rdi,%r8), %dl
 	orb	%cl, %dl
 	movb	%dl, temp(%rip)
 	cmpl	$43, %esi
@@ -57,7 +60,7 @@ main:                                   # @main
 	cmovbq	%rax, %rcx
 	movzbl	array1+42(%rip), %eax
 	shlq	$9, %rax
-	andb	array2(%rax), %dl
+	andb	(%rax,%r8), %dl
 	orb	%cl, %dl
 	movb	%dl, temp(%rip)
 	jmp	.LBB1_5
@@ -102,3 +105,4 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

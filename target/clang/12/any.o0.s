@@ -11,23 +11,27 @@ victim_function_v12:                    # @victim_function_v12
 	.cfi_offset %rbp, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
-	movq	%rdi, -16(%rbp)
-	movq	%rsi, -8(%rbp)
-	movq	-16(%rbp), %rax
-	addq	-8(%rbp), %rax
-	movl	array1_size, %ecx
-	cmpq	%rcx, %rax
+	movq	%rdi, -8(%rbp)
+	movq	%rsi, -16(%rbp)
+	movq	-8(%rbp), %rsi
+	addq	-16(%rbp), %rsi
+	movl	array1_size(%rip), %eax
+	movl	%eax, %edi
+	cmpq	%rdi, %rsi
 	jae	.LBB0_2
 # %bb.1:
-	movq	-16(%rbp), %rax
-	addq	-8(%rbp), %rax
-	movzbl	array1(,%rax), %eax
-	shll	$9, %eax
-	cltq
-	movzbl	array2(,%rax), %eax
-	movzbl	temp, %ecx
-	andl	%eax, %ecx
-	movb	%cl, temp
+	movq	-8(%rbp), %rax
+	addq	-16(%rbp), %rax
+	leaq	array1(%rip), %rcx
+	movzbl	(%rcx,%rax), %edx
+	shll	$9, %edx
+	movslq	%edx, %rax
+	leaq	array2(%rip), %rcx
+	movzbl	(%rcx,%rax), %edx
+	movzbl	temp(%rip), %esi
+	andl	%edx, %esi
+	movb	%sil, %dil
+	movb	%dil, temp(%rip)
 .LBB0_2:
 	popq	%rbp
 	.cfi_def_cfa %rsp, 8
@@ -63,3 +67,9 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig
+	.addrsig_sym victim_function_v12
+	.addrsig_sym array1_size
+	.addrsig_sym array1
+	.addrsig_sym temp
+	.addrsig_sym array2

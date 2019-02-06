@@ -9,7 +9,7 @@ cstrpbrk:                               # @cstrpbrk
 	movb	(%rdi), %al
 	testb	%al, %al
 	je	.LBB0_7
-# %bb.1:                                # %.preheader
+# %bb.1:
 	lfence
 	.p2align	4, 0x90
 .LBB0_2:                                # =>This Loop Header: Depth=1
@@ -52,3 +52,4 @@ cstrpbrk:                               # @cstrpbrk
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

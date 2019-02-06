@@ -10,7 +10,7 @@ cstrcspn:                               # @cstrcspn
 	movq	%rdi, %rax
 	testb	%r8b, %r8b
 	je	.LBB0_7
-# %bb.1:                                # %.preheader
+# %bb.1:
 	movq	%rdi, %rax
 	.p2align	4, 0x90
 .LBB0_2:                                # =>This Loop Header: Depth=1
@@ -45,3 +45,4 @@ cstrcspn:                               # @cstrcspn
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

@@ -11,35 +11,50 @@ victim_function_v15:                    # @victim_function_v15
 	.cfi_offset %rbp, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
-	movq	$-1, %rcx
-	movq	%rsp, %rax
-	sarq	$63, %rax
+	movq	$-1, %rax
+	movq	%rsp, %rcx
+	sarq	$63, %rcx
 	movq	%rdi, -8(%rbp)
+	movq	-8(%rbp), %rdi
+	movq	(%rdi), %rdi
+	movq	%rcx, %rdx
+	orq	%rdi, %rdx
+	movl	array1_size(%rip), %esi
+	movl	%esi, %edi
+	cmpq	%rdi, %rdx
+	movq	%rax, -16(%rbp)         # 8-byte Spill
+	movq	%rcx, -24(%rbp)         # 8-byte Spill
+	jae	.LBB0_3
+	jmp	.LBB0_1
+.LBB0_3:
+	movq	-24(%rbp), %rax         # 8-byte Reload
+	movq	-16(%rbp), %rcx         # 8-byte Reload
+	cmovbq	%rcx, %rax
+	movq	%rax, -32(%rbp)         # 8-byte Spill
+	jmp	.LBB0_2
+.LBB0_1:
+	movq	-24(%rbp), %rax         # 8-byte Reload
+	movq	-16(%rbp), %rcx         # 8-byte Reload
+	cmovaeq	%rcx, %rax
 	movq	-8(%rbp), %rdx
 	movq	(%rdx), %rdx
 	movq	%rax, %rsi
 	orq	%rdx, %rsi
-	movl	array1_size, %edx
-	cmpq	%rdx, %rsi
-	jae	.LBB0_1
-	jmp	.LBB0_2
-.LBB0_1:
-	cmovbq	%rcx, %rax
-	jmp	.LBB0_3
+	leaq	array1(%rip), %rdx
+	movq	%rax, %rdi
+	orq	%rdx, %rdi
+	movzbl	(%rdi,%rsi), %r8d
+	shll	$9, %r8d
+	movslq	%r8d, %rdx
+	leaq	array2(%rip), %rsi
+	movzbl	(%rsi,%rdx), %r8d
+	movzbl	temp(%rip), %r9d
+	andl	%r8d, %r9d
+	movb	%r9b, %r10b
+	movb	%r10b, temp(%rip)
+	movq	%rax, -32(%rbp)         # 8-byte Spill
 .LBB0_2:
-	cmovaeq	%rcx, %rax
-	movq	-8(%rbp), %rcx
-	movq	(%rcx), %rcx
-	movq	%rax, %rdx
-	orq	%rcx, %rdx
-	movzbl	array1(,%rdx), %ecx
-	shll	$9, %ecx
-	movslq	%ecx, %rcx
-	movzbl	array2(,%rcx), %ecx
-	movzbl	temp, %edx
-	andl	%ecx, %edx
-	movb	%dl, temp
-.LBB0_3:
+	movq	-32(%rbp), %rax         # 8-byte Reload
 	shlq	$47, %rax
 	orq	%rax, %rsp
 	popq	%rbp
@@ -76,3 +91,9 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig
+	.addrsig_sym victim_function_v15
+	.addrsig_sym array1_size
+	.addrsig_sym array1
+	.addrsig_sym temp
+	.addrsig_sym array2

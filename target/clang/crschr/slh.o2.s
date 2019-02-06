@@ -52,3 +52,4 @@ cstrchr:                                # @cstrchr
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

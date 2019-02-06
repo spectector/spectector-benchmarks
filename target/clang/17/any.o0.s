@@ -12,19 +12,23 @@ victim_function_v17:                    # @victim_function_v17
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
 	movq	%rdi, -8(%rbp)
-	movq	-8(%rbp), %rax
-	movzbl	array1(,%rax), %eax
-	cmpl	array1_size, %eax
+	movq	-8(%rbp), %rdi
+	leaq	array1(%rip), %rax
+	movzbl	(%rax,%rdi), %ecx
+	cmpl	array1_size(%rip), %ecx
 	jae	.LBB0_2
 # %bb.1:
 	movq	-8(%rbp), %rax
-	movzbl	array1(,%rax), %eax
-	shll	$9, %eax
-	cltq
-	movzbl	array2(,%rax), %eax
-	movzbl	temp, %ecx
-	andl	%eax, %ecx
-	movb	%cl, temp
+	leaq	array1(%rip), %rcx
+	movzbl	(%rcx,%rax), %edx
+	shll	$9, %edx
+	movslq	%edx, %rax
+	leaq	array2(%rip), %rcx
+	movzbl	(%rcx,%rax), %edx
+	movzbl	temp(%rip), %esi
+	andl	%edx, %esi
+	movb	%sil, %dil
+	movb	%dil, temp(%rip)
 .LBB0_2:
 	popq	%rbp
 	.cfi_def_cfa %rsp, 8
@@ -60,3 +64,9 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig
+	.addrsig_sym victim_function_v17
+	.addrsig_sym array1_size
+	.addrsig_sym array1
+	.addrsig_sym temp
+	.addrsig_sym array2

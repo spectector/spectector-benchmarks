@@ -17,7 +17,7 @@ cstrncat:                               # @cstrncat
 	lfence
 	testl	%edx, %edx
 	je	.LBB0_8
-# %bb.3:                                # %.preheader
+# %bb.3:
 	lfence
 	movl	%edx, %r8d
 	xorl	%ecx, %ecx
@@ -51,3 +51,4 @@ cstrncat:                               # @cstrncat
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

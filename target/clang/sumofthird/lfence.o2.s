@@ -58,17 +58,17 @@ sumOfThirdBytes:                        # @sumOfThirdBytes
 	paddd	%xmm0, %xmm1
 	movd	%xmm1, %eax
 .LBB0_7:
+	leaq	(%rdi,%rdx,4), %rsi
+	addq	$2, %rsi
 	subq	%rdx, %rcx
-	leaq	(%rdi,%rdx,4), %rdx
-	addq	$2, %rdx
-	xorl	%esi, %esi
+	xorl	%edx, %edx
 	.p2align	4, 0x90
 .LBB0_8:                                # =>This Inner Loop Header: Depth=1
 	lfence
-	movsbl	(%rdx,%rsi,4), %edi
+	movsbl	(%rsi,%rdx,4), %edi
 	addl	%edi, %eax
-	addq	$1, %rsi
-	cmpq	%rsi, %rcx
+	addq	$1, %rdx
+	cmpq	%rdx, %rcx
 	jne	.LBB0_8
 # %bb.9:
 	lfence
@@ -80,3 +80,4 @@ sumOfThirdBytes:                        # @sumOfThirdBytes
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

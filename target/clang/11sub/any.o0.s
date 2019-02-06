@@ -13,21 +13,25 @@ victim_function_v11:                    # @victim_function_v11
 	.cfi_def_cfa_register %rbp
 	subq	$16, %rsp
 	movq	%rdi, -8(%rbp)
-	movq	-8(%rbp), %rax
-	movl	array1_size, %ecx
-	cmpq	%rcx, %rax
+	movq	-8(%rbp), %rdi
+	movl	array1_size(%rip), %eax
+	movl	%eax, %ecx
+	cmpq	%rcx, %rdi
 	jae	.LBB0_2
 # %bb.1:
-	movq	-8(%rbp), %rax
-	movzbl	array1(,%rax), %eax
+	movl	$1, %eax
+	movl	%eax, %edx
+	movq	-8(%rbp), %rcx
+	leaq	array1(%rip), %rsi
+	movzbl	(%rsi,%rcx), %eax
 	shll	$9, %eax
-	cltq
-	movabsq	$array2, %rsi
-	addq	%rax, %rsi
-	movabsq	$temp, %rdi
-	movl	$1, %edx
+	movslq	%eax, %rcx
+	leaq	array2(%rip), %rsi
+	addq	%rcx, %rsi
+	leaq	temp(%rip), %rdi
 	callq	mymemcmp
-	movb	%al, temp
+	movb	%al, %r8b
+	movb	%r8b, temp(%rip)
 .LBB0_2:
 	addq	$16, %rsp
 	popq	%rbp
@@ -48,13 +52,13 @@ mymemcmp:                               # @mymemcmp
 	.cfi_offset %rbp, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
-	movq	%rdi, -48(%rbp)
-	movq	%rsi, -40(%rbp)
+	movq	%rdi, -16(%rbp)
+	movq	%rsi, -24(%rbp)
 	movq	%rdx, -32(%rbp)
-	movq	-48(%rbp), %rax
-	movq	%rax, -24(%rbp)
-	movq	-40(%rbp), %rax
-	movq	%rax, -16(%rbp)
+	movq	-16(%rbp), %rdx
+	movq	%rdx, -40(%rbp)
+	movq	-24(%rbp), %rdx
+	movq	%rdx, -48(%rbp)
 	cmpq	$0, -32(%rbp)
 	jne	.LBB1_2
 # %bb.1:
@@ -64,37 +68,41 @@ mymemcmp:                               # @mymemcmp
 	jmp	.LBB1_3
 .LBB1_3:                                # =>This Inner Loop Header: Depth=1
 	xorl	%eax, %eax
-	movq	-32(%rbp), %rcx
-	addq	$-1, %rcx
-	movq	%rcx, -32(%rbp)
-	cmpq	$0, %rcx
+	movb	%al, %cl
+	movq	-32(%rbp), %rdx
+	addq	$-1, %rdx
+	movq	%rdx, -32(%rbp)
+	cmpq	$0, %rdx
+	movb	%cl, -49(%rbp)          # 1-byte Spill
 	je	.LBB1_5
 # %bb.4:                                #   in Loop: Header=BB1_3 Depth=1
-	movq	-24(%rbp), %rax
-	movzbl	(%rax), %eax
-	movq	-16(%rbp), %rcx
-	movzbl	(%rcx), %ecx
-	cmpl	%ecx, %eax
-	sete	%al
+	movq	-40(%rbp), %rax
+	movzbl	(%rax), %ecx
+	movq	-48(%rbp), %rax
+	movzbl	(%rax), %edx
+	cmpl	%edx, %ecx
+	sete	%sil
+	movb	%sil, -49(%rbp)         # 1-byte Spill
 .LBB1_5:                                #   in Loop: Header=BB1_3 Depth=1
+	movb	-49(%rbp), %al          # 1-byte Reload
 	testb	$1, %al
 	jne	.LBB1_6
 	jmp	.LBB1_7
 .LBB1_6:                                #   in Loop: Header=BB1_3 Depth=1
-	movq	-24(%rbp), %rax
+	movq	-40(%rbp), %rax
 	addq	$1, %rax
-	movq	%rax, -24(%rbp)
-	movq	-16(%rbp), %rax
+	movq	%rax, -40(%rbp)
+	movq	-48(%rbp), %rax
 	addq	$1, %rax
-	movq	%rax, -16(%rbp)
+	movq	%rax, -48(%rbp)
 	jmp	.LBB1_3
 .LBB1_7:
-	movq	-24(%rbp), %rax
-	movzbl	(%rax), %eax
-	movq	-16(%rbp), %rcx
-	movzbl	(%rcx), %ecx
-	subl	%ecx, %eax
-	movl	%eax, -4(%rbp)
+	movq	-40(%rbp), %rax
+	movzbl	(%rax), %ecx
+	movq	-48(%rbp), %rax
+	movzbl	(%rax), %edx
+	subl	%edx, %ecx
+	movl	%ecx, -4(%rbp)
 .LBB1_8:
 	movl	-4(%rbp), %eax
 	popq	%rbp
@@ -131,3 +139,10 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig
+	.addrsig_sym victim_function_v11
+	.addrsig_sym mymemcmp
+	.addrsig_sym array1_size
+	.addrsig_sym array1
+	.addrsig_sym temp
+	.addrsig_sym array2

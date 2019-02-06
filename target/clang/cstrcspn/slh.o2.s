@@ -13,7 +13,7 @@ cstrcspn:                               # @cstrcspn
 	orb	%r10b, %r9b
 	testb	%r9b, %r9b
 	je	.LBB0_1
-# %bb.2:                                # %.preheader
+# %bb.2:
 	cmoveq	%r8, %r10
 	movq	%rdi, %rax
 	jmp	.LBB0_3
@@ -68,3 +68,4 @@ cstrcspn:                               # @cstrcspn
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

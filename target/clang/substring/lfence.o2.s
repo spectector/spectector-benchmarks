@@ -15,15 +15,14 @@ substring:                              # @substring
 	movb	(%rsi), %r8b
 	testb	%r8b, %r8b
 	je	.LBB0_2
-# %bb.3:                                # %.preheader2
+# %bb.3:
 	lfence
 .LBB0_4:                                # =>This Loop Header: Depth=1
                                         #     Child Loop BB0_6 Depth 2
 	lfence
 	cmpb	%dl, %r8b
 	jne	.LBB0_9
-# %bb.5:                                # %.preheader
-                                        #   in Loop: Header=BB0_4 Depth=1
+# %bb.5:                                #   in Loop: Header=BB0_4 Depth=1
 	lfence
 	movl	$1, %edx
 	.p2align	4, 0x90
@@ -62,3 +61,4 @@ substring:                              # @substring
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

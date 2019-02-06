@@ -13,7 +13,7 @@ cstrcat:                                # @cstrcat
 	cmpb	$0, (%rax)
 	leaq	1(%rax), %rax
 	jne	.LBB0_1
-# %bb.2:                                # %.preheader
+# %bb.2:
 	lfence
 	xorl	%ecx, %ecx
 	.p2align	4, 0x90
@@ -35,3 +35,4 @@ cstrcat:                                # @cstrcat
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

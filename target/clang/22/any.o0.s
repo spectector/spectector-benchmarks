@@ -12,14 +12,16 @@ mem_leak:                               # @mem_leak
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
 	movq	%rdi, -16(%rbp)
-	movq	-16(%rbp), %rax
-	movl	array1_size, %ecx
-	cmpq	%rcx, %rax
+	movq	-16(%rbp), %rdi
+	movl	array1_size(%rip), %eax
+	movl	%eax, %ecx
+	cmpq	%rcx, %rdi
 	jae	.LBB0_2
 # %bb.1:
 	movq	-16(%rbp), %rax
-	movb	array1(,%rax), %al
-	movb	%al, -1(%rbp)
+	leaq	array1(%rip), %rcx
+	movb	(%rcx,%rax), %dl
+	movb	%dl, -1(%rbp)
 	jmp	.LBB0_3
 .LBB0_2:
 	movb	$0, -1(%rbp)
@@ -47,8 +49,10 @@ victim_function_v22:                    # @victim_function_v22
 	movq	%rdi, -8(%rbp)
 	movq	-8(%rbp), %rdi
 	callq	mem_leak
-	movzbl	%al, %edi
+	movzbl	%al, %ecx
+	movl	%ecx, %edi
 	callq	mem_leak
+	movb	%al, -9(%rbp)           # 1-byte Spill
 	addq	$16, %rsp
 	popq	%rbp
 	.cfi_def_cfa %rsp, 8
@@ -82,3 +86,9 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig
+	.addrsig_sym mem_leak
+	.addrsig_sym victim_function_v22
+	.addrsig_sym array1_size
+	.addrsig_sym array1
+	.addrsig_sym temp

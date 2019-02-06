@@ -7,31 +7,32 @@ victim_function_v21:                    # @victim_function_v21
 	.cfi_startproc
 # %bb.0:
 	movq	%rsp, %rax
-	movq	$-1, %r8
+	movq	$-1, %rsi
 	sarq	$63, %rax
 	movl	array1_size(%rip), %edx
 	cmpq	%rdi, %rdx
 	jbe	.LBB0_1
 # %bb.2:
-	cmovbeq	%r8, %rax
-	movzbl	array1(%rdi), %esi
-	orq	%rax, %rsi
+	cmovbeq	%rsi, %rax
+	leaq	array1(%rip), %r8
+	movzbl	(%rdi,%r8), %edi
+	orq	%rax, %rdi
 	movb	temp(%rip), %cl
-	andb	%sil, %cl
+	andb	%dil, %cl
 	movb	%cl, temp(%rip)
-	cmpq	%rdx, %rsi
+	cmpq	%rdx, %rdi
 	jae	.LBB0_3
 # %bb.5:
-	cmovaeq	%r8, %rax
-	andb	array1(%rsi), %cl
+	cmovaeq	%rsi, %rax
+	andb	(%rdi,%r8), %cl
 	orb	%al, %cl
 	movb	%cl, temp(%rip)
 	jmp	.LBB0_4
 .LBB0_1:
-	cmovaq	%r8, %rax
+	cmovaq	%rsi, %rax
 	jmp	.LBB0_4
 .LBB0_3:
-	cmovbq	%r8, %rax
+	cmovbq	%rsi, %rax
 .LBB0_4:
 	shlq	$47, %rax
 	orq	%rax, %rsp
@@ -65,3 +66,4 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

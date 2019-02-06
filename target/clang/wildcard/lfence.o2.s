@@ -13,7 +13,7 @@ wildcardcmp:                            # @wildcardcmp
 	lfence
 	testq	%rsi, %rsi
 	je	.LBB0_13
-# %bb.2:                                # %.preheader
+# %bb.2:
 	lfence
 	xorl	%r8d, %r8d
 	xorl	%edx, %edx
@@ -93,3 +93,4 @@ wildcardcmp:                            # @wildcardcmp
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

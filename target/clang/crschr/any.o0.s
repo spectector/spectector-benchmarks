@@ -15,18 +15,23 @@ cstrchr:                                # @cstrchr
 	movl	%esi, -12(%rbp)
 .LBB0_1:                                # =>This Inner Loop Header: Depth=1
 	xorl	%eax, %eax
-	movq	-8(%rbp), %rcx
-	movsbl	(%rcx), %ecx
-	cmpl	$0, %ecx
+	movb	%al, %cl
+	movq	-8(%rbp), %rdx
+	movsbl	(%rdx), %eax
+	cmpl	$0, %eax
+	movb	%cl, -13(%rbp)          # 1-byte Spill
 	je	.LBB0_3
 # %bb.2:                                #   in Loop: Header=BB0_1 Depth=1
 	movq	-8(%rbp), %rax
-	movsbl	(%rax), %eax
-	movl	-12(%rbp), %ecx
-	movsbl	%cl, %ecx
-	cmpl	%ecx, %eax
-	setne	%al
+	movsbl	(%rax), %ecx
+	movl	-12(%rbp), %edx
+	movb	%dl, %sil
+	movsbl	%sil, %edx
+	cmpl	%edx, %ecx
+	setne	%sil
+	movb	%sil, -13(%rbp)         # 1-byte Spill
 .LBB0_3:                                #   in Loop: Header=BB0_1 Depth=1
+	movb	-13(%rbp), %al          # 1-byte Reload
 	testb	$1, %al
 	jne	.LBB0_4
 	jmp	.LBB0_5
@@ -37,16 +42,20 @@ cstrchr:                                # @cstrchr
 	jmp	.LBB0_1
 .LBB0_5:
 	movq	-8(%rbp), %rax
-	movsbl	(%rax), %eax
-	cmpl	-12(%rbp), %eax
+	movsbl	(%rax), %ecx
+	cmpl	-12(%rbp), %ecx
 	jne	.LBB0_7
 # %bb.6:
 	movq	-8(%rbp), %rax
+	movq	%rax, -24(%rbp)         # 8-byte Spill
 	jmp	.LBB0_8
 .LBB0_7:
 	xorl	%eax, %eax
+	movl	%eax, %ecx
+	movq	%rcx, -24(%rbp)         # 8-byte Spill
 	jmp	.LBB0_8
 .LBB0_8:
+	movq	-24(%rbp), %rax         # 8-byte Reload
 	popq	%rbp
 	.cfi_def_cfa %rsp, 8
 	retq
@@ -57,3 +66,5 @@ cstrchr:                                # @cstrchr
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig
+	.addrsig_sym cstrchr

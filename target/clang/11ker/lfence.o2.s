@@ -11,9 +11,11 @@ victim_function_v11:                    # @victim_function_v11
 	jbe	.LBB0_2
 # %bb.1:
 	lfence
-	movzbl	array1(%rdi), %eax
+	leaq	array1(%rip), %rax
+	movzbl	(%rdi,%rax), %eax
 	shlq	$9, %rax
-	movb	array2(%rax), %al
+	leaq	array2(%rip), %rcx
+	movb	(%rax,%rcx), %al
 	subb	%al, temp(%rip)
 .LBB0_2:
 	lfence
@@ -30,7 +32,7 @@ mymemcmp:                               # @mymemcmp
 # %bb.0:
 	testq	%rdx, %rdx
 	je	.LBB1_4
-# %bb.1:                                # %.preheader
+# %bb.1:
 	lfence
 	xorl	%r8d, %r8d
 	.p2align	4, 0x90
@@ -82,3 +84,4 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

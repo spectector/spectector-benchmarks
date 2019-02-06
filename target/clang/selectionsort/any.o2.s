@@ -50,8 +50,7 @@ SelectionSort:                          # @SelectionSort
 	leal	(%r12,%rax), %ebx
 	andq	$3, %rbx
 	je	.LBB0_5
-# %bb.6:                                # %.preheader1
-                                        #   in Loop: Header=BB0_2 Depth=1
+# %bb.6:                                #   in Loop: Header=BB0_2 Depth=1
 	negq	%rbx
 	movq	%r11, %rdx
 	movl	%r15d, %ebp
@@ -148,3 +147,4 @@ SelectionSort:                          # @SelectionSort
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

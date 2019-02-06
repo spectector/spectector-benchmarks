@@ -9,15 +9,18 @@ victim_function_v18:                    # @victim_function_v18
 	movq	%rsp, %rax
 	movq	$-1, %rcx
 	sarq	$63, %rax
-	movzbl	array3(%rdi), %edx
+	leaq	array3(%rip), %rdx
+	movzbl	(%rdi,%rdx), %edx
 	orl	%eax, %edx
 	cmpl	%edx, array1_size(%rip)
 	jbe	.LBB0_1
 # %bb.2:
 	cmovbeq	%rcx, %rax
-	movzbl	array1(%rdx), %ecx
+	leaq	array1(%rip), %rcx
+	movzbl	(%rdx,%rcx), %ecx
 	orq	%rax, %rcx
-	movb	array2(%rcx), %cl
+	leaq	array2(%rip), %rdx
+	movb	(%rcx,%rdx), %cl
 	orb	%al, %cl
 	andb	%cl, temp(%rip)
 	jmp	.LBB0_3
@@ -60,3 +63,4 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

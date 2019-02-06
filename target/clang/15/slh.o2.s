@@ -16,10 +16,12 @@ victim_function_v15:                    # @victim_function_v15
 	jae	.LBB0_1
 # %bb.2:
 	cmovaeq	%rcx, %rax
-	movzbl	array1(%rdx), %ecx
+	leaq	array1(%rip), %rcx
+	movzbl	(%rdx,%rcx), %ecx
 	shlq	$9, %rcx
 	orq	%rax, %rcx
-	movb	array2(%rcx), %cl
+	leaq	array2(%rip), %rdx
+	movb	(%rcx,%rdx), %cl
 	orb	%al, %cl
 	andb	%cl, temp(%rip)
 	jmp	.LBB0_3
@@ -60,3 +62,4 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

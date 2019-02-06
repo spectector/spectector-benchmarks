@@ -15,7 +15,7 @@ cbzero:                                 # @cbzero
 	lfence
 	xorl	%esi, %esi
 	movq	%rax, %rdx
-	callq	memset
+	callq	memset@PLT
 	addq	$8, %rsp
 	.cfi_def_cfa_offset 8
 .LBB0_2:
@@ -28,3 +28,4 @@ cbzero:                                 # @cbzero
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

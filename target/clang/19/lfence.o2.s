@@ -11,9 +11,11 @@ victim_function_v19:                    # @victim_function_v19
 	jbe	.LBB0_2
 # %bb.1:
 	lfence
-	movzbl	array1(%rdi), %eax
+	leaq	array1(%rip), %rax
+	movzbl	(%rdi,%rax), %eax
 	shlq	$9, %rax
-	movb	array2(%rax), %al
+	leaq	array2(%rip), %rcx
+	movb	(%rax,%rcx), %al
 	andb	%al, temp(%rip)
 .LBB0_2:
 	lfence
@@ -28,24 +30,25 @@ victim_function_v19:                    # @victim_function_v19
 main:                                   # @main
 	.cfi_startproc
 # %bb.0:
-	movl	array1_size(%rip), %ecx
-	testl	%ecx, %ecx
+	movl	array1_size(%rip), %eax
+	testl	%eax, %eax
 	je	.LBB1_3
 # %bb.1:
 	lfence
-	movzbl	array1(%rip), %edx
-	shlq	$9, %rdx
-	movb	temp(%rip), %al
-	andb	array2(%rdx), %al
-	movb	%al, temp(%rip)
-	cmpl	$43, %ecx
+	movzbl	array1(%rip), %esi
+	shlq	$9, %rsi
+	leaq	array2(%rip), %rcx
+	movb	temp(%rip), %dl
+	andb	(%rsi,%rcx), %dl
+	movb	%dl, temp(%rip)
+	cmpl	$43, %eax
 	jb	.LBB1_3
 # %bb.2:
 	lfence
-	movzbl	array1+42(%rip), %ecx
-	shlq	$9, %rcx
-	andb	array2(%rcx), %al
-	movb	%al, temp(%rip)
+	movzbl	array1+42(%rip), %eax
+	shlq	$9, %rax
+	andb	(%rax,%rcx), %dl
+	movb	%dl, temp(%rip)
 .LBB1_3:
 	lfence
 	xorl	%eax, %eax
@@ -81,3 +84,4 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

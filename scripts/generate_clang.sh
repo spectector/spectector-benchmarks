@@ -10,12 +10,8 @@ usage () {
 
 while getopts ":d:" option; do # parsing of the arguments
     case "${option}" in
-	d)
-	    suite=$OPTARG
-	    ;;
-	* )
-	    usage
-	    ;;
+	d) suite=$OPTARG ;;
+	* ) usage ;;
     esac
 done
 
@@ -23,8 +19,8 @@ printf "clang generating: $suite \n"
 
 sources=../sources/$suite
 
-lfence="-x86-speculative-load-hardening -x86-speculative-load-hardening-lfence"
-slh="-x86-speculative-load-hardening"
+lfence="-mllvm -x86-speculative-load-hardening -mllvm -x86-speculative-load-hardening-lfence"
+slh="-mllvm -x86-speculative-load-hardening"
 any=""
 
 for code in $sources/*.c; do
@@ -34,21 +30,14 @@ for code in $sources/*.c; do
     rm -rf $folder
     mkdir -p $folder
 
-    if [ "$num" = "03" ]; then
-	clang -fdeclspec -S -emit-llvm $code -o $folder/o0.ll
-	clang -O2 -fdeclspec -S -emit-llvm $code -o $folder/o2.ll
-    else
-	clang -S -emit-llvm $code -o $folder/o0.ll
-	clang -O2 -S -emit-llvm $code -o $folder/o2.ll
-    fi
-
-    for bcode in $folder/*; do
-	bfile=$(basename $bcode)
-	ext="${bfile%.*}"
-	for mit in lfence any slh; do
-	    flag_mit=${!mit}
-	    llc $flag_mit $bcode -o $folder/$mit.$ext.s
-	done
-	rm $bcode
+    for mit in any lfence slh; do
+	flag_mit=${!mit}
+	if [ "$num" = "03" ]; then
+	    clang -c -fdeclspec -S $flag_mit $code -o $folder/$mit.o0.s
+	    clang -c -fdeclspec -O2 -S $flag_mit $code -o $folder/$mit.o2.s
+	else
+	    clang -c -S $flag_mit $code -o $folder/$mit.o0.s
+	    clang -c -O2 -S $flag_mit $code -o $folder/$mit.o2.s
+	fi
     done
 done

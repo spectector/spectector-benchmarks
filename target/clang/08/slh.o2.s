@@ -7,17 +7,19 @@ victim_function_v08:                    # @victim_function_v08
 	.cfi_startproc
 # %bb.0:
 	movq	%rsp, %rax
-	movq	$-1, %rcx
 	sarq	$63, %rax
 	movl	array1_size(%rip), %ecx
 	xorl	%edx, %edx
 	cmpq	%rdi, %rcx
 	leaq	1(%rdi), %rcx
 	cmovaq	%rcx, %rdx
-	movzbl	array1(%rdx), %ecx
+	movq	$-1, %rcx
+	leaq	array1(%rip), %rcx
+	movzbl	(%rdx,%rcx), %ecx
 	shlq	$9, %rcx
 	orq	%rax, %rcx
-	movb	array2(%rcx), %cl
+	leaq	array2(%rip), %rdx
+	movb	(%rcx,%rdx), %cl
 	orb	%al, %cl
 	andb	%cl, temp(%rip)
 	shlq	$47, %rax
@@ -54,3 +56,4 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

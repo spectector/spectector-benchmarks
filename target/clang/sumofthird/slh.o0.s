@@ -14,41 +14,55 @@ sumOfThirdBytes:                        # @sumOfThirdBytes
 	movq	$-1, %rax
 	movq	%rsp, %rcx
 	sarq	$63, %rcx
-	movq	%rdi, -32(%rbp)
-	movl	%esi, -20(%rbp)
-	movl	$0, -8(%rbp)
-	movl	$0, -4(%rbp)
+	movq	%rdi, -8(%rbp)
+	movl	%esi, -12(%rbp)
+	movl	$0, -20(%rbp)
+	movl	$0, -16(%rbp)
+	movq	%rax, -40(%rbp)         # 8-byte Spill
+	movq	%rcx, -48(%rbp)         # 8-byte Spill
 .LBB0_1:                                # =>This Inner Loop Header: Depth=1
-	movl	-4(%rbp), %edx
-	cmpl	-20(%rbp), %edx
+	movq	-48(%rbp), %rax         # 8-byte Reload
+	movl	-16(%rbp), %ecx
+	cmpl	-12(%rbp), %ecx
+	movq	%rax, -56(%rbp)         # 8-byte Spill
 	jge	.LBB0_4
 # %bb.2:                                #   in Loop: Header=BB0_1 Depth=1
-	cmovgeq	%rax, %rcx
-	movq	-32(%rbp), %rdx
-	movslq	-4(%rbp), %rsi
+	movq	-56(%rbp), %rax         # 8-byte Reload
+	movq	-40(%rbp), %rcx         # 8-byte Reload
+	cmovgeq	%rcx, %rax
+	movq	-8(%rbp), %rdx
+	movslq	-16(%rbp), %rsi
 	shlq	$2, %rsi
 	addq	%rsi, %rdx
-	movq	%rdx, -16(%rbp)
-	movq	-16(%rbp), %rdx
+	movq	%rdx, -32(%rbp)
+	movq	-32(%rbp), %rdx
 	addq	$2, %rdx
-	movq	%rdx, -16(%rbp)
-	movl	-8(%rbp), %edx
-	movq	-16(%rbp), %rsi
-	movsbl	(%rsi), %esi
-	movl	%ecx, %edi
-	orl	%esi, %edi
-	addl	%edi, %edx
-	movl	%edx, -8(%rbp)
+	movq	%rdx, -32(%rbp)
+	movl	-20(%rbp), %edi
+	movq	-32(%rbp), %rdx
+	movsbl	(%rdx), %r8d
+	movl	%eax, %r9d
+	orl	%r8d, %r9d
+	addl	%r9d, %edi
+	movl	%edi, -20(%rbp)
+	movq	%rax, -64(%rbp)         # 8-byte Spill
 # %bb.3:                                #   in Loop: Header=BB0_1 Depth=1
-	movl	-4(%rbp), %edx
-	addl	$1, %edx
-	movl	%edx, -4(%rbp)
+	movl	-16(%rbp), %eax
+	addl	$1, %eax
+	movl	%eax, -16(%rbp)
+	movq	-64(%rbp), %rcx         # 8-byte Reload
+	movq	%rcx, -48(%rbp)         # 8-byte Spill
 	jmp	.LBB0_1
 .LBB0_4:
-	cmovlq	%rax, %rcx
-	movl	-8(%rbp), %eax
-	shlq	$47, %rcx
-	orq	%rcx, %rsp
+	movq	-56(%rbp), %rax         # 8-byte Reload
+	movq	-40(%rbp), %rcx         # 8-byte Reload
+	cmovlq	%rcx, %rax
+	movl	-20(%rbp), %edx
+	movq	%rax, -72(%rbp)         # 8-byte Spill
+	movl	%edx, %eax
+	movq	-72(%rbp), %rsi         # 8-byte Reload
+	shlq	$47, %rsi
+	orq	%rsi, %rsp
 	popq	%rbp
 	.cfi_def_cfa %rsp, 8
 	retq
@@ -59,3 +73,5 @@ sumOfThirdBytes:                        # @sumOfThirdBytes
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig
+	.addrsig_sym sumOfThirdBytes

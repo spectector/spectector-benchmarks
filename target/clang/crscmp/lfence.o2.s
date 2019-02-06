@@ -9,7 +9,7 @@ cstrcmp:                                # @cstrcmp
 	movb	(%rdi), %al
 	testb	%al, %al
 	je	.LBB0_4
-# %bb.1:                                # %.preheader
+# %bb.1:
 	lfence
 	addq	$1, %rdi
 	.p2align	4, 0x90
@@ -42,3 +42,4 @@ cstrcmp:                                # @cstrcmp
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

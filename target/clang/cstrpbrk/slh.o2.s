@@ -21,8 +21,7 @@ cstrpbrk:                               # @cstrpbrk
 	orb	%cl, %r9b
 	testb	%r9b, %r9b
 	je	.LBB0_8
-# %bb.2:                                # %.preheader
-                                        #   in Loop: Header=BB0_1 Depth=1
+# %bb.2:                                #   in Loop: Header=BB0_1 Depth=1
 	cmoveq	%r8, %rcx
 	movq	%rsi, %rdx
 	jmp	.LBB0_3
@@ -62,3 +61,4 @@ cstrpbrk:                               # @cstrpbrk
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

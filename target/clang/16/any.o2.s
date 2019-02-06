@@ -10,11 +10,14 @@ victim_function_v16:                    # @victim_function_v16
 	cmpq	%rdi, %rax
 	jbe	.LBB0_2
 # %bb.1:
-	movzbl	array1(%rdi), %eax
+	leaq	array1(%rip), %rax
+	movzbl	(%rdi,%rax), %eax
 	shlq	$9, %rax
-	movzbl	array2(%rax), %eax
+	leaq	array2(%rip), %rcx
+	movzbl	(%rax,%rcx), %eax
 	shlq	$9, %rax
-	movb	array3(%rax), %al
+	leaq	array3(%rip), %rcx
+	movb	(%rax,%rcx), %al
 	andb	%al, temp(%rip)
 .LBB0_2:
 	retq
@@ -51,3 +54,4 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

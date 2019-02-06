@@ -13,22 +13,26 @@ victim_function_v11:                    # @victim_function_v11
 	.cfi_def_cfa_register %rbp
 	subq	$16, %rsp
 	movq	%rdi, -8(%rbp)
-	movq	-8(%rbp), %rax
-	movl	array1_size, %ecx
-	cmpq	%rcx, %rax
+	movq	-8(%rbp), %rdi
+	movl	array1_size(%rip), %eax
+	movl	%eax, %ecx
+	cmpq	%rcx, %rdi
 	jae	.LBB0_2
 # %bb.1:
 	lfence
-	movq	-8(%rbp), %rax
-	movzbl	array1(,%rax), %eax
+	movl	$1, %eax
+	movl	%eax, %edx
+	movq	-8(%rbp), %rcx
+	leaq	array1(%rip), %rsi
+	movzbl	(%rsi,%rcx), %eax
 	shll	$9, %eax
-	cltq
-	movabsq	$array2, %rsi
-	addq	%rax, %rsi
-	movabsq	$temp, %rdi
-	movl	$1, %edx
+	movslq	%eax, %rcx
+	leaq	array2(%rip), %rsi
+	addq	%rcx, %rsi
+	leaq	temp(%rip), %rdi
 	callq	mymemcmp
-	movb	%al, temp
+	movb	%al, %r8b
+	movb	%r8b, temp(%rip)
 .LBB0_2:
 	lfence
 	addq	$16, %rsp
@@ -50,50 +54,49 @@ mymemcmp:                               # @mymemcmp
 	.cfi_offset %rbp, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
-	movq	%rdi, -48(%rbp)
-	movq	%rsi, -40(%rbp)
+	movq	%rdi, -8(%rbp)
+	movq	%rsi, -16(%rbp)
+	movq	%rdx, -24(%rbp)
+	movl	$0, -44(%rbp)
+	movq	-8(%rbp), %rdx
 	movq	%rdx, -32(%rbp)
-	movl	$0, -4(%rbp)
-	movq	-48(%rbp), %rax
-	movq	%rax, -24(%rbp)
-	movq	-40(%rbp), %rax
-	movq	%rax, -16(%rbp)
+	movq	-16(%rbp), %rdx
+	movq	%rdx, -40(%rbp)
 .LBB1_1:                                # =>This Inner Loop Header: Depth=1
 	xorl	%eax, %eax
-	cmpq	-32(%rbp), %rax
+	movl	%eax, %ecx
+	cmpq	-24(%rbp), %rcx
 	jae	.LBB1_6
 # %bb.2:                                #   in Loop: Header=BB1_1 Depth=1
 	lfence
-	movq	-24(%rbp), %rax
-	movzbl	(%rax), %eax
-	movq	-16(%rbp), %rcx
-	movzbl	(%rcx), %ecx
-	subl	%ecx, %eax
-	movl	%eax, -4(%rbp)
-	cmpl	$0, %eax
+	movq	-32(%rbp), %rax
+	movzbl	(%rax), %ecx
+	movq	-40(%rbp), %rax
+	movzbl	(%rax), %edx
+	subl	%edx, %ecx
+	movl	%ecx, -44(%rbp)
+	cmpl	$0, %ecx
 	je	.LBB1_4
 # %bb.3:
 	lfence
-	jmp	.LBB1_7
+	jmp	.LBB1_6
 .LBB1_4:                                #   in Loop: Header=BB1_1 Depth=1
 	lfence
 	jmp	.LBB1_5
 .LBB1_5:                                #   in Loop: Header=BB1_1 Depth=1
-	movq	-24(%rbp), %rax
-	addq	$1, %rax
-	movq	%rax, -24(%rbp)
-	movq	-16(%rbp), %rax
-	addq	$1, %rax
-	movq	%rax, -16(%rbp)
 	movq	-32(%rbp), %rax
-	addq	$-1, %rax
+	addq	$1, %rax
 	movq	%rax, -32(%rbp)
+	movq	-40(%rbp), %rax
+	addq	$1, %rax
+	movq	%rax, -40(%rbp)
+	movq	-24(%rbp), %rax
+	addq	$-1, %rax
+	movq	%rax, -24(%rbp)
 	jmp	.LBB1_1
-.LBB1_6:                                # %.loopexit
+.LBB1_6:
 	lfence
-	jmp	.LBB1_7
-.LBB1_7:
-	movl	-4(%rbp), %eax
+	movl	-44(%rbp), %eax
 	popq	%rbp
 	.cfi_def_cfa %rsp, 8
 	retq
@@ -128,3 +131,10 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig
+	.addrsig_sym victim_function_v11
+	.addrsig_sym mymemcmp
+	.addrsig_sym array1_size
+	.addrsig_sym array1
+	.addrsig_sym temp
+	.addrsig_sym array2

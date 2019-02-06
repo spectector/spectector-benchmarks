@@ -24,7 +24,7 @@ cstrncat:                               # @cstrncat
 	cmovneq	%r8, %r10
 	testl	%edx, %edx
 	je	.LBB0_12
-# %bb.4:                                # %.preheader
+# %bb.4:
 	cmoveq	%r8, %r10
 	movl	%edx, %r9d
 	xorl	%edx, %edx
@@ -69,3 +69,4 @@ cstrncat:                               # @cstrncat
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

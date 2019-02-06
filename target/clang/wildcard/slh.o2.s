@@ -16,7 +16,7 @@ wildcardcmp:                            # @wildcardcmp
 	cmoveq	%r9, %r11
 	testq	%rsi, %rsi
 	je	.LBB0_18
-# %bb.2:                                # %.preheader
+# %bb.2:
 	cmoveq	%r9, %r11
 	xorl	%r8d, %r8d
 	xorl	%r10d, %r10d
@@ -108,3 +108,4 @@ wildcardcmp:                            # @wildcardcmp
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

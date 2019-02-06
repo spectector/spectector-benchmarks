@@ -53,8 +53,7 @@ SelectionSort:                          # @SelectionSort
 	leal	(%r12,%rax), %ebx
 	andq	$3, %rbx
 	je	.LBB0_5
-# %bb.6:                                # %.preheader1
-                                        #   in Loop: Header=BB0_2 Depth=1
+# %bb.6:                                #   in Loop: Header=BB0_2 Depth=1
 	lfence
 	negq	%rbx
 	movq	%r11, %rdx
@@ -90,8 +89,7 @@ SelectionSort:                          # @SelectionSort
 	movl	%eax, %ebx
 	cmpq	$3, %r14
 	jb	.LBB0_24
-# %bb.11:                               # %.preheader
-                                        #   in Loop: Header=BB0_2 Depth=1
+# %bb.11:                               #   in Loop: Header=BB0_2 Depth=1
 	lfence
 	.p2align	4, 0x90
 .LBB0_12:                               #   Parent Loop BB0_2 Depth=1
@@ -179,3 +177,4 @@ SelectionSort:                          # @SelectionSort
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

@@ -11,37 +11,42 @@ victim_function_v05:                    # @victim_function_v05
 	.cfi_offset %rbp, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
-	movq	%rdi, -16(%rbp)
-	cmpq	$0, -16(%rbp)
+	movq	%rdi, -8(%rbp)
+	cmpq	$0, -8(%rbp)
 	jl	.LBB0_7
 # %bb.1:
 	lfence
-	movq	-16(%rbp), %rax
-	movl	array1_size, %ecx
-	cmpq	%rcx, %rax
+	movq	-8(%rbp), %rax
+	movl	array1_size(%rip), %ecx
+	movl	%ecx, %edx
+	cmpq	%rdx, %rax
 	jge	.LBB0_7
 # %bb.2:
 	lfence
-	movq	-16(%rbp), %rax
+	movq	-8(%rbp), %rax
 	subq	$1, %rax
-	movl	%eax, -4(%rbp)
+	movl	%eax, %ecx
+	movl	%ecx, -12(%rbp)
 .LBB0_3:                                # =>This Inner Loop Header: Depth=1
-	cmpl	$0, -4(%rbp)
+	cmpl	$0, -12(%rbp)
 	jl	.LBB0_6
 # %bb.4:                                #   in Loop: Header=BB0_3 Depth=1
 	lfence
-	movslq	-4(%rbp), %rax
-	movzbl	array1(,%rax), %eax
-	shll	$9, %eax
-	cltq
-	movzbl	array2(,%rax), %eax
-	movzbl	temp, %ecx
-	andl	%eax, %ecx
-	movb	%cl, temp
+	movslq	-12(%rbp), %rax
+	leaq	array1(%rip), %rcx
+	movzbl	(%rcx,%rax), %edx
+	shll	$9, %edx
+	movslq	%edx, %rax
+	leaq	array2(%rip), %rcx
+	movzbl	(%rcx,%rax), %edx
+	movzbl	temp(%rip), %esi
+	andl	%edx, %esi
+	movb	%sil, %dil
+	movb	%dil, temp(%rip)
 # %bb.5:                                #   in Loop: Header=BB0_3 Depth=1
-	movl	-4(%rbp), %eax
+	movl	-12(%rbp), %eax
 	addl	$-1, %eax
-	movl	%eax, -4(%rbp)
+	movl	%eax, -12(%rbp)
 	jmp	.LBB0_3
 .LBB0_6:
 	lfence
@@ -82,3 +87,9 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig
+	.addrsig_sym victim_function_v05
+	.addrsig_sym array1_size
+	.addrsig_sym array1
+	.addrsig_sym temp
+	.addrsig_sym array2

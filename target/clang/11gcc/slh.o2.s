@@ -14,15 +14,17 @@ victim_function_v11:                    # @victim_function_v11
 	jbe	.LBB0_1
 # %bb.2:
 	cmovbeq	%rsi, %rax
-	movzbl	array1(%rdi), %edx
+	leaq	array1(%rip), %rdx
+	movzbl	(%rdi,%rdx), %edx
 	shlq	$9, %rdx
 	orq	%rax, %rdx
-	movb	temp(%rip), %dil
-	movb	array2(%rdx), %cl
+	leaq	array2(%rip), %rdi
+	movb	temp(%rip), %r8b
+	movb	(%rdx,%rdi), %cl
 	orb	%al, %cl
-	cmpb	%cl, %dil
+	cmpb	%cl, %r8b
 	setae	%dl
-	cmpb	%cl, %dil
+	cmpb	%cl, %r8b
 	je	.LBB0_3
 # %bb.4:
 	cmoveq	%rsi, %rax
@@ -125,3 +127,4 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

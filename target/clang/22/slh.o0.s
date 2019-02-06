@@ -15,25 +15,39 @@ mem_leak:                               # @mem_leak
 	movq	%rsp, %rcx
 	sarq	$63, %rcx
 	movq	%rdi, -16(%rbp)
-	movq	-16(%rbp), %rdx
-	movl	array1_size, %esi
-	cmpq	%rsi, %rdx
+	movq	-16(%rbp), %rdi
+	movl	array1_size(%rip), %edx
+	movl	%edx, %esi
+	cmpq	%rsi, %rdi
+	movq	%rax, -24(%rbp)         # 8-byte Spill
+	movq	%rcx, -32(%rbp)         # 8-byte Spill
 	jae	.LBB0_2
 # %bb.1:
-	cmovaeq	%rax, %rcx
-	movq	-16(%rbp), %rax
-	movb	array1(,%rax), %al
-	movb	%cl, %dl
-	orb	%al, %dl
-	movb	%dl, -1(%rbp)
+	movq	-32(%rbp), %rax         # 8-byte Reload
+	movq	-24(%rbp), %rcx         # 8-byte Reload
+	cmovaeq	%rcx, %rax
+	movq	-16(%rbp), %rdx
+	leaq	array1(%rip), %rsi
+	movb	(%rsi,%rdx), %dil
+	movb	%al, %r8b
+	orb	%dil, %r8b
+	movb	%r8b, -1(%rbp)
+	movq	%rax, -40(%rbp)         # 8-byte Spill
 	jmp	.LBB0_3
 .LBB0_2:
-	cmovbq	%rax, %rcx
+	movq	-32(%rbp), %rax         # 8-byte Reload
+	movq	-24(%rbp), %rcx         # 8-byte Reload
+	cmovbq	%rcx, %rax
 	movb	$0, -1(%rbp)
+	movq	%rax, -40(%rbp)         # 8-byte Spill
 .LBB0_3:
-	movzbl	-1(%rbp), %eax
-	shlq	$47, %rcx
-	orq	%rcx, %rsp
+	movq	-40(%rbp), %rax         # 8-byte Reload
+	movzbl	-1(%rbp), %ecx
+	movq	%rax, -48(%rbp)         # 8-byte Spill
+	movl	%ecx, %eax
+	movq	-48(%rbp), %rdx         # 8-byte Reload
+	shlq	$47, %rdx
+	orq	%rdx, %rsp
 	popq	%rbp
 	.cfi_def_cfa %rsp, 8
 	retq
@@ -52,18 +66,20 @@ victim_function_v22:                    # @victim_function_v22
 	.cfi_offset %rbp, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
-	subq	$16, %rsp
+	subq	$32, %rsp
 	movq	$-1, %rax
-	movq	%rsp, %rax
-	sarq	$63, %rax
+	movq	%rsp, %rcx
+	sarq	$63, %rcx
 	movq	%rdi, -8(%rbp)
 	movq	-8(%rbp), %rdi
-	shlq	$47, %rax
-	orq	%rax, %rsp
+	shlq	$47, %rcx
+	orq	%rcx, %rsp
+	movq	%rax, -16(%rbp)         # 8-byte Spill
 	callq	mem_leak
 	movq	%rsp, %rcx
 	sarq	$63, %rcx
-	movzbl	%al, %edi
+	movzbl	%al, %edx
+	movl	%edx, %edi
 	shlq	$47, %rcx
 	orq	%rcx, %rsp
 	callq	mem_leak
@@ -71,7 +87,8 @@ victim_function_v22:                    # @victim_function_v22
 	sarq	$63, %rcx
 	shlq	$47, %rcx
 	orq	%rcx, %rsp
-	addq	$16, %rsp
+	movb	%al, -17(%rbp)          # 1-byte Spill
+	addq	$32, %rsp
 	popq	%rbp
 	.cfi_def_cfa %rsp, 8
 	retq
@@ -104,3 +121,9 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig
+	.addrsig_sym mem_leak
+	.addrsig_sym victim_function_v22
+	.addrsig_sym array1_size
+	.addrsig_sym array1
+	.addrsig_sym temp

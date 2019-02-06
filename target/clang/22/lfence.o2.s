@@ -11,7 +11,8 @@ mem_leak:                               # @mem_leak
 	jbe	.LBB0_1
 # %bb.2:
 	lfence
-	movb	array1(%rdi), %al
+	leaq	array1(%rip), %rax
+	movb	(%rdi,%rax), %al
                                         # kill: def $al killed $al killed $eax
 	retq
 .LBB0_1:
@@ -59,3 +60,4 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

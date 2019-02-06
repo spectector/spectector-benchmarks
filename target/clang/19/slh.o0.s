@@ -11,33 +11,46 @@ victim_function_v19:                    # @victim_function_v19
 	.cfi_offset %rbp, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
-	movq	$-1, %rcx
-	movq	%rsp, %rax
-	sarq	$63, %rax
+	movq	$-1, %rax
+	movq	%rsp, %rcx
+	sarq	$63, %rcx
 	movq	%rdi, -8(%rbp)
-	movq	-8(%rbp), %rdx
-	movl	array1_size, %esi
-	cmpq	%rsi, %rdx
-	jae	.LBB0_1
+	movq	-8(%rbp), %rdi
+	movl	array1_size(%rip), %edx
+	movl	%edx, %esi
+	cmpq	%rsi, %rdi
+	movq	%rax, -16(%rbp)         # 8-byte Spill
+	movq	%rcx, -24(%rbp)         # 8-byte Spill
+	jae	.LBB0_3
+	jmp	.LBB0_1
+.LBB0_3:
+	movq	-24(%rbp), %rax         # 8-byte Reload
+	movq	-16(%rbp), %rcx         # 8-byte Reload
+	cmovbq	%rcx, %rax
+	movq	%rax, -32(%rbp)         # 8-byte Spill
 	jmp	.LBB0_2
 .LBB0_1:
-	cmovbq	%rcx, %rax
-	jmp	.LBB0_3
-.LBB0_2:
+	movq	-24(%rbp), %rax         # 8-byte Reload
+	movq	-16(%rbp), %rcx         # 8-byte Reload
 	cmovaeq	%rcx, %rax
-	movq	-8(%rbp), %rcx
-	movzbl	array1(,%rcx), %ecx
-	movl	%eax, %edx
-	orl	%ecx, %edx
-	shll	$9, %edx
-	movslq	%edx, %rcx
-	movzbl	array2(,%rcx), %ecx
-	movl	%eax, %edx
-	orl	%ecx, %edx
-	movzbl	temp, %ecx
-	andl	%edx, %ecx
-	movb	%cl, temp
-.LBB0_3:
+	movq	-8(%rbp), %rdx
+	leaq	array1(%rip), %rsi
+	movzbl	(%rsi,%rdx), %edi
+	movl	%eax, %r8d
+	orl	%edi, %r8d
+	shll	$9, %r8d
+	movslq	%r8d, %rdx
+	leaq	array2(%rip), %rsi
+	movzbl	(%rsi,%rdx), %edi
+	movl	%eax, %r8d
+	orl	%edi, %r8d
+	movzbl	temp(%rip), %edi
+	andl	%r8d, %edi
+	movb	%dil, %r9b
+	movb	%r9b, temp(%rip)
+	movq	%rax, -32(%rbp)         # 8-byte Spill
+.LBB0_2:
+	movq	-32(%rbp), %rax         # 8-byte Reload
 	shlq	$47, %rax
 	orq	%rax, %rsp
 	popq	%rbp
@@ -59,10 +72,12 @@ main:                                   # @main
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
 	subq	$16, %rsp
+	xorl	%eax, %eax
+	movl	%eax, %edi
 	movl	$0, -4(%rbp)
-	xorl	%edi, %edi
 	callq	victim_function_v19
-	movl	$42, %edi
+	movl	$42, %eax
+	movl	%eax, %edi
 	callq	victim_function_v19
 	xorl	%eax, %eax
 	addq	$16, %rsp
@@ -100,3 +115,10 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig
+	.addrsig_sym victim_function_v19
+	.addrsig_sym main
+	.addrsig_sym array1_size
+	.addrsig_sym array1
+	.addrsig_sym temp
+	.addrsig_sym array2

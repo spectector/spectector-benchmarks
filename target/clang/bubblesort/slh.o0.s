@@ -11,88 +11,117 @@ bubbleSort:                             # @bubbleSort
 	.cfi_offset %rbp, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
-	movq	$-1, %r8
-	movq	%rsp, %rax
-	sarq	$63, %rax
-	movq	%rdi, -16(%rbp)
-	movl	%esi, -24(%rbp)
-	movl	-24(%rbp), %edx
-	subl	$1, %edx
-	movl	%edx, -8(%rbp)
+	movq	$-1, %rax
+	movq	%rsp, %rcx
+	sarq	$63, %rcx
+	movq	%rdi, -8(%rbp)
+	movl	%esi, -12(%rbp)
+	movl	-12(%rbp), %esi
+	subl	$1, %esi
+	movl	%esi, -16(%rbp)
+	movq	%rax, -32(%rbp)         # 8-byte Spill
+	movq	%rcx, -40(%rbp)         # 8-byte Spill
 .LBB0_1:                                # =>This Loop Header: Depth=1
                                         #     Child Loop BB0_3 Depth 2
-	cmpl	$0, -8(%rbp)
-	jl	.LBB0_11
+	movq	-40(%rbp), %rax         # 8-byte Reload
+	cmpl	$0, -16(%rbp)
+	movq	%rax, -48(%rbp)         # 8-byte Spill
+	jl	.LBB0_10
 # %bb.2:                                #   in Loop: Header=BB0_1 Depth=1
-	cmovlq	%r8, %rax
-	movl	$1, -4(%rbp)
+	movq	-48(%rbp), %rax         # 8-byte Reload
+	movq	-32(%rbp), %rcx         # 8-byte Reload
+	cmovlq	%rcx, %rax
+	movl	$1, -20(%rbp)
+	movq	%rax, -56(%rbp)         # 8-byte Spill
 .LBB0_3:                                #   Parent Loop BB0_1 Depth=1
                                         # =>  This Inner Loop Header: Depth=2
-	movl	-4(%rbp), %edx
-	cmpl	-8(%rbp), %edx
-	jg	.LBB0_9
+	movq	-56(%rbp), %rax         # 8-byte Reload
+	movl	-20(%rbp), %ecx
+	cmpl	-16(%rbp), %ecx
+	movq	%rax, -64(%rbp)         # 8-byte Spill
+	jg	.LBB0_8
 # %bb.4:                                #   in Loop: Header=BB0_3 Depth=2
-	cmovgq	%r8, %rax
-	movq	-16(%rbp), %rdx
-	movl	-4(%rbp), %esi
+	movq	-64(%rbp), %rax         # 8-byte Reload
+	movq	-32(%rbp), %rcx         # 8-byte Reload
+	cmovgq	%rcx, %rax
+	movq	-8(%rbp), %rdx
+	movl	-20(%rbp), %esi
 	subl	$1, %esi
-	movslq	%esi, %rsi
-	movl	(%rdx,%rsi,4), %edx
-	movl	%eax, %esi
-	orl	%edx, %esi
-	movq	-16(%rbp), %rdx
-	movslq	-4(%rbp), %rdi
-	movq	%rax, %rcx
-	orq	%rdx, %rcx
+	movslq	%esi, %rdi
+	movl	(%rdx,%rdi,4), %esi
+	movl	%eax, %r8d
+	orl	%esi, %r8d
+	movq	-8(%rbp), %rdx
+	movslq	-20(%rbp), %rdi
+	movq	%rax, %r9
+	orq	%rdx, %r9
 	movq	%rax, %rdx
 	orq	%rdi, %rdx
-	cmpl	(%rcx,%rdx,4), %esi
-	jle	.LBB0_5
+	cmpl	(%r9,%rdx,4), %r8d
+	movq	%rax, -72(%rbp)         # 8-byte Spill
+	jle	.LBB0_11
+	jmp	.LBB0_5
+.LBB0_11:                               #   in Loop: Header=BB0_3 Depth=2
+	movq	-72(%rbp), %rax         # 8-byte Reload
+	movq	-32(%rbp), %rcx         # 8-byte Reload
+	cmovgq	%rcx, %rax
+	movq	%rax, -80(%rbp)         # 8-byte Spill
 	jmp	.LBB0_6
 .LBB0_5:                                #   in Loop: Header=BB0_3 Depth=2
-	cmovgq	%r8, %rax
-	jmp	.LBB0_7
-.LBB0_6:                                #   in Loop: Header=BB0_3 Depth=2
-	cmovleq	%r8, %rax
-	movq	-16(%rbp), %rcx
-	movl	-4(%rbp), %edx
-	subl	$1, %edx
-	movslq	%edx, %rdx
-	movl	(%rcx,%rdx,4), %ecx
-	movl	%eax, %edx
-	orl	%ecx, %edx
-	movl	%edx, -20(%rbp)
-	movq	-16(%rbp), %rcx
-	movslq	-4(%rbp), %rdx
-	movl	(%rcx,%rdx,4), %ecx
-	movl	%eax, %edx
-	orl	%ecx, %edx
-	movq	-16(%rbp), %rcx
-	movl	-4(%rbp), %esi
+	movq	-72(%rbp), %rax         # 8-byte Reload
+	movq	-32(%rbp), %rcx         # 8-byte Reload
+	cmovleq	%rcx, %rax
+	movq	-8(%rbp), %rdx
+	movl	-20(%rbp), %esi
 	subl	$1, %esi
-	movslq	%esi, %rsi
-	movl	%edx, (%rcx,%rsi,4)
-	movl	-20(%rbp), %ecx
-	movq	-16(%rbp), %rdx
-	movslq	-4(%rbp), %rsi
-	movl	%ecx, (%rdx,%rsi,4)
+	movslq	%esi, %rdi
+	movl	(%rdx,%rdi,4), %esi
+	movl	%eax, %r8d
+	orl	%esi, %r8d
+	movl	%r8d, -24(%rbp)
+	movq	-8(%rbp), %rdx
+	movslq	-20(%rbp), %rdi
+	movl	(%rdx,%rdi,4), %esi
+	movl	%eax, %r8d
+	orl	%esi, %r8d
+	movq	-8(%rbp), %rdx
+	movl	-20(%rbp), %esi
+	subl	$1, %esi
+	movslq	%esi, %rdi
+	movl	%r8d, (%rdx,%rdi,4)
+	movl	-24(%rbp), %esi
+	movq	-8(%rbp), %rdx
+	movslq	-20(%rbp), %rdi
+	movl	%esi, (%rdx,%rdi,4)
+	movq	%rax, -80(%rbp)         # 8-byte Spill
+.LBB0_6:                                #   in Loop: Header=BB0_3 Depth=2
+	movq	-80(%rbp), %rax         # 8-byte Reload
+	movq	%rax, -88(%rbp)         # 8-byte Spill
+	jmp	.LBB0_7
 .LBB0_7:                                #   in Loop: Header=BB0_3 Depth=2
-	jmp	.LBB0_8
-.LBB0_8:                                #   in Loop: Header=BB0_3 Depth=2
-	movl	-4(%rbp), %ecx
-	addl	$1, %ecx
-	movl	%ecx, -4(%rbp)
+	movl	-20(%rbp), %eax
+	addl	$1, %eax
+	movl	%eax, -20(%rbp)
+	movq	-88(%rbp), %rcx         # 8-byte Reload
+	movq	%rcx, -56(%rbp)         # 8-byte Spill
 	jmp	.LBB0_3
+.LBB0_8:                                #   in Loop: Header=BB0_1 Depth=1
+	movq	-64(%rbp), %rax         # 8-byte Reload
+	movq	-32(%rbp), %rcx         # 8-byte Reload
+	cmovleq	%rcx, %rax
+	movq	%rax, -96(%rbp)         # 8-byte Spill
+	jmp	.LBB0_9
 .LBB0_9:                                #   in Loop: Header=BB0_1 Depth=1
-	cmovleq	%r8, %rax
-	jmp	.LBB0_10
-.LBB0_10:                               #   in Loop: Header=BB0_1 Depth=1
-	movl	-8(%rbp), %ecx
-	addl	$-1, %ecx
-	movl	%ecx, -8(%rbp)
+	movl	-16(%rbp), %eax
+	addl	$-1, %eax
+	movl	%eax, -16(%rbp)
+	movq	-96(%rbp), %rcx         # 8-byte Reload
+	movq	%rcx, -40(%rbp)         # 8-byte Spill
 	jmp	.LBB0_1
-.LBB0_11:
-	cmovgeq	%r8, %rax
+.LBB0_10:
+	movq	-48(%rbp), %rax         # 8-byte Reload
+	movq	-32(%rbp), %rcx         # 8-byte Reload
+	cmovgeq	%rcx, %rax
 	shlq	$47, %rax
 	orq	%rax, %rsp
 	popq	%rbp
@@ -105,3 +134,5 @@ bubbleSort:                             # @bubbleSort
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig
+	.addrsig_sym bubbleSort

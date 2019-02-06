@@ -18,8 +18,7 @@ substring:                              # @substring
                                         #     Child Loop BB0_5 Depth 2
 	cmpb	%dl, %r8b
 	jne	.LBB0_8
-# %bb.4:                                # %.preheader
-                                        #   in Loop: Header=BB0_3 Depth=1
+# %bb.4:                                #   in Loop: Header=BB0_3 Depth=1
 	movl	$1, %edx
 	.p2align	4, 0x90
 .LBB0_5:                                #   Parent Loop BB0_3 Depth=1
@@ -51,3 +50,4 @@ substring:                              # @substring
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

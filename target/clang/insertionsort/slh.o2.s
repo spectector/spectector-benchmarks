@@ -41,8 +41,7 @@ insertionSort:                          # @insertionSort
 	leaq	1(%rsi), %rcx
 	cmpq	$1, %rcx
 	jg	.LBB0_6
-.LBB0_7:                                # %.loopexit
-                                        #   in Loop: Header=BB0_3 Depth=1
+.LBB0_7:                                #   in Loop: Header=BB0_3 Depth=1
 	cmovgq	%r10, %rax
 	movslq	%esi, %rcx
 	movl	%edx, (%rdi,%rcx,4)
@@ -65,3 +64,4 @@ insertionSort:                          # @insertionSort
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

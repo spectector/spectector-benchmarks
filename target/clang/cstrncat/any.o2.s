@@ -15,7 +15,7 @@ cstrncat:                               # @cstrncat
 # %bb.2:
 	testl	%edx, %edx
 	je	.LBB0_8
-# %bb.3:                                # %.preheader
+# %bb.3:
 	movl	%edx, %r8d
 	xorl	%ecx, %ecx
 	.p2align	4, 0x90
@@ -43,3 +43,4 @@ cstrncat:                               # @cstrncat
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

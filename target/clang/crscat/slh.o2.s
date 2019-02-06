@@ -20,7 +20,7 @@ cstrcat:                                # @cstrcat
 	addq	$1, %rdx
 	cmpb	$0, (%rax)
 	jne	.LBB0_2
-# %bb.3:                                # %.preheader
+# %bb.3:
 	cmovneq	%r8, %r9
 	xorl	%eax, %eax
 	jmp	.LBB0_4
@@ -47,3 +47,4 @@ cstrcat:                                # @cstrcat
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

@@ -68,20 +68,20 @@ sumOfThirdBytes:                        # @sumOfThirdBytes
 	paddd	%xmm0, %xmm1
 	movd	%xmm1, %eax
 .LBB0_8:
+	leaq	(%rdi,%rsi,4), %rdi
+	addq	$2, %rdi
 	subq	%rsi, %r10
-	leaq	(%rdi,%rsi,4), %rsi
-	addq	$2, %rsi
-	xorl	%edi, %edi
+	xorl	%esi, %esi
 	jmp	.LBB0_9
 	.p2align	4, 0x90
 .LBB0_12:                               #   in Loop: Header=BB0_9 Depth=1
 	cmoveq	%r8, %r11
 .LBB0_9:                                # =>This Inner Loop Header: Depth=1
-	movsbl	(%rsi,%rdi,4), %ecx
+	movsbl	(%rdi,%rsi,4), %ecx
 	addl	%ecx, %eax
 	orl	%r11d, %eax
-	addq	$1, %rdi
-	cmpq	%rdi, %r10
+	addq	$1, %rsi
+	cmpq	%rsi, %r10
 	jne	.LBB0_12
 # %bb.10:
 	cmovneq	%r8, %r11
@@ -96,3 +96,4 @@ sumOfThirdBytes:                        # @sumOfThirdBytes
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

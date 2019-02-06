@@ -11,7 +11,8 @@ victim_function_v10:                    # @victim_function_v10
 	jbe	.LBB0_3
 # %bb.1:
 	lfence
-	cmpb	%sil, array1(%rdi)
+	leaq	array1(%rip), %rax
+	cmpb	%sil, (%rdi,%rax)
 	jne	.LBB0_3
 # %bb.2:
 	lfence
@@ -51,3 +52,4 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

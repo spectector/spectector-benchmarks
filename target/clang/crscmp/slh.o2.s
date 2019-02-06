@@ -13,7 +13,7 @@ cstrcmp:                                # @cstrcmp
 	orb	%dl, %al
 	testb	%al, %al
 	je	.LBB0_6
-# %bb.1:                                # %.preheader
+# %bb.1:
 	cmoveq	%r8, %rdx
 	addq	$1, %rdi
 	jmp	.LBB0_2
@@ -56,3 +56,4 @@ cstrcmp:                                # @cstrcmp
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

@@ -11,9 +11,11 @@ victim_function_v20:                    # @victim_function_v20
 	jbe	.LBB0_2
 # %bb.1:
 	lfence
-	movzbl	array1(%rdi), %eax
+	leaq	array1(%rip), %rax
+	movzbl	(%rdi,%rax), %eax
 	shlq	$9, %rax
-	movb	array2(%rax), %al
+	leaq	array2(%rip), %rcx
+	movb	(%rax,%rcx), %al
 	andb	%al, temp(%rip)
 .LBB0_2:
 	lfence
@@ -49,3 +51,4 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

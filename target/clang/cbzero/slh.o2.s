@@ -20,7 +20,7 @@ cbzero:                                 # @cbzero
 	shlq	$47, %rcx
 	movq	%rax, %rdx
 	orq	%rcx, %rsp
-	callq	memset
+	callq	memset@PLT
 	movq	%rsp, %rcx
 	sarq	$63, %rcx
 	jmp	.LBB0_3
@@ -39,3 +39,4 @@ cbzero:                                 # @cbzero
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

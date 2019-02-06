@@ -61,8 +61,7 @@ SelectionSort:                          # @SelectionSort
 	andq	$3, %rdx
 	movq	%rbx, -16(%rsp)         # 8-byte Spill
 	je	.LBB0_9
-# %bb.10:                               # %.preheader1
-                                        #   in Loop: Header=BB0_4 Depth=1
+# %bb.10:                               #   in Loop: Header=BB0_4 Depth=1
 	movq	%r9, %rsi
 	cmoveq	%r13, %r8
 	negq	%rdx
@@ -112,8 +111,7 @@ SelectionSort:                          # @SelectionSort
 	movl	%r11d, %r14d
 	cmpq	$3, %r15
 	jb	.LBB0_17
-.LBB0_19:                               # %.preheader
-                                        #   in Loop: Header=BB0_4 Depth=1
+.LBB0_19:                               #   in Loop: Header=BB0_4 Depth=1
 	cmovbq	%r13, %r8
 	jmp	.LBB0_20
 	.p2align	4, 0x90
@@ -232,3 +230,4 @@ SelectionSort:                          # @SelectionSort
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

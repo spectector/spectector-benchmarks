@@ -23,14 +23,12 @@ substring:                              # @substring
 	orb	%r10b, %r8b
 	testb	%r8b, %r8b
 	je	.LBB0_2
-.LBB0_3:                                # %.preheader2
-                                        # =>This Loop Header: Depth=1
+.LBB0_3:                                # =>This Loop Header: Depth=1
                                         #     Child Loop BB0_5 Depth 2
 	cmoveq	%r9, %r10
 	cmpb	%dl, %r8b
 	jne	.LBB0_7
-# %bb.4:                                # %.preheader
-                                        #   in Loop: Header=BB0_3 Depth=1
+# %bb.4:                                #   in Loop: Header=BB0_3 Depth=1
 	cmovneq	%r9, %r10
 	movl	$1, %edx
 	jmp	.LBB0_5
@@ -78,3 +76,4 @@ substring:                              # @substring
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig
