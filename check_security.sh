@@ -5,7 +5,7 @@ _base=$(e=$0;while test -L "$e";do d=$(dirname "$e");e=$(readlink "$e");\
     cd "$d";done;cd "$(dirname "$e")";pwd -P)
 
 usage () {
-    printf "Usage: check_security [-m compiler] [-p targets] [-t timeout] [-d suite] [-o output] [-s ignore]\n"
+    printf "Usage: check_security [-m compiler] [-p targets] [-t timeout] [-d suite] [-o output] [-s ignore] [-f flags]\n"
     printf "\tCompilers: (intel, microsoft, clang, gcc)  Example numbers: (1-24)\n"
     printf "\tSuites: (test, benchmarks, new, all)\n"
     printf "\tBy default it will be executed with all the compilers, all the\n"
@@ -37,7 +37,7 @@ IFS=' '
 cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15 16 17 18 19 20 21 23 24)
 results=results
 
-while getopts ":m:p:t:d:o:s:" option; do # parsing of the arguments
+while getopts ":m:p:t:d:o:s:f:" option; do # parsing of the arguments
     case "${option}" in
 	m) gen=($OPTARG) ;;
 	p) cases=($OPTARG) ;;
@@ -50,6 +50,7 @@ while getopts ":m:p:t:d:o:s:" option; do # parsing of the arguments
 	   esac ;;
 	o) results=$OPTARG;;
 	s) delete=($OPTARG);;
+	f) flags=($OPTARG);;
 	* ) usage ;;
     esac
 done
@@ -148,7 +149,7 @@ for app in ${cases[@]}; do
 		    type="${name##*.}"
 		    printf "$comp-$app-$y\n" # (show progress)
 		    outf="$outdir/${comp}.${app}.${y}.out"
-		    $runtimeout $timeout $spectector $x --statistics -w 200 -c "$config" --conf-file default_conf --low "$low" > $outf
+		    $runtimeout $timeout $spectector $x $flags --statistics -w 200 -c "$config" --conf-file default_conf --low "$low" > $outf
 		    ret=$?
 		    if [ $ret = 124 ]; then # timeout
 			res "\t~"
