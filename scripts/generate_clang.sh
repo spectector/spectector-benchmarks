@@ -1,25 +1,39 @@
 #! /bin/bash
 # Designed for clang version 7.0.0
 
-suite=test/unix
+sources=../sources/test/unix/*.c
 way=asm
 
 usage () {
-    printf "Usage: check_security [-d suite] [-w way]\n"
+    printf "Usage: generate_clang [-d suite] [-w way] [-s sources]\n"
     exit 0
 }
 
-while getopts ":d:w:" option; do # parsing of the arguments
+make_config () {
+    pc=victim_function_v$1
+    low=""
+    case $1 in
+	15 ) as="di=256"
+	     low="256";;
+	19 ) pc="main" ;;
+	23 ) pc="attacker_function" ;;
+	24 ) pc="another" ;;
+	* ) if [ -n "$1" ] && ! [ "$1" -eq "$1" ] 2>/dev/null; then pc=0 # Check if it's a numeric argument (test suite or benchmarks suite)
+	    fi ;;
+    esac
+    printf "entry($pc).\nc([],[$as]).\nlow([$low]).\\nign([]).\\nheap(1024)." > $folder/config
+}
+
+while getopts ":d:w:s:" option; do # parsing of the arguments
     case "${option}" in
-	d ) suite=$OPTARG ;;
+	d ) sources=../sources/$OPTARG/*.c ;;
 	w ) way=$OPTARG ;;
+	s ) sources=($OPTARG) ;;
 	* ) usage ;;
     esac
 done
 
-printf "clang generating: $suite \n"
-
-sources=../sources/$suite
+printf "clang compiling $sources, $\n"
 
 lfence="-mllvm -x86-speculative-load-hardening -mllvm -x86-speculative-load-hardening-lfence"
 slh="-mllvm -x86-speculative-load-hardening"
@@ -30,7 +44,7 @@ case $way in
     asm ) ext="s"; flag="-S" ;;
 esac
 
-for code in $sources/*.c; do
+for code in $sources; do
     filename=$(basename -- "$code")
     num="${filename%.*}"
     folder=../target/clang/$num
@@ -46,4 +60,5 @@ for code in $sources/*.c; do
 	    clang -c -O2 $flag $flag_mit $code -o $folder/$mit.o2.$ext
 	fi
     done
+    make_config $num
 done

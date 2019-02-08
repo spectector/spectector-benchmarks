@@ -16,17 +16,6 @@ usage () {
     exit 0
 }
 
-makeconf () {
-    if [ -n "$1" ] && ! [ "$1" -eq "$1" ] 2>/dev/null; then config="c([0xf000000=1000],[pc=0, sp=0xf000000, bp=0xf00000])" # Check if it's a numeric argument (test suite or benchmarks suite)
-    elif [ $1 -eq 05 ]; then config="c([0xf000000=1000],[pc=victim_function_v$1, sp=0xf000000, bp=0xf00000, dx=0])" # TODO dx=0 because gcc example
-    elif [ $1 -eq 15 ]; then config="c([0xf000000=1000],[pc=victim_function_v$1, sp=0xf000000, bp=0xf00000, di=256])"
-    elif [ $1 -eq 19 ]; then config="c([0xf000000=1000],[pc=main, sp=0xf000000, bp=0xf00000])"
-    elif [ $1 -eq 23 ]; then config="c([0xf000000=1000],[pc=attacker_function, sp=0xf000000, bp=0xf00000])"
-    elif [ $1 -eq 24 ]; then config="c([0xf000000=1000],[pc=another, sp=0xf000000, bp=0xf00000])"
-    else config="c([0xf000000=1000],[pc=victim_function_v$1, sp=0xf000000, bp=0xf00000])"
-    fi
-}
-
 res () {
     printf $1 >> $out
 }
@@ -34,20 +23,24 @@ res () {
 gen=(microsoft intel clang gcc)
 timeout=30
 IFS=' '
-cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15 16 17 18 19 20 21 23 24)
 results=results
 
-while getopts ":m:p:t:d:o:s:f:" option; do # parsing of the arguments
+# Suites
+old=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15)
+new=(16 17 18 19 20 21 22 23 24)
+benchs=(bubblesort cbzero crscat crschr crscmp cstrcspn cstrncat cstrpbrk insertionsort selectionsort substring sumofthird wildcard)
+tests=$old+$new
+all=$tests+$benchs
+
+cases=${old[@]}
+
+# Parsing of the arguments
+while getopts ":m:p:t:d:o:s:f:" option; do
     case "${option}" in
 	m) gen=($OPTARG) ;;
 	p) cases=($OPTARG) ;;
 	t) timeout=${OPTARG} ;;
-	d) case $OPTARG in
-	       benchmarks) cases=(bubblesort  cbzero  crscat  crschr  crscmp  cstrcspn  cstrncat  cstrpbrk  insertionsort  selectionsort  substring  sumofthird  wildcard);;
-	       new) cases=(16 17 18 19 20 21 22 23 24);;
-	       all) cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15 16 17 18 19 20 21 22 23 24 bubblesort  cbzero  crscat  crschr  crscmp  cstrcspn  cstrncat  cstrpbrk  insertionsort  selectionsort  substring  sumofthird  wildcard);;
-	       *) cases=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15 16 17 18 19 20 21 22 23 24) ;;
-	   esac ;;
+	d) cases=${${!OPTARG}[@]};;
 	o) results=$OPTARG;;
 	s) delete=($OPTARG);;
 	f) flags=($OPTARG);;
@@ -99,7 +92,7 @@ EOF
 fi
 
 for del in ${delete[@]}; do
-   cases=("${cases[@]/$del}")
+    cases=("${cases[@]/$del}")
 done
 
 # Check if the output is a directory
@@ -124,11 +117,9 @@ printf "$mits" > $out
 res "\n$lmi"
 res "\n$lop\n"
 
-low="[256]" # The low addresses (can't change from one path to another), 256 is the direction that di points on #15
 for app in ${cases[@]}; do
     num=$app
     [ "$num" == "11ass" ] || [ "$num" == "11gcc" ] || [ "$num" == "11sub" ] || [ "$num" == "11ker" ] && num=11
-    makeconf $num # Set up the configurations
     res "\n$app"
     for comp in ${gen[@]}; do
 	folder=target/$comp/$app
@@ -149,7 +140,7 @@ for app in ${cases[@]}; do
 		    type="${name##*.}"
 		    printf "$comp-$app-$y\n" # (show progress)
 		    outf="$outdir/${comp}.${app}.${y}.out"
-		    $runtimeout $timeout $spectector $x $flags --statistics -w 200 -c "$config" --conf-file default_conf --low "$low" > $outf
+		    $runtimeout $timeout $spectector $x $flags --statistics -w 200 > $outf
 		    ret=$?
 		    if [ $ret = 124 ]; then # timeout
 			res "\t~"
