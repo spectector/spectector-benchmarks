@@ -5,7 +5,7 @@ sources=../sources/test/unix/*.c
 way=asm
 
 usage () {
-    printf "Usage: generate_gcc [-d suite] [-w way] [-s sources]\n"
+    printf "Usage: generate_gcc [-d suite] [-w way] [-s sources] [-c compiler_options]\n"
     exit 0
 }
 
@@ -25,11 +25,12 @@ make_config () {
     printf "entry($pc).\nc([],[$as]).\nlow([$low]).\\nign([]).\\nheap(1024)." > $folder/config
 }
 
-while getopts ":d:w:s:" option; do # parsing of the arguments
+while getopts ":d:w:s:c:o:" option; do # parsing of the arguments
     case "${option}" in
 	d ) sources=../sources/$OPTARG/*.c ;;
 	w ) way=$OPTARG ;;
 	s ) sources=($OPTARG) ;;
+	c ) compiler_options=$OPTARG ;;
 	* ) usage ;;
     esac
 done
@@ -46,10 +47,10 @@ for code in $sources; do
     num="${filename%.*}"
     folder=../target/gcc/$num
     mkdir -p $folder
-    ~/.gcc/bin/gcc $flag $code -o $folder/any.o0.$ext
-    ~/.gcc/bin/gcc -O2 $flag $code -o $folder/any.o2.$ext
-    ~/.gcc/bin/gcc -fspectre-v1=2 $flag $code -o $folder/slh.o0.$ext
-    ~/.gcc/bin/gcc -fspectre-v1=2 -O2 $flag $code -o $folder/slh.o2.$ext
+    ~/.gcc/bin/gcc $compiler_options $flag $code -o $folder/any.o0.$ext
+    ~/.gcc/bin/gcc $compiler_options -O2 $flag $code -o $folder/any.o2.$ext
+    ~/.gcc/bin/gcc $compiler_options -fspectre-v1=2 $flag $code -o $folder/slh.o0.$ext
+    ~/.gcc/bin/gcc $compiler_options -fspectre-v1=2 -O2 $flag $code -o $folder/slh.o2.$ext
     # Add =3 for TLS tracing
     make_config $num
 done

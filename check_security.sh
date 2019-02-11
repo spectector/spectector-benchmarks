@@ -29,8 +29,8 @@ results=results
 old=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15)
 new=(16 17 18 19 20 21 22 23 24)
 benchs=(bubblesort cbzero crscat crschr crscmp cstrcspn cstrncat cstrpbrk insertionsort selectionsort substring sumofthird wildcard)
-tests=$old+$new
-all=$tests+$benchs
+tests="${old[@]} ${new[@]}"
+all="${tests[@]} ${benchs[@]}"
 
 cases=${old[@]}
 
@@ -40,10 +40,11 @@ while getopts ":m:p:t:d:o:s:f:" option; do
 	m) gen=($OPTARG) ;;
 	p) cases=($OPTARG) ;;
 	t) timeout=${OPTARG} ;;
-	d) cases=${${!OPTARG}[@]};;
+	d) suite=${OPTARG[@]}[@]
+	   cases=${!suite} ;;
 	o) results=$OPTARG;;
 	s) delete=($OPTARG);;
-	f) flags=($OPTARG);;
+	f) flags=$OPTARG;;
 	* ) usage ;;
     esac
 done
@@ -60,7 +61,7 @@ for compiler in ${gen[@]}; do
 	intel ) mits+="\tICC\t\t\t"
 	    	lmi+="\tUNP\t\tFEN\t"
 	    	lop+="\t-O0\t-O2\t-O0\t-O2" ;;    
-	microsoft ) mits+="\tVisual C++\t\t\t"
+	microsoft ) mits+="\tVisual C++\t\t"
 	    	    lmi+="\tUNP\t\tFEN\t"
 	    	    lop+="\t-O0\t-O2\t-O0\t-O2" ;;
 	gcc ) mits+="\tGCC\t\t\t"

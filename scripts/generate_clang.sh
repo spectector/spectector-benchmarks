@@ -5,7 +5,7 @@ sources=../sources/test/unix/*.c
 way=asm
 
 usage () {
-    printf "Usage: generate_clang [-d suite] [-w way] [-s sources]\n"
+    printf "Usage: generate_clang [-d suite] [-w way] [-s sources] [-c compiler options]\n"
     exit 0
 }
 
@@ -24,16 +24,17 @@ make_config () {
     printf "entry($pc).\nc([],[$as]).\nlow([$low]).\\nign([]).\\nheap(1024)." > $folder/config
 }
 
-while getopts ":d:w:s:" option; do # parsing of the arguments
+while getopts ":d:w:s:c:" option; do # parsing of the arguments
     case "${option}" in
 	d ) sources=../sources/$OPTARG/*.c ;;
 	w ) way=$OPTARG ;;
 	s ) sources=($OPTARG) ;;
+	c ) compiler_options=$OPTARG ;;
 	* ) usage ;;
     esac
 done
 
-printf "clang compiling $sources, $\n"
+printf "clang compiling $sources\n"
 
 lfence="-mllvm -x86-speculative-load-hardening -mllvm -x86-speculative-load-hardening-lfence"
 slh="-mllvm -x86-speculative-load-hardening"
@@ -53,11 +54,11 @@ for code in $sources; do
     for mit in any lfence slh; do
 	flag_mit=${!mit}
 	if [ "$num" = "03" ]; then
-	    clang -c -fdeclspec $flag $flag_mit $code -o $folder/$mit.o0.$ext
-	    clang -c -fdeclspec -O2 $flag $flag_mit $code -o $folder/$mit.o2.$ext
+	    clang -c $compiler_options -fdeclspec $flag $flag_mit $code -o $folder/$mit.o0.$ext
+	    clang -c $compiler_options -fdeclspec -O2 $flag $flag_mit $code -o $folder/$mit.o2.$ext
 	else
-	    clang -c $flag $flag_mit $code -o $folder/$mit.o0.$ext
-	    clang -c -O2 $flag $flag_mit $code -o $folder/$mit.o2.$ext
+	    clang -c $compiler_options $flag $flag_mit $code -o $folder/$mit.o0.$ext
+	    clang -c $compiler_options -O2 $flag $flag_mit $code -o $folder/$mit.o2.$ext
 	fi
     done
     make_config $num

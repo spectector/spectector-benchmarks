@@ -1,5 +1,0 @@
-% Default configuration: Stack pointer points to the return address (1000)
-c([0xf000000=1000],[pc=0, sp=0xf000000, bp=0xf00000]).
-low([]).
-ign([]).
-heap(1024).
