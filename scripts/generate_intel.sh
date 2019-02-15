@@ -10,25 +10,18 @@ usage () {
 }
 
 make_config () {
-    pc=victim_function_v$1
-    low=""
-    case $1 in
-	15 ) as="di=256"
-	     low="256";;
-	19 ) pc="main" ;;
-	23 ) pc="attacker_function" ;;
-	24 ) pc="another" ;;
-	* ) if [ -n "$1" ] && ! [ "$1" -eq "$1" ] 2>/dev/null; then pc=0 # Check if it's a numeric argument (test suite or benchmarks suite)
-	    fi ;;
-    esac
-    printf "entry($pc).\nc([],[$as]).\nlow([$low]).\\nign([]).\\nheap(1024)." > $folder/config
+    ./make_config.sh $1 > $folder/config
 }
 
 while getopts ":d:w:s:c:" option; do # parsing of the arguments
     case "${option}" in
 	d ) sources=../sources/$OPTARG/*.c ;;
 	w ) way=$OPTARG ;;
-	s ) sources=($OPTARG) ;;
+	s ) if [ -f $OPTARG ]; then
+		sources=($OPTARG)
+	    elif [ -d $OPTARG ]; then
+		sources=$OPTARG/*.c
+	    fi ;;
 	c ) compiler_options=$OPTARG ;;
 	* ) usage ;;
     esac

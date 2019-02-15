@@ -5,16 +5,15 @@ usage () {
     exit 0
 }
 
-while getopts ":s:" option; do # parsing of the arguments
+while getopts ":f:" option; do # parsing of the arguments
     case "${option}" in
-	s ) sources=($OPTARG)
-	    sf="-s $sources"
+	f ) flag=$OPTARG
 	    ;;
 	* ) usage ;;
     esac
 done
 
 for call in ${scripts[@]}; do
-    $call $sf -w bin 2> /dev/null
-    $call $sf -w asm 2> /dev/null
+    $call $flag -w bin 2> /dev/null
+    $call $flag -w asm 2> /dev/null
 done

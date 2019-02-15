@@ -24,24 +24,26 @@ gen=(microsoft intel clang gcc)
 timeout=30
 IFS=' '
 results=results
+opts=(o0 o2)
 
 # Suites
 old=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15)
 new=(16 17 18 19 20 21 22 23 24)
 benchs=(bubblesort cbzero crscat crschr crscmp cstrcspn cstrncat cstrpbrk insertionsort selectionsort substring sumofthird wildcard)
+test_suite=(flops-6 objinst evalloop flops-7 linpack-pc oourafft revertBits ackermann exptree flops-8 lists Oscar richards_benchmark fannkuch flops lowercase partialsums salsa20 almabench fasta floyd-warshall lpbench perlin ary3 fbench fp-convert Perm sieve pi spectral-norm mandel-2 polybench strcat Bubblesort ffbench mandel puzzle cholesky fib2 matmul_f64_4x4 Puzzle chomp fldry matrix queens FloatMM heapsort methcall Queens flops-1 hello misr Quicksort Towers flops-2 himenobmtxpa random Treesort dry flops-3 huffbench n-body RealMM dt flops-4 IntMM nestedloop recursive flops-5 nsieve-bits ReedSolomon whetstone)
 tests="${old[@]} ${new[@]}"
 all="${tests[@]} ${benchs[@]}"
-
 cases=${old[@]}
 
 # Parsing of the arguments
-while getopts ":m:p:t:d:o:s:f:" option; do
+while getopts ":m:p:t:d:o:s:f:q:" option; do
     case "${option}" in
 	m) gen=($OPTARG) ;;
 	p) cases=($OPTARG) ;;
 	t) timeout=${OPTARG} ;;
 	d) suite=${OPTARG[@]}[@]
 	   cases=${!suite} ;;
+	q) opts=($OPTARG) ;;
 	o) results=$OPTARG;;
 	s) delete=($OPTARG);;
 	f) flags=$OPTARG;;
@@ -118,6 +120,8 @@ printf "$mits" > $out
 res "\n$lmi"
 res "\n$lop\n"
 
+printf "spectector parse errors\n" > /tmp/spectector.parse.errors
+
 for app in ${cases[@]}; do
     num=$app
     [ "$num" == "11ass" ] || [ "$num" == "11gcc" ] || [ "$num" == "11sub" ] || [ "$num" == "11ker" ] && num=11
@@ -126,11 +130,14 @@ for app in ${cases[@]}; do
 	folder=target/$comp/$app
 	experiments=(any lfence slh)
 	extension=s
-	[ "$comp" == "intel" ] && experiments=(any lfence)
-	[ "$comp" == "gcc" ] && experiments=(any slh)
-	[ "$comp" == "microsoft" ] && experiments=(any lfence) && extension=asm
+	case "$comp" in
+	    "intel") experiments=(any lfence);;
+	    "gcc") experiments=(any slh);;
+	    "microsoft") experiments=(any lfence) && extension=asm;;
+	esac
 	for ex in ${experiments[@]}; do
-	    for x in $folder/$ex.o0.$extension $folder/$ex.o2.$extension; do
+	    for opt in ${opts[@]}; do
+		x=$folder/$ex.$opt.$extension # TODO: Give option for onlchoose the optimizations!!!!
 		if ! [ -f $x ]; then
 		    printf "$x doesn't exist\n"
 		    res '\t¬'
@@ -141,12 +148,13 @@ for app in ${cases[@]}; do
 		    type="${name##*.}"
 		    printf "$comp-$app-$y\n" # (show progress)
 		    outf="$outdir/${comp}.${app}.${y}.out"
-		    $runtimeout $timeout $spectector $x $flags --statistics -w 200 > $outf
+		    $runtimeout $timeout $spectector $x $flags --statistics -w 200 > $outf 2> /tmp/spectector.err
 		    ret=$?
 		    if [ $ret = 124 ]; then # timeout
 			res "\t~"
 		    else
-			(grep unsafe "$outf" > /dev/null && res '\tL') || # Leak
+			(grep parse /tmp/spectector.err > /dev/null && res '\t^' && printf "$x\t" >> /tmp/spectector.parse.errors && cat /tmp/spectector.err >> /tmp/spectector.parse.errors) ||
+			    (grep unsafe "$outf" > /dev/null && res '\tL') || # Leak
 			    (grep "timeout..." "$outf" && res '\t?') || # SMT timeout
 			    (grep "program is safe" "$outf" > /dev/null > /dev/null && res '\tS') || # S
 			    (grep checking "$outf" > /dev/null && res '\t?') || res '\t?' # Maybe a bug
