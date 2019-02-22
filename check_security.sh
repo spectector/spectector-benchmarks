@@ -2,25 +2,24 @@
 
 # Physical directory where the script is located
 _base=$(e=$0;while test -L "$e";do d=$(dirname "$e");e=$(readlink "$e");\
-    cd "$d";done;cd "$(dirname "$e")";pwd -P)
+				   cd "$d";done;cd "$(dirname "$e")";pwd -P)
 
 usage () {
     printf "Usage: check_security [<options>...]
   -t TIMEOUT
   -m COMPILER  intel, microsoft, clang, gcc
+  -q OPTIMIZATIONS
   -p TARGETS
   -s IGNORE    Don't analyze the specified targets
-  -q OPTS
   -d SUITE     test, benchmarks, new, all
   -o DIR       Output directory
   -f FLAG      Pass all the flags to spectector
-  -r FILE      The file must contain all the files
-     	       and its corresponding function
-               to analyze (relative to that directory)
+  -r FILE      The file must contain all the files and its corresponding 
+     	       function to analyze (relative to that directory)
   -i           Analyze all the functions of the files
 
-By default it will be executed with all the compilers, all
-the test example numbers and a timeout of 30 seconds
+By default it will be executed with all the compilers, all the Paul Kocher
+examples and a timeout of 30 seconds
 
 To pass a list as an option argument, all the elements
  must be quoted and separated by spaces.
@@ -28,28 +27,26 @@ To pass a list as an option argument, all the elements
     exit 0
 }
 
-resP () {
-    printf $1 >> $outP
-}
-
-resA () {
-    printf $1 >> $outA
-}
+resP () { printf $1 >> $outP; }
+resA () { printf $1 >> $outA; }
+grep_out () { grep "$1" $2 > /dev/null && resA $3; }
 
 produce_output () {
-    ([ $ret = 124 ] && resA "~\t") || # timeout
-	(grep parse $results/spectector.err > /dev/null && resA '^\t') ||
-	(grep "unsupported instruction" $results/spectector.err && resA '|\t') ||
-	(grep unsafe "$outf" > /dev/null && resA 'L\t') || # Leak
-	(grep "timeout..." "$outf" && resA '?\t') || # SMT timeout
-	(grep "program is safe" "$outf" > /dev/null > /dev/null && resA 'S\t') || # S
-	(grep checking "$outf" > /dev/null && resA '?\t') || resA '?\t' # Maybe a bug
-    printf "$target\t" >> $results/spectector.errors && cat $results/spectector.err >> $results/spectector.errors
+    ([ $ret = 124 ] && resA "~\t")|| # timeout
+	(grep_out "Could not parse" $results/err '^\t')||
+	(grep_out "unsupported instruction" $results/err '|\t')||
+	(grep_out "unsafe" $outf 'L\t')|| # Leak
+	(grep_out "timeout..." $outf 'SMT\t')|| # SMT timeout
+	(grep_out "program is safe" $outf 'S\t')|| # S
+	(grep_out "checking speculative" $outf '_\t')||
+	resA '?\t' # Maybe a bug
+    printf "$target\t$func\n" >> $results/errors &&
+	cat $results/err >> $results/errors
 }
 
 summarize_results () {
     paste $outP $outA | column -s $'\t' -t > $out
-    rm $outP $outA
+    rm $results/err
     exit 0
 }
 
@@ -59,11 +56,21 @@ IFS=' '
 results=results
 opts=(.o0 .o2)
 
-# Suites
+# Suites # TODO - Insert on an external file
 old=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15)
-new=(16 17 18 19 20 21 22 23 24)
-benchs=(bubblesort cbzero crscat crschr crscmp cstrcspn cstrncat cstrpbrk insertionsort selectionsort substring sumofthird wildcard)
-test_suite=(flops-6 objinst evalloop flops-7 linpack-pc oourafft revertBits ackermann exptree flops-8 lists Oscar richards_benchmark fannkuch flops lowercase partialsums salsa20 almabench fasta floyd-warshall lpbench perlin ary3 fbench fp-convert Perm sieve pi spectral-norm mandel-2 polybench strcat Bubblesort ffbench mandel puzzle cholesky fib2 matmul_f64_4x4 Puzzle chomp fldry matrix queens FloatMM heapsort methcall Queens flops-1 hello misr Quicksort Towers flops-2 himenobmtxpa random Treesort dry flops-3 huffbench n-body RealMM dt flops-4 IntMM nestedloop recursive flops-5 nsieve-bits ReedSolomon whetstone)
+new=(16 17 18 19 20 21 22 23 24 25 26 27)
+benchs=(bubblesort cbzero crscat crschr crscmp cstrcspn cstrncat cstrpbrk
+	insertionsort selectionsort substring sumofthird wildcard)
+test_suite=(flops-6 objinst evalloop flops-7 linpack-pc oourafft revertBits
+	    ackermann exptree flops-8 lists Oscar richards_benchmark fannkuch
+	    flops lowercase partialsums salsa20 almabench fasta floyd-warshall
+	    lpbench perlin ary3 fbench fp-convert Perm sieve pi spectral-norm
+	    mandel-2 polybench strcat Bubblesort ffbench mandel puzzle cholesky
+	    fib2 matmul_f64_4x4 Puzzle chomp fldry matrix queens FloatMM
+	    heapsort methcall Queens flops-1 hello misr Quicksort Towers
+	    flops-2 himenobmtxpa random Treesort dry flops-3 huffbench n-body
+	    RealMM dt flops-4 IntMM nestedloop recursive flops-5 nsieve-bits
+	    ReedSolomon whetstone)
 tests="${old[@]} ${new[@]}"
 all="${tests[@]} ${benchs[@]}"
 cases=${old[@]}
@@ -113,7 +120,8 @@ trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM
 
 cd "$_base"
 
-# Change the path to run spectector, this works if you are in spectector folder or one of it's subfolders
+# Change the path to run spectector
+# This works if you are in spectector folder or one of it's subfolders
 if [ -x ./spectector ]; then
     spectector=./spectector
 elif [ -x ../bin/spectector ]; then
@@ -145,7 +153,12 @@ outA=$results/summary_analysis.txt
 outP=$results/summary_programs.txt
 # folder with the results for each benchmark
 outdir=$results/out
-mkdir -p "$outdir"
+
+# Store old results
+old_folder=$results/$(date "+%Y.%m.%d-%H.%M.%S")
+mkdir -p $old_folder
+find $results -maxdepth 1 -type f -exec mv {} destination_path \;
+mv $outdir $old_folder
 
 if which gtimeout > /dev/null 2>&1; then
     runtimeout=gtimeout # for macOS (GNU coreutils)
@@ -154,7 +167,7 @@ else
 fi
 
 # Write the output files
-rm -f $results/spectector.parse.errors
+mkdir -p "$outdir"
 printf "\n\n\n" > $outP
 printf "$mits" > $outA
 printf "\n$lmi" >> $outA
@@ -166,18 +179,19 @@ if ! [ -z $raw ] && [ -f $raw ]; then
     while read -r line || [[ -n "$line" ]]; do
 	to_analyze=($line)
 	target=$dir/${to_analyze[0]}
-	entry=${to_analyze[1]}
-	if [ -f $target ] && grep "$entry:" $target > /dev/null; then
-	    outf="$outdir/$type.${to_analyze[0]}.$entry.out"
-	    resP "$target\t$entry\n"
-	    $runtimeout $timeout $spectector $target $flags --statistics -e $entry -w 200 > $outf 2> $results/spectector.err
+	func=${to_analyze[1]}
+	if [ -f $target ] && grep "$func:" $target > /dev/null; then
+	    outf="$outdir/$type.${to_analyze[0]}.$func.out"
+	    resP "$target\t$func\n"
+	    printf "$target\t$func\n"
+	    $runtimeout $timeout $spectector $target $flags --statistics\
+			-e $func > $outf 2> $results/err
 	    ret=$?
-	    printf "$target\t$entry\n"
 	    produce_output
 	    resA "\n"
-	# else
-	#     printf "$target doesn't exist or $entry doesn't exist\n"
-	#     resA '¬\t'
+	    # else
+	    #     printf "$target doesn't exist or $func doesn't exist\n"
+	    #     resA '¬\t'
 	fi
     done < $raw
     summarize_results
@@ -185,7 +199,8 @@ fi
 
 for app in ${cases[@]}; do
     if [ $get_entry ]; then
-	entries="./scripts/get_function_names.sh target/clang/$app/any.o2.s" # TODO: Change source?
+	# TODO: Change source?
+	entries="./scripts/get_function_names.sh target/clang/$app/any.o2.s"
     else
 	entries="echo no-entry"
     fi
@@ -219,7 +234,8 @@ for app in ${cases[@]}; do
 			    printf "$comp-$app-$f_target\n"
 			    outf="$outdir/${comp}.${app}.${f_target}.out"
 			fi # (show progress)
-			$runtimeout $timeout $spectector $target $flags --statistics -w 200 $entry_flag > $outf 2> $results/spectector.err
+			$runtimeout $timeout $spectector $target $flags\
+			  --statistics $entry_flag > $outf 2> $results/err
 			ret=$?
 			produce_output
 		    fi
