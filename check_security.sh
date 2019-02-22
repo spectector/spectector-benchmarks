@@ -157,8 +157,8 @@ outdir=$results/out
 # Store old results
 old_folder=$results/$(date "+%Y.%m.%d-%H.%M.%S")
 mkdir -p $old_folder
-find $results -maxdepth 1 -type f -exec mv {} destination_path \;
-mv $outdir $old_folder
+find $results -maxdepth 1 -type f -exec mv {} $old_folder \;
+mv $outdir $old_folder 2> /dev/null
 
 if which gtimeout > /dev/null 2>&1; then
     runtimeout=gtimeout # for macOS (GNU coreutils)
