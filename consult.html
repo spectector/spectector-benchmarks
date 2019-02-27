@@ -4,24 +4,22 @@
     <h1>Results</h1>
   </head>
   <body>
-    <select id="list" onchange="show_table(this.value)">
-      <option value="">Choose option</option>
-    </select>
-    <a id="data"></a> 
-    <script src="results/stats.json"></script>
-    <script> // TODO: Distingish raw and controlled experiments
-      var sel = document.getElementById('list');
-      var fragment = document.createDocumentFragment();
-      results.forEach(function(elem, index) {
-	  var opt = document.createElement('option');
-	  opt.innerHTML = elem.name;
-	  opt.value = index;
-	  fragment.appendChild(opt);
-      });
-      sel.appendChild(fragment);
-      show_init();
+    <button type="button" onclick="show_general()">Show general table</button>
+    <a id="data"></a>
+    <script>
+      loadjs(window.location.search.substring(1), show_general);
 
-      function show_init() { // Draw a table with all the results formatted
+      function loadjs(file, callback) {
+	  if(file=="") { file = "results/stats.json"; } // If no file is declared
+	  var script = document.createElement("script");
+	  script.type = "text/javascript";
+	  script.src = file;
+	  script.onload=callback;
+	  script.onerror=show_footer;
+	  document.body.appendChild(script);
+      }
+
+      function show_general() { // Draw a table with all the results formatted
 	  var txt = ""
 	  actual_exp = "";
 	  actual_comp = "";
@@ -33,6 +31,7 @@
 	      if (comp != actual_comp){
 		  txt += "<br></table><h2>"+comp+"</h2><table border='1'>"
 		  actual_comp = comp;
+		  actual_exp = "";
 	      }
 	      if (exp != actual_exp){
 		  txt += "<tr><th>"+exp+"</th>"
@@ -40,10 +39,14 @@
 	      }
 	      var color = elem.timeout ? "purple" : elem.safe ? "green": "red";
 	      txt += "<td><a style=\"color:"+color+";\"onclick=\"show_table("+i+")\">"+mit+"</a></td>";
-	      //txt += "<td><a style=\"color:"+color+";\">"+mit+"</a></td>";
 	  });
 	  txt += "</tr>";
 	  document.getElementById("data").innerHTML = txt;
+	  show_footer();
+      }
+
+      function show_footer(){
+	  document.getElementById("data").innerHTML += "<h3>Labels:</h3><a style=\"color:red\">LEAK</a> <a style=\"color:green\">SECURE</a> <a style=\"color:purple\">TIMEOUT</a><p>To show another JSON stats file, append its absolute path to the url, i.e. \"?/tmp/my.json\"</p>";
       }
 
       function get_case(exp, n){
@@ -51,21 +54,33 @@
 	  return p[n];
       }
 
-
       function show_table(index) {
-	  if (!index) {show_init(); return;}
-	  var txt = "<table border='1'>"
-	  var color = results[index].safe ? "green": "red";
+	  if (!index) { show_general(); return; }
+	  var table = "<table border='1'>"
+	  //var color = results[index].safe ? "green": "red";
 	  for (prop in results[index]){
-	      txt += "<tr><th>"+prop+":</th><td>";
+	      table += "<tr><th>"+prop+":</th><td>";
 	      val=results[index][prop];
-	      if (prop == "file" || prop == "name"){
-		  txt += "<a href=\""+val+"\">"+val+"</a><br></td></tr>";
-	      } else {
-		  txt += val + "</td></tr>";
+	      switch(prop){
+	      case "file":
+		  table += "<a href=\""+val+"\">"+val+"</a><br></td></tr>";
+		  var out_file = val.split('.').slice(0,-1).join('.')+".out";
+		  table += "<tr><th>Log file</th><td><a href=\""+out_file+"\">"+out_file+"</a><br></td></tr>";
+		  break;
+	      case "name":
+		  table += "<a href=\""+val+"\">"+val+"</a><br></td></tr>";
+		  break;
+	      case "total_time":
+		  table += val + " ms</td></tr>";
+		  break;	  
+	      case "paths":
+		  table += val["length"] + "</td></tr>";
+		  break;
+	      default:
+		  table += val + "</td></tr>";
 	      }
 	  }
-	  document.getElementById("data").innerHTML = txt
+	  document.getElementById("data").innerHTML = table
       }
     </script>
   </body>
