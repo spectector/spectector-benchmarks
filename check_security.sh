@@ -27,26 +27,29 @@ To pass a list as an option argument, all the elements
     exit 0
 }
 
-resP () { printf $1 >> $outP; }
-resA () { printf $1 >> $outA; }
-grep_out () { grep "$1" $2 > /dev/null && resA $3; }
+resP () { printf "$1" >> $outP; }
+resA () { printf "$1" >> $outA; }
+grep_out () { grep "$1\t" $2 > /dev/null && resA $3; }
 
 produce_output () {
-    ([ $ret = 124 ] && resA "~\t")|| # timeout
-	(grep_out "Could not parse" $results/err '^\t')||
-	(grep_out "unsupported instruction" $results/err '|\t')||
-	(grep_out "unsafe" $outf 'L\t')|| # Leak
-	(grep_out "timeout..." $outf 'SMT\t')|| # SMT timeout
-	(grep_out "program is safe" $outf 'S\t')|| # S
-	(grep_out "checking speculative" $outf '_\t')||
+    ([ "$ret" -eq 124 ] && resA "~\t" && printf "{\"name\":\"%s\",\"timeout\":true}" "$target" > "$outjson")|| # timeout
+	(grep_out "Could not parse" "$results/err" '^\t')||
+	(grep_out "unsupported instruction" "$results/err" '|\t')||
+	(grep_out "unsafe" "$outf" 'L\t')|| # Leak
+	(grep_out "timeout..." "$outf" 'SMT\t')|| # SMT timeout
+	(grep_out "program is safe" "$outf" 'S\t')|| # S
+	(grep_out "checking speculative" "$outf" '_\t')||
 	resA '?\t' # Maybe a bug
-    printf "$target\t$func\n" >> $results/errors &&
-	cat $results/err >> $results/errors
+    printf "%s" "$target\t$func\n" >> "$results/errors" &&
+	cat "$results/err" >> "$results/errors"
 }
 
 summarize_results () {
-    paste $outP $outA | column -s $'\t' -t > $out
-    rm $results/err
+    paste "$outP" "$outA" | column -s $'\t' -t > "$out"
+    rm "$results/err"
+    printf "results=[" > "$jsonfile"
+    for f in "$outdir"/*.json; do (cat "${f}"; printf ",";) >> "$jsonfile"; done
+    printf "{\"name\":\"summary\"}]" >> "$jsonfile" # TODO: Fix
     exit 0
 }
 
@@ -149,6 +152,7 @@ if ! [ -d $results ]; then
 fi
 
 out=$results/summary.txt
+jsonfile=$results/stats.json
 outA=$results/summary_analysis.txt
 outP=$results/summary_programs.txt
 # folder with the results for each benchmark
@@ -168,10 +172,10 @@ fi
 
 # Write the output files
 mkdir -p "$outdir"
-printf "\n\n\n" > $outP
-printf "$mits" > $outA
-printf "\n$lmi" >> $outA
-printf "\n$lop\n" >> $outA
+printf "\n\n\n" > "$outP"
+printf "$mits" > "$outA"
+printf "\n$lmi" >> "$outA"
+printf "\n$lop\n" >> "$outA"
 
 if ! [ -z $raw ] && [ -f $raw ]; then
     dir=$(dirname $raw)
@@ -182,9 +186,10 @@ if ! [ -z $raw ] && [ -f $raw ]; then
 	func=${to_analyze[1]}
 	if [ -f $target ] && grep "$func:" $target > /dev/null; then
 	    outf="$outdir/$type.${to_analyze[0]}.$func.out"
+	    outjson="$outdir/${comp}.${app}.${f_target}.json"
 	    resP "$target\t$func\n"
-	    printf "$target\t$func\n"
-	    $runtimeout $timeout $spectector $target $flags --statistics\
+	    printf "%s\n" "$target\t$func"
+	    $runtimeout $timeout $spectector $target $flags --stats "$outjson"\
 			-e $func > $outf 2> $results/err
 	    ret=$?
 	    produce_output
@@ -220,7 +225,7 @@ for app in ${cases[@]}; do
 		for opt in ${opts[@]}; do
 		    target=$folder/$ex$opt.$extension
 		    if ! [ -f $target ]; then
-			printf "$target doesn't exist\n"
+			printf "%s doesn't exist\n" "$target"
 			resA '¬\t'
 		    else
 			f_target=$(basename $target)
@@ -228,14 +233,15 @@ for app in ${cases[@]}; do
 			mitigation="${name%.*}"
 			type="${name##*.}"
 			if [ $get_entry ]; then
-			    printf "$comp-$app-$f_target-$func\n"
+			    printf "%s\n" "$comp-$app-$f_target-$func"
 			    outf="$outdir/${comp}.${app}.${f_target}-$func.out"
 			else
-			    printf "$comp-$app-$f_target\n"
+			    printf "%s\n" "$comp-$app-$f_target"
 			    outf="$outdir/${comp}.${app}.${f_target}.out"
+			    outjson="$outdir/${comp}.${app}.${f_target}.json"
 			fi # (show progress)
-			$runtimeout $timeout $spectector $target $flags\
-			  --statistics $entry_flag > $outf 2> $results/err
+			$runtimeout $timeout $spectector "$target" $flags\
+			  --stats $outjson $entry_flag > "$outf" 2> "$results/err"
 			ret=$?
 			produce_output
 		    fi

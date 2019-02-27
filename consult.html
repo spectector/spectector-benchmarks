@@ -1,0 +1,72 @@
+<meta charset="utf-8"/>
+<html>
+  <head>
+    <h1>Results</h1>
+  </head>
+  <body>
+    <select id="list" onchange="show_table(this.value)">
+      <option value="">Choose option</option>
+    </select>
+    <a id="data"></a> 
+    <script src="results/stats.json"></script>
+    <script> // TODO: Distingish raw and controlled experiments
+      var sel = document.getElementById('list');
+      var fragment = document.createDocumentFragment();
+      results.forEach(function(elem, index) {
+	  var opt = document.createElement('option');
+	  opt.innerHTML = elem.name;
+	  opt.value = index;
+	  fragment.appendChild(opt);
+      });
+      sel.appendChild(fragment);
+      show_init();
+
+      function show_init() { // Draw a table with all the results formatted
+	  var txt = ""
+	  actual_exp = "";
+	  actual_comp = "";
+	  results.forEach(function(elem, i) {
+	      if ( i === results.length-1){return;} // For last element (summary)
+	      comp = get_case(elem.name, 1);
+	      exp = get_case(elem.name, 2);
+	      mit = get_case(elem.name, 3);
+	      if (comp != actual_comp){
+		  txt += "<br></table><h2>"+comp+"</h2><table border='1'>"
+		  actual_comp = comp;
+	      }
+	      if (exp != actual_exp){
+		  txt += "<tr><th>"+exp+"</th>"
+		  actual_exp = exp;
+	      }
+	      var color = elem.timeout ? "purple" : elem.safe ? "green": "red";
+	      txt += "<td><a style=\"color:"+color+";\"onclick=\"show_table("+i+")\">"+mit+"</a></td>";
+	      //txt += "<td><a style=\"color:"+color+";\">"+mit+"</a></td>";
+	  });
+	  txt += "</tr>";
+	  document.getElementById("data").innerHTML = txt;
+      }
+
+      function get_case(exp, n){
+	  var p = exp.split('/');
+	  return p[n];
+      }
+
+
+      function show_table(index) {
+	  if (!index) {show_init(); return;}
+	  var txt = "<table border='1'>"
+	  var color = results[index].safe ? "green": "red";
+	  for (prop in results[index]){
+	      txt += "<tr><th>"+prop+":</th><td>";
+	      val=results[index][prop];
+	      if (prop == "file" || prop == "name"){
+		  txt += "<a href=\""+val+"\">"+val+"</a><br></td></tr>";
+	      } else {
+		  txt += val + "</td></tr>";
+	      }
+	  }
+	  document.getElementById("data").innerHTML = txt
+      }
+    </script>
+  </body>
+</html>
