@@ -55,7 +55,7 @@
       }
 
       function show_table(index) {
-	  if (!index) { show_general(); return; }
+	  //if (!index) { show_general(); return; }
 	  var table = "<table border='1'>"
 	  //var color = results[index].safe ? "green": "red";
 	  for (prop in results[index]){
@@ -63,24 +63,47 @@
 	      val=results[index][prop];
 	      switch(prop){
 	      case "file":
-		  table += "<a href=\""+val+"\">"+val+"</a><br></td></tr>";
+		  table += "<a href=\""+val+"\">"+val+"</a></td></tr>";
 		  var out_file = val.split('.').slice(0,-1).join('.')+".out";
-		  table += "<tr><th>Log file</th><td><a href=\""+out_file+"\">"+out_file+"</a><br></td></tr>";
+		  table += "<tr><th>Log file</th><td><a href=\""+out_file+"\">"+out_file+"</a></td></tr>";
 		  break;
 	      case "name":
-		  table += "<a href=\""+val+"\">"+val+"</a><br></td></tr>";
+		  table += "<a href=\""+val+"\">"+val+"</a></td></tr>";
 		  break;
 	      case "total_time":
 		  table += val + " ms</td></tr>";
 		  break;	  
 	      case "paths":
 		  table += val["length"] + "</td></tr>";
+		  stats=stats_paths(val);
+		  table += "<tr><th>Time traces</th><td>"+stats.trace+" ms </td></tr>";
+		  table += "<tr><th>Time SMT solving</th><td>"+stats.solve+" ms </td></tr>";
+		  // TODO parse an array
+		  table += "<tr><th>Steps</th><td> <TABLE BORDER=\"3\" CELLPADDING=\"3\" CELLSPACING=\"3\">"
+		  for (s in stats.steps){
+		      table+= "<TD>"+stats.steps[s]+"</TD>"
+		  }
+		  table += "</TABLE></td></tr>";
 		  break;
 	      default:
 		  table += val + "</td></tr>";
 	      }
 	  }
 	  document.getElementById("data").innerHTML = table
+      }
+
+      function stats_paths(paths) {
+	  var trace = 0;
+	  var solve = 0;
+	  var steps = [];
+	  for (path in paths){
+	      if( paths[path].time_trace ){
+		  trace += paths[path].time_trace;
+		  solve += paths[path].time_solve;
+		  steps.push(paths[path].steps);
+	      }
+	  }
+	  return {trace:trace, solve:solve, steps:steps}
       }
     </script>
   </body>
