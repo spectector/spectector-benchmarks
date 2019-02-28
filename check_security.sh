@@ -32,7 +32,7 @@ resA () { printf "$1" >> $outA; }
 grep_out () { grep "$1\t" $2 > /dev/null && resA $3; }
 
 produce_output () {
-    ([ "$ret" -eq 124 ] && resA "~\t" && printf "{\"name\":\"%s\",\"timeout\":true}" "$target" > "$outjson")|| # timeout
+    ([ "$ret" -eq 124 ] && resA "~\t" && printf "{\"name\":\"%s\",\"timeout\":true,\"file\":\"%s\"}" "$target" "$outjson" > "$outjson")|| # timeout
 	(grep_out "Could not parse" "$results/err" '^\t')||
 	(grep_out "unsupported instruction" "$results/err" '|\t')||
 	(grep_out "unsafe" "$outf" 'L\t')|| # Leak
@@ -41,11 +41,11 @@ produce_output () {
 	(grep_out "checking speculative" "$outf" '_\t')||
 	resA '?\t' # Maybe a bug
     printf "%s" "$target\t$func\n" >> "$results/errors" &&
-	cat "$results/err" >> "$results/errors"
+	cat $results/err >> "$results/errors"
 }
 
 summarize_results () {
-    paste "$outP" "$outA" | column -s $'\t' -t > "$out"
+    #paste "$outP" "$outA" | column -s $'\t' -t > "$out"
     rm "$results/err"
     printf "results=[" > "$jsonfile"
     for f in "$outdir"/*.json; do (cat "${f}"; printf ",";) >> "$jsonfile"; done
@@ -162,6 +162,7 @@ outdir=$results/out
 old_folder=$results/$(date "+%Y.%m.%d-%H.%M.%S")
 mkdir -p $old_folder
 find $results -maxdepth 1 -type f -exec mv {} $old_folder \;
+rm -f $results/consult.html
 mv $outdir $old_folder 2> /dev/null
 
 if which gtimeout > /dev/null 2>&1; then
@@ -186,7 +187,7 @@ if ! [ -z $raw ] && [ -f $raw ]; then
 	func=${to_analyze[1]}
 	if [ -f $target ] && grep "$func:" $target > /dev/null; then
 	    outf="$outdir/$type.${to_analyze[0]}.$func.out"
-	    outjson="$outdir/${comp}.${app}.${f_target}.json"
+	    outjson="$outdir/$type.${to_analyze[0]}.$func.json"
 	    resP "$target\t$func\n"
 	    printf "%s\n" "$target\t$func"
 	    $runtimeout $timeout $spectector $target $flags --stats "$outjson"\

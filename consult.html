@@ -76,12 +76,12 @@
 	      case "paths":
 		  table += val["length"] + "</td></tr>";
 		  stats=stats_paths(val);
-		  table += "<tr><th>Time traces</th><td>"+stats.trace+" ms </td></tr>";
-		  table += "<tr><th>Time SMT solving</th><td>"+stats.solve+" ms </td></tr>";
+		  table += "<tr><th>Time symbolic execution</th><td>"+stats.trace+" ms </td></tr>";
+		  table += "<tr><th>Time SNI-checking</th><td>"+stats.solve+" ms </td></tr>";
 		  // TODO parse an array
-		  table += "<tr><th>Steps</th><td> <TABLE BORDER=\"3\" CELLPADDING=\"3\" CELLSPACING=\"3\">"
+		  table += "<tr><th>Steps per path</th><td> <TABLE BORDER=\"3\" CELLPADDING=\"3\" CELLSPACING=\"3\">"
 		  for (s in stats.steps){
-		      table+= "<TD>"+stats.steps[s]+"</TD>"
+		      table+= "<TD>"+s+": "+stats.steps[s]+"</TD>"
 		  }
 		  table += "</TABLE></td></tr>";
 		  break;
@@ -95,15 +95,17 @@
       function stats_paths(paths) {
 	  var trace = 0;
 	  var solve = 0;
-	  var steps = [];
+	  var steps = []; // min, avg, max
+	  var total_steps = 0;
 	  for (path in paths){
 	      if( paths[path].time_trace ){
 		  trace += paths[path].time_trace;
 		  solve += paths[path].time_solve;
 		  steps.push(paths[path].steps);
+		  total_steps += paths[path].steps;
 	      }
 	  }
-	  return {trace:trace, solve:solve, steps:steps}
+	  return {trace:trace, solve:solve, steps:{min:Math.min(...steps), avg:total_steps/paths.length, max:Math.max(...steps), total:total_steps}}
       }
     </script>
   </body>
