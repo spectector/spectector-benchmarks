@@ -32,21 +32,18 @@ resA () { printf "$1" >> $outA; }
 grep_out () { grep "$1\t" $2 > /dev/null && resA $3; }
 
 produce_output () {
-    ([ "$ret" -eq 124 ] && resA "~\t" && printf "{\"name\":\"%s\",\"timeout\":true,\"file\":\"%s\"}" "$target" "$outjson" > "$outjson")|| # timeout
-	(grep_out "Could not parse" "$results/err" '^\t')||
-	(grep_out "unsupported instruction" "$results/err" '|\t')||
+    ([ "$ret" -eq 124 ] && resA "~\t" && printf "{\"name\":\"%s\",\"timeout\":true,\"file\":\"%s\",\"entry\":%s}" "$target" "$outjson" "$func" > "$outjson")|| # timeout
+	(grep_out "Could not parse" "$outerr" '^\t')||
+	(grep_out "unsupported instruction" "$outerr" '|\t')||
 	(grep_out "unsafe" "$outf" 'L\t')|| # Leak
 	(grep_out "timeout..." "$outf" 'SMT\t')|| # SMT timeout
 	(grep_out "program is safe" "$outf" 'S\t')|| # S
 	(grep_out "checking speculative" "$outf" '_\t')||
 	resA '?\t' # Maybe a bug
-    printf "%s" "$target\t$func\n" >> "$results/errors" &&
-	cat $results/err >> "$results/errors"
 }
 
 summarize_results () {
     #paste "$outP" "$outA" | column -s $'\t' -t > "$out"
-    rm "$results/err"
     printf "results=[" > "$jsonfile"
     for f in "$outdir"/*.json; do (cat "${f}"; printf ",";) >> "$jsonfile"; done
     printf "{\"name\":\"summary\"}]" >> "$jsonfile" # TODO: Fix
@@ -185,13 +182,14 @@ if ! [ -z $raw ] && [ -f $raw ]; then
 	to_analyze=($line)
 	target=$dir/${to_analyze[0]}
 	func=${to_analyze[1]}
-	if [ -f $target ] && grep "$func:" $target > /dev/null; then
+	if [ -f $target ] && grep "\<$func:" $target > /dev/null; then
 	    outf="$outdir/$type.${to_analyze[0]}.$func.out"
 	    outjson="$outdir/$type.${to_analyze[0]}.$func.json"
+	    outerr="$outdir/$type.${to_analyze[0]}.$func.err"
 	    resP "$target\t$func\n"
 	    printf "%s\n" "$target\t$func"
 	    $runtimeout $timeout $spectector $target $flags --stats "$outjson"\
-			-e $func > $outf 2> $results/err
+			-e $func > $outf 2> $outerr
 	    ret=$?
 	    produce_output
 	    resA "\n"
@@ -239,10 +237,11 @@ for app in ${cases[@]}; do
 			else
 			    printf "%s\n" "$comp-$app-$f_target"
 			    outf="$outdir/${comp}.${app}.${f_target}.out"
-			    outjson="$outdir/${comp}.${app}.${f_target}.json"
 			fi # (show progress)
+			outjson="$outdir/${comp}.${app}.${f_target}.json"
+			outerr="$outdir/${comp}.${app}.${f_target}.err"
 			$runtimeout $timeout $spectector "$target" $flags\
-			  --stats $outjson $entry_flag > "$outf" 2> "$results/err"
+			  --stats $outjson $entry_flag > "$outf" 2> $outerr
 			ret=$?
 			produce_output
 		    fi

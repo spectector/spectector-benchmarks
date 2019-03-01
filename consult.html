@@ -2,111 +2,18 @@
 <html>
   <head>
     <h1>Results</h1>
+    <p>To show another JSON stats file, append its absolute path to the url, i.e. <em>consult.html?results2/stats.json</em></p>
   </head>
   <body>
-    <button type="button" onclick="show_general()">Show general table</button>
+    <h2 id="stats">Stats</h2>
+    <a style="color:red" id="leak"> LEAK: </a>
+    <a style="color:green" id="secure"> SECURE: </a>
+    <a style="color:purple" id="tout"> TIMEOUT: </a>
+    <a style="color:blue" id="unknown"> UNKNOWN INS: </a>
+    <br>
+    <button type="button" onclick="show_general(true)">Show general table</button>
+    <button type="button" onclick="show_general(false)">Show descriptive view</button>
     <a id="data"></a>
-    <script>
-      loadjs(window.location.search.substring(1), show_general);
-
-      function loadjs(file, callback) {
-	  if(file=="") { file = "results/stats.json"; } // If no file is declared
-	  var script = document.createElement("script");
-	  script.type = "text/javascript";
-	  script.src = file;
-	  script.onload=callback;
-	  script.onerror=show_footer;
-	  document.body.appendChild(script);
-      }
-
-      function show_general() { // Draw a table with all the results formatted
-	  var txt = ""
-	  actual_exp = "";
-	  actual_comp = "";
-	  results.forEach(function(elem, i) {
-	      if ( i === results.length-1){return;} // For last element (summary)
-	      comp = get_case(elem.name, 1);
-	      exp = get_case(elem.name, 2);
-	      mit = get_case(elem.name, 3);
-	      if (comp != actual_comp){
-		  txt += "<br></table><h2>"+comp+"</h2><table border='1'>"
-		  actual_comp = comp;
-		  actual_exp = "";
-	      }
-	      if (exp != actual_exp){
-		  txt += "<tr><th>"+exp+"</th>"
-		  actual_exp = exp;
-	      }
-	      var color = elem.timeout ? "purple" : elem.safe ? "green": "red";
-	      txt += "<td><a style=\"color:"+color+";\"onclick=\"show_table("+i+")\">"+mit+"</a></td>";
-	  });
-	  txt += "</tr>";
-	  document.getElementById("data").innerHTML = txt;
-	  show_footer();
-      }
-
-      function show_footer(){
-	  document.getElementById("data").innerHTML += "<h3>Labels:</h3><a style=\"color:red\">LEAK</a> <a style=\"color:green\">SECURE</a> <a style=\"color:purple\">TIMEOUT</a><p>To show another JSON stats file, append its absolute path to the url, i.e. \"?/tmp/my.json\"</p>";
-      }
-
-      function get_case(exp, n){
-	  var p = exp.split('/');
-	  return p[n];
-      }
-
-      function show_table(index) {
-	  //if (!index) { show_general(); return; }
-	  var table = "<table border='1'>"
-	  //var color = results[index].safe ? "green": "red";
-	  for (prop in results[index]){
-	      table += "<tr><th>"+prop+":</th><td>";
-	      val=results[index][prop];
-	      switch(prop){
-	      case "file":
-		  table += "<a href=\""+val+"\">"+val+"</a></td></tr>";
-		  var out_file = val.split('.').slice(0,-1).join('.')+".out";
-		  table += "<tr><th>Log file</th><td><a href=\""+out_file+"\">"+out_file+"</a></td></tr>";
-		  break;
-	      case "name":
-		  table += "<a href=\""+val+"\">"+val+"</a></td></tr>";
-		  break;
-	      case "total_time":
-		  table += val + " ms</td></tr>";
-		  break;	  
-	      case "paths":
-		  table += val["length"] + "</td></tr>";
-		  stats=stats_paths(val);
-		  table += "<tr><th>Time symbolic execution</th><td>"+stats.trace+" ms </td></tr>";
-		  table += "<tr><th>Time SNI-checking</th><td>"+stats.solve+" ms </td></tr>";
-		  // TODO parse an array
-		  table += "<tr><th>Steps per path</th><td> <TABLE BORDER=\"3\" CELLPADDING=\"3\" CELLSPACING=\"3\">"
-		  for (s in stats.steps){
-		      table+= "<TD>"+s+": "+stats.steps[s]+"</TD>"
-		  }
-		  table += "</TABLE></td></tr>";
-		  break;
-	      default:
-		  table += val + "</td></tr>";
-	      }
-	  }
-	  document.getElementById("data").innerHTML = table
-      }
-
-      function stats_paths(paths) {
-	  var trace = 0;
-	  var solve = 0;
-	  var steps = []; // min, avg, max
-	  var total_steps = 0;
-	  for (path in paths){
-	      if( paths[path].time_trace ){
-		  trace += paths[path].time_trace;
-		  solve += paths[path].time_solve;
-		  steps.push(paths[path].steps);
-		  total_steps += paths[path].steps;
-	      }
-	  }
-	  return {trace:trace, solve:solve, steps:{min:Math.min(...steps), avg:total_steps/paths.length, max:Math.max(...steps), total:total_steps}}
-      }
-    </script>
+    <script src="process_stats.js"></script>
   </body>
 </html>
