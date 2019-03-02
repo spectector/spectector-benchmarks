@@ -1,8 +1,7 @@
 // Load stats json file
-loadjs(window.location.search.substring(1), init);
 
-function loadjs(file, callback) {
-    if(file=="") { file = "results/stats.json"; } // If no file is declared
+function loadjs(file, def, callback) {
+    if(file=="") { file = def; } // If no file is declared
     var script = document.createElement("script");
     script.type = "text/javascript";
     script.src = file;
@@ -51,7 +50,7 @@ function show_general(bool) { // Draw a table with all the results formatted
 	//txt += "<br><table border='1'>";
 	txt += "<br><table border='1'><tr><th>Program</th>";
 	for (prop in results[0]){ // Consider it contains all in order
-	    if(prop != "entry" && prop != "name" && prop != "unsafe"){
+	    if(prop != "entry" && prop != "name"){
 	       	txt += "<th>"+prop+"</th>";
 	    }
 	}
@@ -70,7 +69,9 @@ function show_general(bool) { // Draw a table with all the results formatted
 			var out_file = val.split('.').slice(0,-1).join('.')+".out";
 			txt += "<tr><td><a href=\""+results[i].name+"\">src</a></td></tr>";
 			// TODO add C code link
-			txt += "<tr><td><a href=\""+out_file+"\">log</a><td></tr></table></td>";
+			txt += "<tr><td><a href=\""+out_file+"\">log</a></td></tr></table></td>";
+			// var err_file = val.split('.').slice(0,-1).join('.')+".err";
+			// txt += "<tr><td><a href=\""+err_file+"\">err</a><td></tr></table></td>";
 			break;
 		    case "name":
 			break;
@@ -93,8 +94,6 @@ function show_general(bool) { // Draw a table with all the results formatted
 			txt += "</table></td></tr></table>";
 			break;
 		    case "entry":
-			break;
-		    case "unsafe":
 			break;
 		    default:
 			txt += "<td>";
@@ -175,12 +174,19 @@ function stats_results(results) {
     var timeout = results.filter(r => r.timeout).length;
     var analyzed = total-timeout;
     var unsafe = results.filter(r => r.unsafe).length;
-    var unknown = results.filter(r => r.paths ? stats_paths(r.paths).unknown_ins : 0).length;
+    var safe = analyzed-unsafe;
+    var unknown = 0;
+    results.forEach(function(elem, i) {
+	if(!elem.timeout && elem.paths && stats_paths(elem.paths).unknown_ins){
+	    unknown++;
+	    elem.unsafe ? unsafe-- : safe--;
+	}
+    })
     return {total:total,
 	    timeout:timeout,
 	    analyzed:analyzed,
 	    unsafe:unsafe,
-	    safe:analyzed-unsafe,
+	    safe:safe,
 	    unknown:unknown
 	   }
 }

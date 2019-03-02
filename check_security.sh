@@ -187,7 +187,7 @@ if ! [ -z $raw ] && [ -f $raw ]; then
 	    outjson="$outdir/$type.${to_analyze[0]}.$func.json"
 	    outerr="$outdir/$type.${to_analyze[0]}.$func.err"
 	    resP "$target\t$func\n"
-	    printf "%s\n" "$target\t$func"
+	    printf "%s\t%s\n" "$target" "$func"
 	    $runtimeout $timeout $spectector $target $flags --stats "$outjson"\
 			-e $func > $outf 2> $outerr
 	    ret=$?
