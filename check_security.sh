@@ -162,7 +162,7 @@ if ! [ -z $raw ]; then
 	    printf "%s is not a directory\n" "$all_folder"
 	    exit 1
 	fi
-	printf "Analyzing all the functions of the files of %s\n" "$all_folder"
+	printf "Analyzing all the functions of the files of %s\n" "$raw"
 	type=$(basename $raw)
 	for target in $raw/*.s; do
 	    name=$(basename $target)
@@ -180,8 +180,7 @@ if ! [ -z $raw ]; then
 	done
 	summarize_results
 	exit 1
-    fi
-    if [ -f $raw ]; then
+    elif [ -f $raw ]; then
 	dir=$(dirname $raw)
 	type=$(basename $dir)
 	while read -r line || [[ -n "$line" ]]; do
@@ -197,11 +196,14 @@ if ! [ -z $raw ]; then
 			    -e $func > $outf 2> $outerr
 		ret=$?
 		produce_output
-		# else
-		#     printf "$target doesn't exist or $func doesn't exist\n"
+	    # else
+	    # 	printf "$target doesn't exist or $func doesn't exist\n"
 	    fi
 	done < $raw
 	summarize_results
+    else
+	printf "Review the parameters passed"
+	exit 1
     fi
 fi
 
