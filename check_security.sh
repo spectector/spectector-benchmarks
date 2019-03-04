@@ -4,7 +4,7 @@
 _base=$(e=$0;while test -L "$e";do d=$(dirname "$e");e=$(readlink "$e");\
 				   cd "$d";done;cd "$(dirname "$e")";pwd -P)
 
-usage () {
+function usage () {
     printf "Usage: check_security [<options>...]
   -t TIMEOUT
   -m COMPILER  intel, microsoft, clang, gcc
@@ -27,16 +27,24 @@ To pass a list as an option argument, all the elements
     exit 0
 }
 
-produce_output () {
+function produce_output () {
     [ "$ret" -eq 124 ] && printf "{\"name\":\"%s\",\"status\":\"timeout\",\"file\":\"%s\",\"entry\":\"%s\"}" "$target" "$outjson" "$func" > "$outjson" # timeout
 }
 
-summarize_results () {
+function summarize_results () {
     printf "results=[" > "$jsonfile"
     for f in "$outdir"/*.json; do (cat "${f}"; printf ",";) >> "$jsonfile"; done
     printf "{\"name\":\"summary\"}]" >> "$jsonfile" # TODO: Fix
     exit 0
 }
+
+function clean_up {
+
+    # Perform program exit housekeeping
+    kill $LAST
+    exit
+}
+
 
 gen=(microsoft intel clang gcc)
 timeout=30
@@ -104,7 +112,7 @@ for compiler in ${gen[@]}; do
     esac
 done
 
-trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM
+trap clean_up SIGINT SIGTERM EXIT
 
 cd "$_base"
 
@@ -173,7 +181,9 @@ if ! [ -z $raw ]; then
 		outerr="$outdir/$type.$name.$func.err"
 		printf "%s\t%s\n" "$target" "$func"
 		$runtimeout $timeout $spectector $target $flags --stats "$outjson"\
-	    		    -e $func > $outf 2> $outerr
+	    		    -e $func > $outf 2> $outerr &
+		LAST=$!
+		wait $LAST
 		ret=$?
 		produce_output
 	    done
@@ -193,7 +203,9 @@ if ! [ -z $raw ]; then
 		outerr="$outdir/$type.${to_analyze[0]}.$func.err"
 		printf "%s\t%s\n" "$target" "$func"
 		$runtimeout $timeout $spectector $target $flags --stats "$outjson"\
-			    -e $func > $outf 2> $outerr
+			    -e $func > $outf 2> $outerr &
+		LAST=$!
+		wait $LAST
 		ret=$?
 		produce_output
 	    # else
@@ -248,7 +260,9 @@ for app in ${cases[@]}; do
 			    outerr="$outdir/${comp}.${app}.${f_target}.err"
 			fi # (show progress)
 			$runtimeout $timeout $spectector "$target" $flags\
-			  --stats $outjson $entry_flag > "$outf" 2> $outerr
+			  --stats $outjson $entry_flag > "$outf" 2> $outerr &
+			LAST=$!
+			wait $LAST
 			ret=$?
 			produce_output
 		    fi
