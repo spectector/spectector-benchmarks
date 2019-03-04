@@ -27,23 +27,11 @@ To pass a list as an option argument, all the elements
     exit 0
 }
 
-resP () { printf "$1" >> $outP; }
-resA () { printf "$1" >> $outA; }
-grep_out () { grep "$1\t" $2 > /dev/null && resA $3; }
-
 produce_output () {
-    ([ "$ret" -eq 124 ] && resA "~\t" && printf "{\"name\":\"%s\",\"status\":\"timeout\",\"file\":\"%s\",\"entry\":\"%s\"}" "$target" "$outjson" "$func" > "$outjson")|| # timeout
-	(grep_out "Could not parse" "$outerr" '^\t')||
-	(grep_out "unsupported instruction" "$outerr" '|\t')||
-	(grep_out "unsafe" "$outf" 'L\t')|| # Leak
-	(grep_out "timeout..." "$outf" 'SMT\t')|| # SMT timeout
-	(grep_out "program is safe" "$outf" 'S\t')|| # S
-	(grep_out "checking speculative" "$outf" '_\t')||
-	resA '?\t' # Maybe a bug
+    [ "$ret" -eq 124 ] && printf "{\"name\":\"%s\",\"status\":\"timeout\",\"file\":\"%s\",\"entry\":\"%s\"}" "$target" "$outjson" "$func" > "$outjson" # timeout
 }
 
 summarize_results () {
-    #paste "$outP" "$outA" | column -s $'\t' -t > "$out"
     printf "results=[" > "$jsonfile"
     for f in "$outdir"/*.json; do (cat "${f}"; printf ",";) >> "$jsonfile"; done
     printf "{\"name\":\"summary\"}]" >> "$jsonfile" # TODO: Fix
@@ -148,10 +136,7 @@ if ! [ -d $results ]; then
     exit 1
 fi
 
-out=$results/summary.txt
 jsonfile=$results/stats.json
-outA=$results/summary_analysis.txt
-outP=$results/summary_programs.txt
 # folder with the results for each benchmark
 outdir=$results/out
 
@@ -170,35 +155,54 @@ fi
 
 # Write the output files
 mkdir -p "$outdir"
-printf "\n\n\n" > "$outP"
-printf "$mits" > "$outA"
-printf "\n$lmi" >> "$outA"
-printf "\n$lop\n" >> "$outA"
 
-if ! [ -z $raw ] && [ -f $raw ]; then
-    dir=$(dirname $raw)
-    type=$(basename $dir)
-    while read -r line || [[ -n "$line" ]]; do
-	to_analyze=($line)
-	target=$dir/${to_analyze[0]}
-	func=${to_analyze[1]}
-	if [ -f $target ] && grep "\<$func:" $target > /dev/null; then
-	    outf="$outdir/$type.${to_analyze[0]}.$func.out"
-	    outjson="$outdir/$type.${to_analyze[0]}.$func.json"
-	    outerr="$outdir/$type.${to_analyze[0]}.$func.err"
-	    resP "$target\t$func\n"
-	    printf "%s\t%s\n" "$target" "$func"
-	    $runtimeout $timeout $spectector $target $flags --stats "$outjson"\
-			-e $func > $outf 2> $outerr
-	    ret=$?
-	    produce_output
-	    resA "\n"
-	    # else
-	    #     printf "$target doesn't exist or $func doesn't exist\n"
-	    #     resA '¬\t'
+if ! [ -z $raw ]; then
+    if [ $get_entry ]; then
+	if ! [ -d $raw ]; then
+	    printf "%s is not a directory\n" "$all_folder"
+	    exit 1
 	fi
-    done < $raw
-    summarize_results
+	printf "Analyzing all the functions of the files of %s\n" "$all_folder"
+	type=$(basename $raw)
+	for target in $raw/*.s; do
+	    name=$(basename $target)
+	    entries="./scripts/get_function_names.sh $target"
+	    $entries | while read func; do
+		outf="$outdir/$type.$name.$func.out"
+		outjson="$outdir/$type.$name.$func.json"
+		outerr="$outdir/$type.$name.$func.err"
+		printf "%s\t%s\n" "$target" "$func"
+		$runtimeout $timeout $spectector $target $flags --stats "$outjson"\
+	    		    -e $func > $outf 2> $outerr
+		ret=$?
+		produce_output
+	    done
+	done
+	summarize_results
+	exit 1
+    fi
+    if [ -f $raw ]; then
+	dir=$(dirname $raw)
+	type=$(basename $dir)
+	while read -r line || [[ -n "$line" ]]; do
+	    to_analyze=($line)
+	    target=$dir/${to_analyze[0]}
+	    func=${to_analyze[1]}
+	    if [ -f $target ] && grep "\<$func:" $target > /dev/null; then
+		outf="$outdir/$type.${to_analyze[0]}.$func.out"
+		outjson="$outdir/$type.${to_analyze[0]}.$func.json"
+		outerr="$outdir/$type.${to_analyze[0]}.$func.err"
+		printf "%s\t%s\n" "$target" "$func"
+		$runtimeout $timeout $spectector $target $flags --stats "$outjson"\
+			    -e $func > $outf 2> $outerr
+		ret=$?
+		produce_output
+		# else
+		#     printf "$target doesn't exist or $func doesn't exist\n"
+	    fi
+	done < $raw
+	summarize_results
+    fi
 fi
 
 for app in ${cases[@]}; do
@@ -209,8 +213,8 @@ for app in ${cases[@]}; do
 	entries="echo no-entry"
     fi
     $entries | while read func; do
-	if [ $get_entry ]; then resP "$app-$func\n"; entry_flag="-e $func";
-	else func=""; resP "$app\n"; fi
+	if [ $get_entry ]; then entry_flag="-e $func";
+	fi
 	for comp in ${gen[@]}; do
 	    folder=target/$comp/$app
 	    experiments=(any lfence slh)
@@ -225,7 +229,6 @@ for app in ${cases[@]}; do
 		    target=$folder/$ex$opt.$extension
 		    if ! [ -f $target ]; then
 			printf "%s doesn't exist\n" "$target"
-			resA '¬\t'
 		    else
 			f_target=$(basename $target)
 			name="${f_target%.*}"
@@ -233,13 +236,15 @@ for app in ${cases[@]}; do
 			type="${name##*.}"
 			if [ $get_entry ]; then
 			    printf "%s\n" "$comp-$app-$f_target-$func"
-			    outf="$outdir/${comp}.${app}.${f_target}-$func.out"
+			    outf="$outdir/${comp}.${app}.${f_target}.$func.out"
+			    outjson="$outdir/${comp}.${app}.${f_target}.$func.json"
+			    outerr="$outdir/${comp}.${app}.${f_target}.$func.err"
 			else
 			    printf "%s\n" "$comp-$app-$f_target"
 			    outf="$outdir/${comp}.${app}.${f_target}.out"
+			    outjson="$outdir/${comp}.${app}.${f_target}.json"
+			    outerr="$outdir/${comp}.${app}.${f_target}.err"
 			fi # (show progress)
-			outjson="$outdir/${comp}.${app}.${f_target}.json"
-			outerr="$outdir/${comp}.${app}.${f_target}.err"
 			$runtimeout $timeout $spectector "$target" $flags\
 			  --stats $outjson $entry_flag > "$outf" 2> $outerr
 			ret=$?
@@ -248,7 +253,6 @@ for app in ${cases[@]}; do
 		done
 	    done
 	done
-	resA "\n"
     done
 done
 summarize_results
