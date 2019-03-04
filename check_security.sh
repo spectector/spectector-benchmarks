@@ -32,7 +32,7 @@ resA () { printf "$1" >> $outA; }
 grep_out () { grep "$1\t" $2 > /dev/null && resA $3; }
 
 produce_output () {
-    ([ "$ret" -eq 124 ] && resA "~\t" && printf "{\"name\":\"%s\",\"timeout\":true,\"file\":\"%s\",\"entry\":\"%s\"}" "$target" "$outjson" "$func" > "$outjson")|| # timeout
+    ([ "$ret" -eq 124 ] && resA "~\t" && printf "{\"name\":\"%s\",\"status\":\"timeout\",\"file\":\"%s\",\"entry\":\"%s\"}" "$target" "$outjson" "$func" > "$outjson")|| # timeout
 	(grep_out "Could not parse" "$outerr" '^\t')||
 	(grep_out "unsupported instruction" "$outerr" '|\t')||
 	(grep_out "unsafe" "$outf" 'L\t')|| # Leak
