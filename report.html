@@ -3,16 +3,13 @@
   <head>
     <h1>Results</h1>
     <p>To show another JSON stats file, append its absolute path to the url, i.e. <em>consult.html?results2/stats.json</em></p>
+    <button type="button" onclick="show_general(true)">Show overview table</button>
+    <button type="button" onclick="show_general(false)">Show descriptive table</button>
   </head>
   <body>
     <h2 id="stats">Stats</h2>
-    <a style="color:red" id="leak"> LEAK: </a>
-    <a style="color:green" id="secure"> SECURE: </a>
-    <a style="color:purple" id="tout"> TIMEOUT: </a>
-    <a style="color:blue" id="unknown"> UNKNOWN INS: </a>
+    <a id="buttons"></a>
     <br>
-    <button type="button" onclick="show_general(true)">Show general table</button>
-    <button type="button" onclick="show_general(false)">Show descriptive view</button>
     <a id="data"></a>
     <script src="process_stats.js"></script>
     <script>loadjs(window.location.search.substring(1), "results/stats.json", init);</script>

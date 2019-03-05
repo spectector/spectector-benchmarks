@@ -29,6 +29,7 @@ To pass a list as an option argument, all the elements
 
 function produce_output () {
     [ "$ret" -eq 124 ] && printf "{\"name\":\"%s\",\"status\":\"timeout\",\"file\":\"%s\",\"entry\":\"%s\"}" "$target" "$outjson" "$func" > "$outjson" # timeout
+    [ "$ret" -eq 139 ] && printf "{\"name\":\"%s\",\"status\":\"segfault\",\"file\":\"%s\",\"entry\":\"%s\"}" "$target" "$outjson" "$func" > "$outjson" # timeout
 }
 
 function summarize_results () {
@@ -39,12 +40,9 @@ function summarize_results () {
 }
 
 function clean_up {
-
-    # Perform program exit housekeeping
     kill $LAST
     exit
 }
-
 
 gen=(microsoft intel clang gcc)
 timeout=30
