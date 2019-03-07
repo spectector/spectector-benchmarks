@@ -19,17 +19,18 @@ function init(){
     txt = "";
     for (var x in stats){
 	if (x != "total" && x != "analyzed"){
-	    if (x == "unsafe"){
-	    }
-	    txt += "<button style=\"color:"+color_status[x]+"\" id=\"leak\" onclick=\"change_view('"+x+"')\"> "+x.toUpperCase()+": "+stats[x]+"</button>";
+	    txt += "<td><table>";
+	    //txt += "<td><table><tr><td><button style=\"color:"+color_status[x]+"\" id=\"leak\" onclick=\"change_view('"+x+"')\"> "+x.toUpperCase()+": "+stats[x]+"</button></td></tr><tr><td>"+x+"</td></tr></table></td>";
+	    txt += "<tr><td><button style=\"color:"+color_status[x]+"\" id=\"leak\" onclick=\"change_view('"+x+"')\"> "+x.toUpperCase()+": "+stats[x]+"</button></td></tr></td></table>";
 	}
     }
-    document.getElementById("buttons").innerHTML = "Press a button to show/hide its elements:<br>" + txt;
+    document.getElementById("buttons").innerHTML = "Press a button to show/hide its elements and stats:<br><table><tr>" + txt + "</tr></table>";
     show_general(true);
 }
 
 function show_general(bool) { // Draw a table with all the results formatted
     showing = bool;
+    document.getElementById("conc_stats").innerHTML = "";
     var txt = "";
     if(bool){
 	actual_exp = "";
@@ -234,12 +235,37 @@ function stats_results(results) {
 }
 
 function change_view(st){
+    stats = {"times":[], "paths_length":[], "steps":[]};
     results.forEach(function(elem, i) {
 	if(elem.status == st) {
 	    elem.show = !elem.show;
+	    stats.times.push(elem.total_time);
+	    if (elem.paths){
+		stats.paths_length.push(elem.paths.length);
+		for(var path in elem.paths){
+		    if(elem.paths[path].steps)
+			stats.steps.push(elem.paths[path].steps);
+		}
+	    }
 	}
     });
+    // var table = document.createElement("table");
+    // var name = document.createElement("h3"); name.innerText = st;
+    // document.getElementById("conc_stats").appendChild(table);
     show_general(showing);
+    var txt = "<table border=\"2\">";
+    txt += "<tr><td></td><th>Min</th><th>Avg</th><th>Max</th></tr>";
+    for (var x in stats){
+	txt += "<tr><th>"+x+"</th><td>" + Math.min(...stats[x]) + "</td>";
+	txt += "<td>" + stats[x].reduce(add)/stats[x].length + "</td>";
+	txt += "<td>" + Math.max(...stats[x]) + "</td></tr>";
+    }
+    txt += "</table>";
+    document.getElementById("conc_stats").innerHTML = "<h3>"+st+":</h3>" + txt;
+}
+
+function add(accumulator, a) {
+    return accumulator + a;
 }
 
 color_status = {

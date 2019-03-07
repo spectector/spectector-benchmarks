@@ -40,7 +40,7 @@ function summarize_results () {
 }
 
 function clean_up {
-    kill $LAST
+    kill $LAST 2> /dev/null
     exit
 }
 
