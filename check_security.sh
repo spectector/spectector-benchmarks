@@ -36,12 +36,12 @@ function summarize_results () {
     printf "results=[" > "$jsonfile"
     for f in "$outdir"/*.json; do (cat "${f}"; printf ",";) >> "$jsonfile"; done
     printf "{\"name\":\"summary\"}]" >> "$jsonfile" # TODO: Fix
-    exit 0
 }
 
 function clean_up {
     kill $LAST 2> /dev/null
-    exit
+    summarize_results
+    exit 1
 }
 
 gen=(microsoft intel clang gcc)
@@ -187,7 +187,7 @@ if ! [ -z $raw ]; then
 	    done
 	done
 	summarize_results
-	exit 1
+	exit 0
     elif [ -f $raw ]; then
 	dir=$(dirname $raw)
 	type=$(basename $dir)
@@ -211,6 +211,7 @@ if ! [ -z $raw ]; then
 	    fi
 	done < $raw
 	summarize_results
+	exit 0
     else
 	printf "Review the parameters passed"
 	exit 1
@@ -270,6 +271,7 @@ for app in ${cases[@]}; do
     done
 done
 summarize_results
+exit 0
 
 # echo "Comparison with saved results: "
 # diff ../results/summary.txt ../results/summary.txt-ok && echo ok
