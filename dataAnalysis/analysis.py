@@ -6,6 +6,7 @@ from pprint import pprint
 import matplotlib.pyplot as plt
 import numpy as np
 
+from matplotlib.backends.backend_pdf import PdfPages
 
 import matplotlib
 from math import sqrt
@@ -178,6 +179,8 @@ def getResult (entry, unknownInstrMode):
     if not unknown_ins(entry):
         if entry["status"] == "safe":
             return "safe"
+        elif entry["status"] == "safe_bound":
+            return "safeUnk"
         elif entry["status"] == "data":
             return "data"
         elif entry["status"] == "control":
@@ -185,7 +188,7 @@ def getResult (entry, unknownInstrMode):
         else:
             assert False
     else:
-        if entry["status"] == "safe":
+        if entry["status"] == "safe" or entry["status"] == "safe_bound":
             return "safeUnk"
         elif entry["status"] == "data":
             if unknownInstrMode == "skip":
@@ -303,7 +306,7 @@ def stackedBars(dataByLength,  intervals, unknownInstrMode, ignoreParsingErrors 
 
 
   
-    plt.figure(figsize=(50,10))
+    fig = plt.figure()#(figsize=(50,10))
 
     p1 = plt.bar(ind, safeVals, width, color=green, edgecolor='black', log=log)
     p2 = plt.bar(ind, safeUnkVals, width, bottom=safeVals, color=green, edgecolor='black', hatch='//', log=log)
@@ -322,7 +325,8 @@ def stackedBars(dataByLength,  intervals, unknownInstrMode, ignoreParsingErrors 
     # plt.yticks(np.arange(0, 101, 10))
     plt.legend((p1[0], p2[0], p3[0], p4[0], p5[0], p6[0], p7[0], p8[0],), ('safe', 'safeUnk', 'data', 'ctrl', 'dataUnk', 'ctrlUnk', 'segfault','timeout'))
 
-    plt.show()
+    # plt.show()
+    return fig
 
 # def plotSizes(dataByLength,  intervals,  title="", xLabel="", yLabel="", log=False):
 #     sizes = []
@@ -377,7 +381,8 @@ def plotValue(data, mode, title="", xLabel="", yLabel="", log=False):
     plt.title(title)    
     plt.xlabel(xLabel)
     plt.ylabel(yLabel)
-    plt.show()
+    # plt.show()
+    return fig
 
 def any_number_range(a,b,s=1):
     if (a == b):
@@ -419,6 +424,7 @@ def plotPie(data,filename="tmp.pdf"):
     explode = (0, 0, 0, 0, 0, 0, 0, 0) 
     colors = [green,green,brightRed, darkRed, brightRed, darkRed, blue, yellow]
 
+
     fig1, ax1 = plt.subplots()
     patches = ax1.pie(sizes, explode=explode, colors=colors, labels=labels, autopct='%1.1f%%',
              startangle=90)[0]
@@ -436,8 +442,9 @@ def plotPie(data,filename="tmp.pdf"):
     ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
 
     # plt.tight_layout()
-    plt.savefig(filename)
-    plt.show()
+    # plt.savefig(filename)
+    # plt.show()
+    return fig1
 
 def plotDoublePie(data):
     labelsOut = ['safe', 'data', 'ctrl', 'segfault', 'timeout']
@@ -461,7 +468,7 @@ def plotDoublePie(data):
     explodeIn = (0, 0, 0, 0, 0, 0, 0, 0) 
     colorsIn = [green,green,brightRed,  brightRed, darkRed, darkRed, blue, yellow]
 
-
+    fig = plt.figure()
     plt.pie(sizesOut, labels=labelsOut, colors=colorsOut, startangle=90, pctdistance=0.85, autopct='%1.1f%%')
     patches = plt.pie(sizesIn,colors=colorsIn,radius=0.75,startangle=90)[0]
     patches[1].set_hatch('//') 
@@ -474,9 +481,10 @@ def plotDoublePie(data):
     fig.gca().add_artist(centre_circle)
 
     plt.axis('equal')
-    plt.show()
+    return fig
+    # plt.show()
 
-    plt.show()
+    # plt.show()
 
 
 
@@ -484,51 +492,73 @@ def plotDoublePie(data):
 
 ######## 
 
-def stepAnalysis(data, unknownInstrMode):
+def stepAnalysis(data, unknownInstrMode, reportName):
     intervals = generateIntervals(0,1900,100)
     dataBySteps = groupByIntervals(data, intervals, "steps")
-    stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=True, title="Results by steps", xLabel="Number of steps", yLabel="Number of programs")
-    stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by steps", xLabel="Number of steps", yLabel="Percentage")
-    plotValue(data, "steps", title="Steps", xLabel="Programs", yLabel="Number of steps", log=False)
+    plt1 = stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=True, title="Results by steps", xLabel="Number of steps", yLabel="Number of programs")
+    plt2 = stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by steps", xLabel="Number of steps", yLabel="Percentage")
+    plt3 = plotValue(data, "steps", title="Steps", xLabel="Programs", yLabel="Number of steps", log=False)
+    toPDF(reportName+"steps.pdf", [plt1, plt2, plt3])
 
-def instructionsAnalysis(data, unknownInstrMode):
-    intervals = generateIntervals(0,1900,100)
+def instructionsAnalysis(data, unknownInstrMode, reportName):
+    intervals = generateIntervals(0,1000,100)
     dataBySteps = groupByIntervals(data, intervals, "instructions")
-    stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=False, title="Results by instructions", xLabel="Number of instructions", yLabel="Number of programs")
-    stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by instructions", xLabel="Number of instructions", yLabel="Percentage")
-    plotValue(data, "instructions", title="instructions", xLabel="Programs", yLabel="Number of instructions", log=False)
+    plt1 = stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=False, title="Results by instructions", xLabel="Number of instructions", yLabel="Number of programs")
+    plt2 = stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by instructions", xLabel="Number of instructions", yLabel="Percentage")
+    plt3 = plotValue(data, "instructions", title="instructions", xLabel="Programs", yLabel="Number of instructions", log=False)
+    toPDF(reportName+"instructions.pdf", [plt1, plt2, plt3])
 
-def resultsAnalysis(data, unknownInstrMode):
+def resultsAnalysis(data, unknownInstrMode, reportName):
     dataByResult = groupByClass(data, "result", unknownInstrMode)
     # plotPie(dataByResult)
-    plotDoublePie(dataByResult)
+    plt = plotDoublePie(dataByResult)
+    toPDF(reportName+"results.pdf", [plt])
 
-def timeAnalysis(data, unknownInstrMode):
+def timeAnalysis(data, unknownInstrMode, reportName):
     intervals =  generateIntervals(0,40000,5000)
     dataByTime = groupByIntervals(data, intervals, "totalTime")
-    stackedBars(dataByTime,intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=False)
-    plotValue(data, "totalTime", title="Total Time", xLabel="Programs", yLabel="Total time", log=False)
+    plt1 = stackedBars(dataByTime,intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=False)
+    plt2 = plotValue(data, "totalTime", title="Total Time", xLabel="Programs", yLabel="Total time", log=False)
+    toPDF(reportName+"time.pdf", [plt1, plt2])
 
-def pathAnalysis(data, unknownInstrMode):
+def pathAnalysis(data, unknownInstrMode, reportName):
     intervals = generateIntervals(0,30,2)
     dataByPaths = groupByIntervals(data, intervals, "paths")
-    stackedBars(dataByPaths, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=False, title="Results by paths", xLabel="Number of instructions", yLabel="Number of programs")
-    stackedBars(dataByPaths, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by paths", xLabel="Number of instructions", yLabel="Percentage")
-    plotValue(data, "paths", title="Paths", xLabel="Programs", yLabel="Number of paths", log=False)
+    plt1 = stackedBars(dataByPaths, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=False, title="Results by paths", xLabel="Number of instructions", yLabel="Number of programs")
+    plt2 = stackedBars(dataByPaths, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by paths", xLabel="Number of instructions", yLabel="Percentage")
+    plt3 = plotValue(data, "paths", title="Paths", xLabel="Programs", yLabel="Number of paths", log=False)
+    toPDF(reportName+"paths.pdf", [plt1, plt2, plt3])
 
-path = "/Users/marco.guarnieri/spectector-results/results_unknown_as_stop/out"
-unknownInstrMode = "stop"
-data = loadData(path)
-print "Number of files "+str(len(data))
+def toPDF(filename, figs):
+    pp = PdfPages(filename)
+    for fig in figs:
+        pp.savefig(fig)
+        plt.close(fig)
+    pp.close()
 
-# latexify()
+
+### analyse logs for UNKNOWN as SKIP
+pathSkip = "/Users/marco.guarnieri/spectector-results/results_unknown_as_skip/results_xen_clang_linked/out"
+data = loadData(pathSkip)
+print "Number of files (SKIP) "+str(len(data))
+resultsAnalysis(data, unknownInstrMode="skip", reportName="skip")
+pathAnalysis(data, unknownInstrMode="skip", reportName="skip")
+instructionsAnalysis(data, unknownInstrMode="skip", reportName="skip")
+stepAnalysis(data, unknownInstrMode="skip", reportName="skip")
+timeAnalysis(data, unknownInstrMode="skip", reportName="skip")
 
 
-resultsAnalysis(data, unknownInstrMode=unknownInstrMode)
-pathAnalysis(data, unknownInstrMode=unknownInstrMode)
-instructionsAnalysis(data, unknownInstrMode=unknownInstrMode)
-stepAnalysis(data, unknownInstrMode=unknownInstrMode)
-timeAnalysis(data, unknownInstrMode=unknownInstrMode)
+### analyse logs for UNKNOWN as SKIP
+pathStop = "/Users/marco.guarnieri/spectector-results/results_unknown_as_stop/results_xen_clang_linked/out"
+data = loadData(pathStop)
+print "Number of files (STOP) "+str(len(data))
+resultsAnalysis(data, unknownInstrMode="stop", reportName="stop")
+pathAnalysis(data, unknownInstrMode="stop", reportName="stop")
+instructionsAnalysis(data, unknownInstrMode="stop", reportName="stop")
+stepAnalysis(data, unknownInstrMode="stop", reportName="stop")
+timeAnalysis(data, unknownInstrMode="stop", reportName="stop")
+
+
 
 
 
