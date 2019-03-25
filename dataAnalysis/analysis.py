@@ -168,7 +168,7 @@ def groupByIntervals(data, intervals, mode):
                 data1[(min,max)][function] = data[function]
     return data1
 
-def getResult (entry):
+def getResult (entry, unknownInstrMode):
     if entry["status"] == "timeout":
             return "timeout"
     if entry["status"] == "segfault":
@@ -188,19 +188,29 @@ def getResult (entry):
         if entry["status"] == "safe":
             return "safeUnk"
         elif entry["status"] == "data":
-            return "dataUnk"
+            if unknownInstrMode == "skip":
+                return "dataUnk"
+            elif  unknownInstrMode == "stop":
+                return "data"
+            else:
+                assert False
         elif entry["status"] == "control":
-            return "controlUnk"
+            if unknownInstrMode == "skip":
+                return "controlUnk"
+            elif  unknownInstrMode == "stop":
+                return "control"
+            else:
+                assert False
         else:
             assert False
 
 
 ## group the functions 
-def groupByClass(data, mode):
+def groupByClass(data, mode, unknownInstrMode):
     data1 = {}
     for function in data:
         if mode == "result":
-            value = getResult(data[function])
+            value = getResult(data[function], unknownInstrMode)
         else:
             print "Unsupported mode"
             return 0
@@ -218,7 +228,7 @@ def unknown_ins(entry):
                     return True
     return False
 
-def stackedBars(dataByLength,  intervals, ignoreParsingErrors = True, percentage = True, log=False, title="", xLabel="", yLabel=""):
+def stackedBars(dataByLength,  intervals, unknownInstrMode, ignoreParsingErrors = True, percentage = True, log=False, title="", xLabel="", yLabel=""):
     safeVals = []
     dataVals = []
     ctrlVals = []
@@ -232,18 +242,18 @@ def stackedBars(dataByLength,  intervals, ignoreParsingErrors = True, percentage
             values = dataByLength[(min,max)]
 
             if ignoreParsingErrors:
-                total = float(len([key for key in values.keys() if getResult(values[key]) != "parsing"]))
+                total = float(len([key for key in values.keys() if getResult(values[key], unknownInstrMode) != "parsing"]))
             else:
                 total = float(len(values.keys()))
 
-            safe = len([key for key in values.keys() if getResult(values[key]) == "safe" ])
-            data = len([key for key in values.keys() if getResult(values[key]) == "data" ])
-            ctrl = len([key for key in values.keys() if getResult(values[key]) == "control" ])
-            safeUnk = len([key for key in values.keys() if getResult(values[key]) == "safeUnk" ])
-            dataUnk = len([key for key in values.keys() if getResult(values[key]) == "dataUnk" ])
-            ctrlUnk = len([key for key in values.keys() if getResult(values[key]) == "controlUnk" ])
-            segfault = len([key for key in values.keys() if getResult(values[key]) == "segfault" ])
-            timeout = len([key for key in values.keys() if getResult(values[key]) == "timeout" ])
+            safe = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "safe" ])
+            data = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "data" ])
+            ctrl = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "control" ])
+            safeUnk = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "safeUnk" ])
+            dataUnk = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "dataUnk" ])
+            ctrlUnk = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "controlUnk" ])
+            segfault = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "segfault" ])
+            timeout = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "timeout" ])
 
             if percentage:
                 safeVals.append(100*safe/total)
@@ -397,14 +407,14 @@ def generateIntervals(min,max, step):
 
 def plotPie(data,filename="tmp.pdf"):
     labels = ['safe', 'safeUnk', 'data', 'ctrl', 'dataUnk', 'ctrlUnk', 'segfault', 'timeout']
-    safe = len(data["safe"].keys())
-    dataV = len(data["data"].keys())
-    ctrl = len(data["control"].keys())
-    safeUnk = len(data["safeUnk"].keys())
-    dataUnk = len(data["dataUnk"].keys())
-    ctrlUnk = len(data["controlUnk"].keys())
-    segfault = len(data["segfault"].keys())
-    timeout = len(data["timeout"].keys())
+    safe = len(data["safe"].keys()) if "safe" in data.keys() else 0
+    dataV = len(data["data"].keys())  if "data" in data.keys() else 0
+    ctrl = len(data["control"].keys())  if "control" in data.keys() else 0
+    safeUnk = len(data["safeUnk"].keys())  if "safeUnk" in data.keys() else 0
+    dataUnk = len(data["dataUnk"].keys()) if "dataUnk" in data.keys() else 0
+    ctrlUnk = len(data["controlUnk"].keys()) if "controlUnk" in data.keys() else 0
+    segfault = len(data["segfault"].keys()) if "segfault" in data.keys() else 0
+    timeout = len(data["timeout"].keys()) if "timeout" in data.keys() else 0
     sizes = [safe, safeUnk, dataV, ctrl, dataUnk, ctrlUnk, segfault, timeout]
     explode = (0, 0, 0, 0, 0, 0, 0, 0) 
     colors = [green,green,brightRed, darkRed, brightRed, darkRed, blue, yellow]
@@ -431,17 +441,17 @@ def plotPie(data,filename="tmp.pdf"):
 
 def plotDoublePie(data):
     labelsOut = ['safe', 'data', 'ctrl', 'segfault', 'timeout']
-    safeAll = len(data["safe"].keys())+ len(data["safeUnk"].keys())
-    dataAll = len(data["data"].keys())+len(data["dataUnk"].keys())
-    ctrlAll = len(data["control"].keys())+len(data["controlUnk"].keys())
-    segfault = len(data["segfault"].keys())
-    timeout = len(data["timeout"].keys())
-    safe = len(data["safe"].keys())
-    dataV = len(data["data"].keys())
-    ctrl = len(data["control"].keys())
-    safeUnk = len(data["safeUnk"].keys())
-    dataUnk = len(data["dataUnk"].keys())
-    ctrlUnk = len(data["controlUnk"].keys())
+    safeAll = ( len(data["safe"].keys())  if "safe" in data.keys() else 0 )+ ( len(data["safeUnk"].keys())  if "safeUnk" in data.keys() else 0)
+    dataAll = ( len(data["data"].keys())  if "data" in data.keys() else 0 ) + ( len(data["dataUnk"].keys())  if "dataUnk" in data.keys() else 0)
+    ctrlAll = ( len(data["control"].keys())  if "control" in data.keys() else 0) +( len(data["controlUnk"].keys())  if "controlUnk" in data.keys() else 0)
+    segfault = len(data["segfault"].keys())  if "segfault" in data.keys() else 0
+    timeout = len(data["timeout"].keys())  if "timeout" in data.keys() else 0
+    safe = len(data["safe"].keys())  if "safe" in data.keys() else 0
+    dataV = len(data["data"].keys())  if "data" in data.keys() else 0
+    ctrl = len(data["control"].keys())  if "control" in data.keys() else 0
+    safeUnk = len(data["safeUnk"].keys())  if "safeUnk" in data.keys() else 0
+    dataUnk = len(data["dataUnk"].keys())  if "dataUnk" in data.keys() else 0
+    ctrlUnk = len(data["controlUnk"].keys())  if "controlUnk" in data.keys() else 0
 
     sizesOut = [safeAll, dataAll, ctrlAll, segfault, timeout]
     explodeOut = (0, 0, 0, 0, 0) 
@@ -474,48 +484,51 @@ def plotDoublePie(data):
 
 ######## 
 
-def stepAnalysis(data):
+def stepAnalysis(data, unknownInstrMode):
     intervals = generateIntervals(0,1900,100)
     dataBySteps = groupByIntervals(data, intervals, "steps")
-    stackedBars(dataBySteps, intervals, ignoreParsingErrors=True, percentage=False, log=True, title="Results by steps", xLabel="Number of steps", yLabel="Number of programs")
-    stackedBars(dataBySteps, intervals, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by steps", xLabel="Number of steps", yLabel="Percentage")
+    stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=True, title="Results by steps", xLabel="Number of steps", yLabel="Number of programs")
+    stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by steps", xLabel="Number of steps", yLabel="Percentage")
     plotValue(data, "steps", title="Steps", xLabel="Programs", yLabel="Number of steps", log=False)
 
-def instructionsAnalysis(data):
+def instructionsAnalysis(data, unknownInstrMode):
     intervals = generateIntervals(0,1900,100)
     dataBySteps = groupByIntervals(data, intervals, "instructions")
-    stackedBars(dataBySteps, intervals, ignoreParsingErrors=True, percentage=False, log=False, title="Results by instructions", xLabel="Number of instructions", yLabel="Number of programs")
-    stackedBars(dataBySteps, intervals, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by instructions", xLabel="Number of instructions", yLabel="Percentage")
+    stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=False, title="Results by instructions", xLabel="Number of instructions", yLabel="Number of programs")
+    stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by instructions", xLabel="Number of instructions", yLabel="Percentage")
     plotValue(data, "instructions", title="instructions", xLabel="Programs", yLabel="Number of instructions", log=False)
 
-def resultsAnalysis(data):
-    dataByResult = groupByClass(data, "result")
-    plotPie(dataByResult)
+def resultsAnalysis(data, unknownInstrMode):
+    dataByResult = groupByClass(data, "result", unknownInstrMode)
+    # plotPie(dataByResult)
     plotDoublePie(dataByResult)
 
-def timeAnalysis(data):
-    dataByTime = groupByIntervals(data, generateIntervals(0,40000,5000), "totalTime")
-    stackedBars(dataByTime,generateIntervals(0,40000,5000), ignoreParsingErrors=True, percentage=False, log=False)
+def timeAnalysis(data, unknownInstrMode):
+    intervals =  generateIntervals(0,40000,5000)
+    dataByTime = groupByIntervals(data, intervals, "totalTime")
+    stackedBars(dataByTime,intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=False)
     plotValue(data, "totalTime", title="Total Time", xLabel="Programs", yLabel="Total time", log=False)
 
-def pathAnalysis(data):
+def pathAnalysis(data, unknownInstrMode):
     intervals = generateIntervals(0,30,2)
     dataByPaths = groupByIntervals(data, intervals, "paths")
-    stackedBars(dataByPaths, intervals, ignoreParsingErrors=True, percentage=False, log=False, title="Results by paths", xLabel="Number of instructions", yLabel="Number of programs")
-    stackedBars(dataByPaths, intervals, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by paths", xLabel="Number of instructions", yLabel="Percentage")
+    stackedBars(dataByPaths, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=False, title="Results by paths", xLabel="Number of instructions", yLabel="Number of programs")
+    stackedBars(dataByPaths, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by paths", xLabel="Number of instructions", yLabel="Percentage")
     plotValue(data, "paths", title="Paths", xLabel="Programs", yLabel="Number of paths", log=False)
 
-path = "/tmp/spectector_results/results_xen_clang_linked/out"
+path = "/Users/marco.guarnieri/spectector-results/results_unknown_as_stop/out"
+unknownInstrMode = "stop"
 data = loadData(path)
 print "Number of files "+str(len(data))
 
 # latexify()
 
-resultsAnalysis(data)
-# pathAnalysis(data)
-# instructionsAnalysis(data)
-# stepAnalysis(data)
-# timeAnalysis(data)
+
+resultsAnalysis(data, unknownInstrMode=unknownInstrMode)
+pathAnalysis(data, unknownInstrMode=unknownInstrMode)
+instructionsAnalysis(data, unknownInstrMode=unknownInstrMode)
+stepAnalysis(data, unknownInstrMode=unknownInstrMode)
+timeAnalysis(data, unknownInstrMode=unknownInstrMode)
 
 
 
