@@ -170,42 +170,76 @@ def groupByIntervals(data, intervals, mode):
     return data1
 
 def getResult (entry, unknownInstrMode):
-    if entry["status"] == "timeout":
+    status = entry["status"]
+    if status == "timeout":
             return "timeout"
-    if entry["status"] == "segfault":
+    if status == "segfault":
             return "segfault"
-    if entry["status"] == "parsing":
+    if status == "parsing":
             return "parsing"
-    if not unknown_ins(entry):
-        if entry["status"] == "safe":
+
+    if status == "safe":
+        if not unknown_ins(entry):
             return "safe"
-        elif entry["status"] == "safe_bound":
-            return "safeUnk"
-        elif entry["status"] == "data":
-            return "data"
-        elif entry["status"] == "control":
-            return "control"
         else:
-            assert False
-    else:
-        if entry["status"] == "safe" or entry["status"] == "safe_bound":
             return "safeUnk"
-        elif entry["status"] == "data":
-            if unknownInstrMode == "skip":
-                return "dataUnk"
-            elif  unknownInstrMode == "stop":
+
+    if status == "safe_bound":
+        return "safeUnk"
+
+    if status == "data":
+        if  unknownInstrMode == "stop":
+            return "data"
+        elif unknownInstrMode == "skip":
+            if not unknown_ins_lastTrace(entry):
                 return "data"
             else:
-                assert False
-        elif entry["status"] == "control":
-            if unknownInstrMode == "skip":
-                return "controlUnk"
-            elif  unknownInstrMode == "stop":
-                return "control"
-            else:
-                assert False
+                return "dataUnk"
         else:
             assert False
+    if status == "control":
+        if  unknownInstrMode == "stop":
+            return "control"
+        elif unknownInstrMode == "skip":
+            if not unknown_ins_lastTrace(entry):
+                return "control"
+            else:
+                return "controlUnk"
+        else:
+            assert False
+    assert False # unsupported value
+
+
+    # if not unknown_ins(entry):
+    #     if entry["status"] == "safe":
+    #         return "safe"
+    #     elif entry["status"] == "safe_bound":
+    #         return "safeUnk"
+    #     elif entry["status"] == "data":
+    #         return "data"
+    #     elif entry["status"] == "control":
+    #         return "control"
+    #     else:
+    #         assert False
+    # else:
+    #     if entry["status"] == "safe" or entry["status"] == "safe_bound":
+    #         return "safeUnk"
+    #     elif entry["status"] == "data":
+    #         if unknownInstrMode == "skip":
+    #             return "dataUnk"
+    #         elif  unknownInstrMode == "stop":
+    #             return "data"
+    #         else:
+    #             assert False
+    #     elif entry["status"] == "control":
+    #         if unknownInstrMode == "skip":
+    #             return "controlUnk"
+    #         elif  unknownInstrMode == "stop":
+    #             return "control"
+    #         else:
+    #             assert False
+    #     else:
+    #         assert False
 
 
 ## group the functions 
@@ -230,6 +264,16 @@ def unknown_ins(entry):
                 if pathData["unknown_ins"] > 0:
                     return True
     return False
+
+def unknown_ins_lastTrace(entry):
+    if "paths" in entry:
+        lastPath = entry["paths"]["length"]
+        pathData = entry["paths"][str(int(lastPath) -1)]
+        if pathData["unknown_ins"] > 0:
+            return True
+    return False
+
+
 
 def stackedBars(dataByLength,  intervals, unknownInstrMode, ignoreParsingErrors = True, percentage = True, log=False, title="", xLabel="", yLabel=""):
     safeVals = []
@@ -461,11 +505,11 @@ def plotDoublePie(data):
     ctrlUnk = len(data["controlUnk"].keys())  if "controlUnk" in data.keys() else 0
 
     sizesOut = [safeAll, dataAll, ctrlAll, segfault, timeout]
-    explodeOut = (0, 0, 0, 0, 0) 
+    # explodeOut = (0, 0, 0, 0, 0) 
     colorsOut = [green,brightRed, darkRed, blue, yellow]
 
     sizesIn = [safe, safeUnk, dataV, dataUnk, ctrl, ctrlUnk, segfault, timeout]
-    explodeIn = (0, 0, 0, 0, 0, 0, 0, 0) 
+    # explodeIn = (0, 0, 0, 0, 0, 0, 0, 0) 
     colorsIn = [green,green,brightRed,  brightRed, darkRed, darkRed, blue, yellow]
 
     fig = plt.figure()
@@ -541,22 +585,22 @@ def toPDF(filename, figs):
 pathSkip = "/Users/marco.guarnieri/spectector-results/results_unknown_as_skip/results_xen_clang_linked/out"
 data = loadData(pathSkip)
 print "Number of files (SKIP) "+str(len(data))
-resultsAnalysis(data, unknownInstrMode="skip", reportName="skip")
-pathAnalysis(data, unknownInstrMode="skip", reportName="skip")
-instructionsAnalysis(data, unknownInstrMode="skip", reportName="skip")
-stepAnalysis(data, unknownInstrMode="skip", reportName="skip")
-timeAnalysis(data, unknownInstrMode="skip", reportName="skip")
+resultsAnalysis(data, unknownInstrMode="skip", reportName="skip_")
+pathAnalysis(data, unknownInstrMode="skip", reportName="skip_")
+instructionsAnalysis(data, unknownInstrMode="skip", reportName="skip_")
+stepAnalysis(data, unknownInstrMode="skip", reportName="skip_")
+timeAnalysis(data, unknownInstrMode="skip", reportName="skip_")
 
 
 ### analyse logs for UNKNOWN as SKIP
 pathStop = "/Users/marco.guarnieri/spectector-results/results_unknown_as_stop/results_xen_clang_linked/out"
 data = loadData(pathStop)
 print "Number of files (STOP) "+str(len(data))
-resultsAnalysis(data, unknownInstrMode="stop", reportName="stop")
-pathAnalysis(data, unknownInstrMode="stop", reportName="stop")
-instructionsAnalysis(data, unknownInstrMode="stop", reportName="stop")
-stepAnalysis(data, unknownInstrMode="stop", reportName="stop")
-timeAnalysis(data, unknownInstrMode="stop", reportName="stop")
+resultsAnalysis(data, unknownInstrMode="stop", reportName="stop_")
+pathAnalysis(data, unknownInstrMode="stop", reportName="stop_")
+instructionsAnalysis(data, unknownInstrMode="stop", reportName="stop_")
+stepAnalysis(data, unknownInstrMode="stop", reportName="stop_")
+timeAnalysis(data, unknownInstrMode="stop", reportName="stop_")
 
 
 
