@@ -82,6 +82,7 @@ brightRed = "#FF0404"
 darkRed = "#8F0000"
 blue = "#1620A8"
 yellow = "#C6A600"  
+purple = "#800080"
 
 ## load the json data. 
 def loadData(path):
@@ -393,9 +394,10 @@ def stackedBars(dataByLength,  intervals, unknownInstrMode, ignoreParsingErrors 
 #     plt.show()
 
 ## visualize lengths
-def plotValue(data, mode, title="", xLabel="", yLabel="", log=False):
+def plotValue(data, mode, unknownInstrMode, title="", xLabel="", yLabel="", log=False):
     y = []
     x = []
+    colors=[]
     for function in data:
         if mode == "steps":
             val = getTotalSteps(data[function])
@@ -412,6 +414,23 @@ def plotValue(data, mode, title="", xLabel="", yLabel="", log=False):
         else:
             print "Unsupported mode"
             return 0
+
+        if  getResult(data[function],unknownInstrMode) == "safe" or  getResult(data[function],unknownInstrMode) ==  "safeUnk":
+            colors.append(green)
+        elif getResult(data[function],unknownInstrMode) == "data" or  getResult(data[function],unknownInstrMode) ==  "dataUnk":
+            colors.append(brightRed)
+        elif getResult(data[function],unknownInstrMode) == "control" or  getResult(data[function],unknownInstrMode) ==  "controlUnk":
+            colors.append(darkRed)
+        elif getResult(data[function],unknownInstrMode) == "segfault":
+            colors.append(blue)
+        elif getResult(data[function],unknownInstrMode) == "timeout":
+            colors.append(yellow)
+        elif getResult(data[function],unknownInstrMode) == "parsing":
+            colors.append(purple)
+        else:
+            print "Unsupported status"
+            return 0
+
         x.append(len(x))
         y.append(val+1 if log else val)   
     # plt.scatter(x,y)
@@ -419,7 +438,7 @@ def plotValue(data, mode, title="", xLabel="", yLabel="", log=False):
 
     fig = plt.figure()
     ax = plt.gca()
-    ax.scatter(x ,y , c='blue', alpha=1, edgecolors='none')
+    ax.scatter(x ,y , c=colors, alpha=1, edgecolors='none')
     if log:
         ax.set_yscale('log')
     plt.title(title)    
@@ -490,7 +509,7 @@ def plotPie(data,filename="tmp.pdf"):
     # plt.show()
     return fig1
 
-def plotDoublePie(data):
+def plotDoublePie(data, plotParsing=False):
     labelsOut = ['safe', 'data', 'ctrl', 'segfault', 'timeout']
     safeAll = ( len(data["safe"].keys())  if "safe" in data.keys() else 0 )+ ( len(data["safeUnk"].keys())  if "safeUnk" in data.keys() else 0)
     dataAll = ( len(data["data"].keys())  if "data" in data.keys() else 0 ) + ( len(data["dataUnk"].keys())  if "dataUnk" in data.keys() else 0)
@@ -511,6 +530,14 @@ def plotDoublePie(data):
     sizesIn = [safe, safeUnk, dataV, dataUnk, ctrl, ctrlUnk, segfault, timeout]
     # explodeIn = (0, 0, 0, 0, 0, 0, 0, 0) 
     colorsIn = [green,green,brightRed,  brightRed, darkRed, darkRed, blue, yellow]
+
+    if plotParsing:
+        labelsOut.append('parsing')
+        parsing = len(data["parsing"].keys())  if "parsing" in data.keys() else 0
+        sizesOut.append(parsing)
+        colorsOut.append(purple)
+        sizesIn.append(parsing)
+        colorsIn.append(purple)
 
     fig = plt.figure()
     plt.pie(sizesOut, labels=labelsOut, colors=colorsOut, startangle=90, pctdistance=0.85, autopct='%1.1f%%')
@@ -577,7 +604,7 @@ def stepAnalysis(data, unknownInstrMode, reportName):
     dataBySteps = groupByIntervals(data, intervals, "steps")
     plt1 = stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=True, title="Results by steps", xLabel="Number of steps", yLabel="Number of programs")
     plt2 = stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by steps", xLabel="Number of steps", yLabel="Percentage")
-    plt3 = plotValue(data, "steps", title="Steps", xLabel="Programs", yLabel="Number of steps", log=False)
+    plt3 = plotValue(data, "steps",unknownInstrMode, title="Steps", xLabel="Programs", yLabel="Number of steps", log=False)
     toPDF(reportName+"steps.pdf", [plt1, plt2, plt3])
 
 def instructionsAnalysis(data, unknownInstrMode, reportName):
@@ -585,20 +612,20 @@ def instructionsAnalysis(data, unknownInstrMode, reportName):
     dataBySteps = groupByIntervals(data, intervals, "instructions")
     plt1 = stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=False, title="Results by instructions", xLabel="Number of instructions", yLabel="Number of programs")
     plt2 = stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by instructions", xLabel="Number of instructions", yLabel="Percentage")
-    plt3 = plotValue(data, "instructions", title="instructions", xLabel="Programs", yLabel="Number of instructions", log=False)
+    plt3 = plotValue(data, "instructions", unknownInstrMode, title="instructions", xLabel="Programs", yLabel="Number of instructions", log=False)
     toPDF(reportName+"instructions.pdf", [plt1, plt2, plt3])
 
-def resultsAnalysis(data, unknownInstrMode, reportName):
+def resultsAnalysis(data, unknownInstrMode, reportName, plotParsing=False):
     dataByResult = groupByClass(data, "result", unknownInstrMode)
     # plotPie(dataByResult)
-    plt = plotDoublePie(dataByResult)
+    plt = plotDoublePie(dataByResult, plotParsing=plotParsing)
     toPDF(reportName+"results.pdf", [plt])
 
 def timeAnalysis(data, unknownInstrMode, reportName):
     intervals =  generateIntervals(0,40000,5000)
     dataByTime = groupByIntervals(data, intervals, "totalTime")
     plt1 = stackedBars(dataByTime,intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=False)
-    plt2 = plotValue(data, "totalTime", title="Total Time", xLabel="Programs", yLabel="Total time", log=False)
+    plt2 = plotValue(data, "totalTime", unknownInstrMode, title="Total Time", xLabel="Programs", yLabel="Total time", log=False)
     toPDF(reportName+"time.pdf", [plt1, plt2])
 
 def pathAnalysis(data, unknownInstrMode, reportName):
@@ -606,7 +633,7 @@ def pathAnalysis(data, unknownInstrMode, reportName):
     dataByPaths = groupByIntervals(data, intervals, "paths")
     plt1 = stackedBars(dataByPaths, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=False, title="Results by paths", xLabel="Number of instructions", yLabel="Number of programs")
     plt2 = stackedBars(dataByPaths, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by paths", xLabel="Number of instructions", yLabel="Percentage")
-    plt3 = plotValue(data, "paths", title="Paths", xLabel="Programs", yLabel="Number of paths", log=False)
+    plt3 = plotValue(data, "paths", unknownInstrMode, title="Paths", xLabel="Programs", yLabel="Number of paths", log=False)
     toPDF(reportName+"paths.pdf", [plt1, plt2, plt3])
 
 def resultsComparisonAnalysis(dataSkip, dataStop, reportName):
@@ -614,11 +641,38 @@ def resultsComparisonAnalysis(dataSkip, dataStop, reportName):
     plt = plotDoublePie(data)
     toPDF(reportName+"results.pdf", [plt])
 
+def printResults(data, dataGrouped):
+    print "COUNT DATA"
+    for f in data.keys():
+        if status == "timeout":
+            timeout += 1
+        if status == "segfault":
+            segfault += 1
+        if status == "parsing":
+            parsing += 1
+
+
+    safe = len(dataGrouped["safe"].keys())  if "safe" in dataGrouped.keys() else 0
+    dataV = len(dataGrouped["data"].keys())  if "data" in dataGrouped.keys() else 0
+    ctrl = len(dataGrouped["control"].keys())  if "control" in dataGrouped.keys() else 0
+    safeUnk = len(dataGrouped["safeUnk"].keys())  if "safeUnk" in dataGrouped.keys() else 0
+    dataUnk = len(dataGrouped["dataUnk"].keys())  if "dataUnk" in dataGrouped.keys() else 0
+    ctrlUnk = len(dataGrouped["controlUnk"].keys())  if "controlUnk" in dataGrouped.keys() else 0
+    segfault = len(dataGrouped["segfault"].keys())  if "segfault" in dataGrouped.keys() else 0
+    timeout = len(dataGrouped["timeout"].keys())  if "timeout" in dataGrouped.keys() else 0
+    parsing = len(dataGrouped["parsing"].keys())  if "parsing" in dataGrouped.keys() else 0
+
+    print "GROUPED DATA"
+    print "safe: "+safe+" data: "+dataV+" ctrl: "+ctrl+" safeUnk: "+safeUnk+" dataUnk: "+dataUnk+" ctrlUnk: "+ctrlUnk+" segfault: "+segfault+" timeout: "+timeout+" parsing: "+parsing
+
+
+
+
 ### analyse logs for UNKNOWN as SKIP
 pathSkip = "/Users/marco.guarnieri/spectector-results/results_unknown_as_skip/results_xen_clang_linked/out"
 dataSkip = loadData(pathSkip)
 print "Number of files (SKIP) "+str(len(dataSkip))
-resultsAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_")
+resultsAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_", plotParsing=True)
 pathAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_")
 instructionsAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_")
 stepAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_")
@@ -629,7 +683,7 @@ timeAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_")
 pathStop = "/Users/marco.guarnieri/spectector-results/results_unknown_as_stop/results_xen_clang_linked/out"
 dataStop = loadData(pathStop)
 print "Number of files (STOP) "+str(len(dataStop))
-resultsAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_")
+resultsAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_", plotParsing=True)
 pathAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_")
 instructionsAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_")
 stepAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_")
