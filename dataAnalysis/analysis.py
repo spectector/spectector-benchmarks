@@ -531,7 +531,43 @@ def plotDoublePie(data):
     # plt.show()
 
 
+def toPDF(filename, figs):
+    pp = PdfPages(filename)
+    for fig in figs:
+        pp.savefig(fig)
+        plt.close(fig)
+    pp.close()
 
+
+def merge(dataSkip, dataStop):
+    functions = set(dataSkip.keys()).union(set(dataStop.keys()))
+    data1 ={}
+    for function in functions:
+        valueSkip = ""
+        if function in dataSkip.keys():
+            valueSkip = getResult(dataSkip[function], "skip")
+        valueStop = ""
+        if function in dataStop.keys():
+            valueStop = getResult(dataStop[function], "stop")
+    
+        if valueStop == "control":
+            if valueStop not in data1:
+                data1[valueStop] = {}
+            data1[valueStop][function] = dataStop[function]
+        elif valueStop == "data":
+            if valueStop not in data1:
+                data1[valueStop] = {}
+            data1[valueStop][function] = dataStop[function]
+        else:
+            if function in dataSkip.keys():
+                if valueSkip not in data1:
+                    data1[valueSkip] = {}
+                data1[valueSkip][function] = dataSkip[function]
+            
+        # if valueStop != valueSkip:
+        #     print function + " " + valueStop + "  " + valueSkip
+
+    return data1
 
 
 ######## 
@@ -573,35 +609,35 @@ def pathAnalysis(data, unknownInstrMode, reportName):
     plt3 = plotValue(data, "paths", title="Paths", xLabel="Programs", yLabel="Number of paths", log=False)
     toPDF(reportName+"paths.pdf", [plt1, plt2, plt3])
 
-def toPDF(filename, figs):
-    pp = PdfPages(filename)
-    for fig in figs:
-        pp.savefig(fig)
-        plt.close(fig)
-    pp.close()
-
+def resultsComparisonAnalysis(dataSkip, dataStop, reportName):
+    data = merge(dataSkip, dataStop)
+    plt = plotDoublePie(data)
+    toPDF(reportName+"results.pdf", [plt])
 
 ### analyse logs for UNKNOWN as SKIP
 pathSkip = "/Users/marco.guarnieri/spectector-results/results_unknown_as_skip/results_xen_clang_linked/out"
-data = loadData(pathSkip)
-print "Number of files (SKIP) "+str(len(data))
-resultsAnalysis(data, unknownInstrMode="skip", reportName="skip_")
-pathAnalysis(data, unknownInstrMode="skip", reportName="skip_")
-instructionsAnalysis(data, unknownInstrMode="skip", reportName="skip_")
-stepAnalysis(data, unknownInstrMode="skip", reportName="skip_")
-timeAnalysis(data, unknownInstrMode="skip", reportName="skip_")
+dataSkip = loadData(pathSkip)
+print "Number of files (SKIP) "+str(len(dataSkip))
+resultsAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_")
+pathAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_")
+instructionsAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_")
+stepAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_")
+timeAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_")
 
 
-### analyse logs for UNKNOWN as SKIP
+### analyse logs for UNKNOWN as STOP
 pathStop = "/Users/marco.guarnieri/spectector-results/results_unknown_as_stop/results_xen_clang_linked/out"
-data = loadData(pathStop)
-print "Number of files (STOP) "+str(len(data))
-resultsAnalysis(data, unknownInstrMode="stop", reportName="stop_")
-pathAnalysis(data, unknownInstrMode="stop", reportName="stop_")
-instructionsAnalysis(data, unknownInstrMode="stop", reportName="stop_")
-stepAnalysis(data, unknownInstrMode="stop", reportName="stop_")
-timeAnalysis(data, unknownInstrMode="stop", reportName="stop_")
+dataStop = loadData(pathStop)
+print "Number of files (STOP) "+str(len(dataStop))
+resultsAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_")
+pathAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_")
+instructionsAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_")
+stepAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_")
+timeAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_")
 
+
+#### COMPARISON RESULTS
+resultsComparisonAnalysis(dataSkip,dataStop, reportName="comp_")
 
 
 
