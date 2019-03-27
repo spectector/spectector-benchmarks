@@ -280,6 +280,15 @@ def unknown_ins_lastTrace(entry):
 
 
 def stackedBars(dataByLength,  intervals, unknownInstrMode, ignoreParsingErrors = True, percentage = True, log=False, title="", xLabel="", yLabel=""):
+    # def autolabel(rects):
+    #     # Attach some text labels.
+    #     for rect in rects:
+    #         plt.text(rect.get_x() + rect.get_width() / 2.,
+    #                 rect.get_y() + rect.get_height() / 2.,
+    #                 '%f'%rect.get_height(),
+    #                 ha = 'center',
+    #                 va = 'center')
+    
     safeVals = []
     dataVals = []
     ctrlVals = []
@@ -364,7 +373,7 @@ def stackedBars(dataByLength,  intervals, unknownInstrMode, ignoreParsingErrors 
     p6 = plt.bar(ind, ctrlUnkVals, width, bottom=safeVals+safeUnkVals+dataVals+ctrlVals+dataUnkVals, color=darkRed, edgecolor='black', hatch='//', log=log)
     p7 = plt.bar(ind, segfaultVals, width, bottom=safeVals+dataVals+ctrlVals+safeUnkVals+dataUnkVals+ctrlUnkVals, color=yellow, edgecolor='black', log=log)
     p8 = plt.bar(ind, timeoutVals, width, bottom=safeVals+dataVals+ctrlVals+safeUnkVals+dataUnkVals+ctrlUnkVals+segfaultVals, color=blue, edgecolor='black', log=log)
-
+    # autolabel(p1)
     plt.ylabel(yLabel)
     plt.xlabel(xLabel)
 
@@ -497,9 +506,9 @@ def plotPie(data,filename="tmp.pdf"):
     patches = ax1.pie(sizes, explode=explode, colors=colors, labels=labels, autopct='%1.1f%%',
              startangle=90)[0]
 
-    patches[1].set_hatch('//') 
-    patches[4].set_hatch('//')
-    patches[5].set_hatch('//') 
+    patches[1].set_hatch('///') 
+    patches[4].set_hatch('///')
+    patches[5].set_hatch('///') 
 
     #draw circle
     centre_circle = plt.Circle((0,0),0.70,fc='white')
