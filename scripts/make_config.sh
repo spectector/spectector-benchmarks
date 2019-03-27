@@ -2,6 +2,7 @@ pc=victim_function_v$1
 low=""
 as=$2
 case $1 in
+    "11ker" ) pc=victim_function_v11;;
     15 ) as="di=256"
 	 low="256";;
     19 ) pc="main" ;;
@@ -10,4 +11,4 @@ case $1 in
     * ) if [ -n "$1" ] && ! [ "$1" -eq "$1" ] 2>/dev/null; then pc=0 # Check if it's a numeric argument (test suite or benchmarks suite)
 	fi ;;
 esac
-printf "entry($pc).\nc([],[$as]).\nlow([$low]).\\nign([]).\\nheap(1024)."
+printf "entries([$pc]).\nc([],[$as]).\nlow([$low]).\\nign([]).\\nheap(1024)."

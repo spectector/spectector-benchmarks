@@ -15,109 +15,220 @@ function loadjs(file, def, callback) {
 
 function init(){
     var stats = stats_results(results);
-    document.getElementById("stats").innerText += " of "+stats.total+" files ("+stats.analyzed+" analyzed)";
-    txt = "";
+    document.getElementById("stats").innerText += "Stats of "+stats.total+" functions ("+stats.analyzed+" analyzed, "+stats.terminated+" terminated)";
+    var table = document.createElement("table");
+    var row = document.createElement("tr");
     for (var x in stats){
-	if (x != "total" && x != "analyzed"){
-	    txt += "<td><table>";
-	    //txt += "<td><table><tr><td><button style=\"color:"+color_status[x]+"\" id=\"leak\" onclick=\"change_view('"+x+"')\"> "+x.toUpperCase()+": "+stats[x]+"</button></td></tr><tr><td>"+x+"</td></tr></table></td>";
-	    txt += "<tr><td><button style=\"color:"+color_status[x]+"\" id=\"leak\" onclick=\"change_view('"+x+"')\"> "+x.toUpperCase()+": "+stats[x]+"</button></td></tr></td></table>";
+	if (x != "total" && x != "analyzed" && x != "terminated"){
+	    var cell = document.createElement("td");
+	    var button = document.createElement("button");
+	    button.setAttribute("style", "color:"+color_status[x]);
+	    button.setAttribute("onclick", "show_stats('"+x+"')");
+	    button.innerText = x.toUpperCase()+": "+stats[x];
+	    cell.appendChild(button);
+	    row.appendChild(cell);
 	}
     }
-    document.getElementById("buttons").innerHTML = "Press a button to show/hide its elements and stats:<br><table><tr>" + txt + "</tr></table>";
-    show_general(true);
+    table.appendChild(row);
+    document.getElementById("buttons").innerText = "Press a button to show its elements and toggle the visualization";
+    document.getElementById("buttons").appendChild(table);
+    show_general();
 }
 
-function show_general(bool) { // Draw a table with all the results formatted
-    showing = bool;
+function show_general() { // Draw a table with all the results formatted
+    showing = "general";
     document.getElementById("conc_stats").innerHTML = "";
+    document.getElementById("data").innerHTML = "";
     var txt = "";
-    if(bool){
-	actual_exp = "";
-	actual_comp = "";
-	// var table = document.createElement("table")
-	// table.setAttribute("border", "1")
-	// document.body.appendChild(table)
-	results.forEach(function(elem, i) {
-	    if ( i === results.length-1 || !elem.show){return;} // For last element (summary)
-	    comp = get_case(elem.name, 1);
-	    exp = get_case(elem.name, 2);
-	    mit = get_case(elem.name, 3) ? get_case(elem.name, 3) : elem.entry; //More or less
-	    if (comp != actual_comp){
-		txt += "<br></table><h2>"+comp+"</h2><table border='1'>";
-		actual_comp = comp;
-		actual_exp = "";
+    actual_exp = "";
+    actual_comp = "";
+    var actual_table = document.createElement("table");
+    var actual_row = document.createElement("tr");
+    actual_table.setAttribute("border", "1");
+    results.forEach(function(elem, i) {
+	if ( i === results.length-1 || !elem.show){return;} // For last element (summary)
+	comp = get_case(elem.name, 1);
+	exp = get_case(elem.name, 2);
+	mit = get_case(elem.name, 3) ? get_case(elem.name, 3) : elem.entry; //More or less
+	if (comp != actual_comp){
+	    var title = document.createElement("h2");
+	    title.innerText = comp;
+	    document.getElementById("data").appendChild(document.createElement("br"));
+	    actual_table.appendChild(actual_row);
+	    actual_row = document.createElement("tr");
+	    document.getElementById("data").appendChild(actual_table);
+	    document.getElementById("data").appendChild(title);
+	    actual_table = document.createElement("table");
+	    actual_table.setAttribute("border", "1");
+	    actual_comp = comp;
+	    actual_exp = "";
+	}
+	if (exp != actual_exp){
+	    actual_table.appendChild(actual_row);
+	    actual_row = document.createElement("tr");
+	    var name_row = document.createElement("th");
+	    name_row.innerText = exp;
+	    actual_row.appendChild(name_row);
+	    actual_exp = exp;
+	}
+	var color = color_status[elem.status];
+	var cell = document.createElement("td");
+	var contents = document.createElement("a");
+	contents.setAttribute("style", "color:"+color+";");
+	contents.setAttribute("onclick", "show_table("+i+")");
+	contents.innerText = mit;
+	cell.appendChild(contents);
+	actual_row.appendChild(cell);
+    });
+    actual_table.appendChild(actual_row);
+    document.getElementById("data").appendChild(actual_table);
+}
+
+
+function show_descriptive() { // Draw a table with all the results formatted
+    showing = "descriptive";
+    document.getElementById("conc_stats").innerHTML = "";
+    document.getElementById("data").innerHTML = "";
+    document.getElementById("data").appendChild(document.createElement("br"));
+    var table = document.createElement("table");
+    table.setAttribute("border", "1");
+    table.setAttribute("id", "descriptive_table");
+    var actual_row = document.createElement("tr");
+    var cell = document.createElement("th");
+    cell.innerText = "Program";
+    actual_row.appendChild(cell);
+    for (var prop in results[0]){ // Consider it contains all in order
+	if(prop != "entry" && prop != "name" && prop != "show"){
+	    cell = document.createElement("th");
+	    if (prop == "status" || prop == "total_time") {
+		var button = document.createElement("button");
+		button.setAttribute("onclick", "sort_descriptive_table('"+prop+"')");
+		button.innerText = prop;
+		cell.appendChild(button);
+	    } else {
+		cell.innerText = prop;
 	    }
-	    if (exp != actual_exp){
-		txt += "<tr><th>"+exp+"</th>";
-		actual_exp = exp;
-	    }
-	    var color = color_status[elem.status];
-	    txt += "<td><a style=\"color:"+color+";\"onclick=\"show_table("+i+")\">"+mit+"</a></td>";
-	});
-	txt += "</tr>";
-	document.getElementById("data").innerHTML = txt;
-    } else {
-	txt += "<br><table border='1' id=\"descriptive_table\"><tr><th>Program</th>";
-	for (var prop in results[0]){ // Consider it contains all in order
-	    if(prop != "entry" && prop != "name" && prop != "show"){
-	       	txt += "<th>"+ ((prop == "status" || prop == "total_time") ? "<button onclick=\"sort_descriptive_table('"+prop+"')\">"+prop+"</button>" : prop) +"</th>";
+	    actual_row.appendChild(cell);
+	}
+    }
+    table.appendChild(actual_row);
+    results.forEach(function(elem, i) {
+	if ( i === results.length-1 || !elem.show){return;} // For last element (summary)
+	var color = color_status[elem.status];
+	actual_row = document.createElement("tr");
+	cell = document.createElement("th");
+	cell.innerText = elem.name;
+	var fun = document.createElement("a");
+	fun.setAttribute("style", "color:"+color+";");
+	fun.setAttribute("onclick", "show_table("+i+")");
+	fun.innerText = elem.entry;
+	cell.appendChild(fun);
+	actual_row.appendChild(cell);
+	var inner_table, inner_row, inner_cell;
+	for (var prop in results[i]){
+	    val=results[i][prop];
+	    switch(prop){
+	    case "file":
+		cell = document.createElement("td");
+		inner_table = document.createElement("table");
+		inner_row = document.createElement("tr");
+		inner_cell = document.createElement("td");
+		var ref = document.createElement("a");
+		ref.setAttribute("href", val);
+		ref.innerText = "json";
+		inner_cell.appendChild(ref);
+		inner_row.appendChild(inner_cell);
+		inner_table.appendChild(inner_row);
+		var out_file = val.split('.').slice(0,-1).join('.')+".out";
+		inner_row = document.createElement("tr");
+		inner_cell = document.createElement("td");
+		ref = document.createElement("a");
+		ref.setAttribute("href", elem.name);
+		ref.innerText = "src";
+		inner_cell.appendChild(ref);
+		inner_row.appendChild(inner_cell);
+		inner_table.appendChild(inner_row);
+		// TODO add C code link
+		inner_row = document.createElement("tr");
+		inner_cell = document.createElement("td");
+		ref = document.createElement("a");
+		ref.setAttribute("href", out_file);
+		ref.innerText = "log";
+		inner_cell.appendChild(ref);
+		inner_row.appendChild(inner_cell);
+		inner_table.appendChild(inner_row);
+		cell.appendChild(inner_table);
+		actual_row.appendChild(cell);
+		// var err_file = val.split('.').slice(0,-1).join('.')+".err";
+		break;
+	    case "name":
+		break;
+	    case "total_time":
+		cell = document.createElement("td");
+		cell.innerText = val + " ms";
+		actual_row.appendChild(cell);
+		break;
+	    case "paths":
+		cell = document.createElement("td");
+		inner_table = document.createElement("table");
+		inner_row = document.createElement("tr");
+		inner_cell = document.createElement("td");
+		inner_cell.innerText = val.length;
+		inner_row.appendChild(inner_cell);
+		inner_table.appendChild(inner_row);
+		stats=stats_paths(val); 	    // TODO macro for repeating the work
+		inner_row = document.createElement("tr");
+		inner_cell = document.createElement("td");
+		inner_cell.innerText = "Time symbolic execution: "+stats.trace+" ms";
+		inner_row.appendChild(inner_cell);
+		inner_table.appendChild(inner_row);
+		inner_row = document.createElement("tr");
+		inner_cell = document.createElement("td");
+		inner_cell.innerText = "Time SNI-checking: "+stats.solve+" ms";
+		inner_row.appendChild(inner_cell);
+		inner_table.appendChild(inner_row);
+		inner_row = document.createElement("tr");
+		inner_cell = document.createElement("td");
+		inner_cell.innerText = "Unknown ins: "+stats.unknown_ins;
+		inner_row.appendChild(inner_cell);
+		inner_table.appendChild(inner_row);
+		inner_row = document.createElement("tr");
+		inner_cell = document.createElement("td");
+		inner_cell.innerText = "Unknown labels: "+stats.unknown_labels;
+		inner_row.appendChild(inner_cell);
+		inner_table.appendChild(inner_row);
+		inner_row = document.createElement("tr");
+		inner_cell = document.createElement("td");
+		inner_cell.innerText = "Steps per path";
+		var table_level3 = document.createElement("table");
+		table_level3.setAttribute("border", "3");
+		table_level3.setAttribute("cellpadding", "3");
+		table_level3.setAttribute("cellspacing", "3");
+		var cell_table_level3 = document.createElement("td");
+		for (var s in stats.steps){
+		    cell_table_level3.innerText = s +": "+stats.steps[s];
+		    table_level3.appendChild(cell_table_level3);
+		    cell_table_level3 = document.createElement("td");
+		}
+		inner_cell.appendChild(table_level3);
+		inner_row.appendChild(inner_cell);
+		inner_table.appendChild(inner_row);
+		cell.appendChild(inner_table);
+		actual_row.appendChild(inner_table);
+		break;
+	    case "entry":
+		break;
+	    case "show":
+		break;
+	    default:
+		cell = document.createElement("td");
+		cell.innerText = val;
+		actual_row.appendChild(cell);
 	    }
 	}
-	txt += "</tr>";
-	results.forEach(function(elem, i) {
-	    if ( i === results.length-1 || !elem.show){return;} // For last element (summary)
-	    var color = color_status[elem.status];
-	    txt += "<tr><th>"+elem.name+" <a style=\"color:"+color+";\"onclick=\"show_table("+i+")\">"+elem.entry+"</a></th>";
-	    for (var prop in results[i]){
-		val=results[i][prop];
-		switch(prop){
-		case "file":
-		    txt += "<td><table><tr><td>";
-		    txt += "<a href=\""+val+"\">json</a></td></tr>";
-		    var out_file = val.split('.').slice(0,-1).join('.')+".out";
-		    txt += "<tr><td><a href=\""+results[i].name+"\">src</a></td></tr>";
-		    // TODO add C code link
-		    txt += "<tr><td><a href=\""+out_file+"\">log</a></td></tr></table></td>";
-		    // var err_file = val.split('.').slice(0,-1).join('.')+".err";
-		    // txt += "<tr><td><a href=\""+err_file+"\">err</a><td></tr></table></td>";
-		    break;
-		case "name":
-		    break;
-		case "total_time":
-		    txt += "<td>";
-		    txt += val + " ms</td>";
-		    break;
-		case "paths":
-		    txt += "<td><table border\"2\"><tr><td>";
-		    txt += val.length + "</td></tr>";
-		    stats=stats_paths(val);
-		    txt += "<tr><td>Time symbolic execution: "+stats.trace+" ms </td></tr>";
-		    txt += "<tr><td>Time SNI-checking: "+stats.solve+" ms </td></tr>";
-		    txt += "<tr><td>Unknown ins: "+stats.unknown_ins+"</td></tr>";
-		    txt += "<tr><td>Unknown labels: "+stats.unknown_labels+"</td></tr>";
-		    // TODO parse an array
-		    txt += "<tr><td>Steps per path <table border=\"3\" cellpadding=\"3\" cellspacing=\"3\">";
-		    for (var s in stats.steps){
-			txt+= "<td>"+s+": "+stats.steps[s]+"</td>";
-		    }
-		    txt += "</table></td></tr></table>";
-		    break;
-		case "entry":
-		    break;
-		case "show":
-		    break;
-		    default:
-			txt += "<td>";
-			txt += val + "</td>";
-		    }
-	    }
-	    txt += "</th></tr>";
-	});
-	
-	txt += "</table>";
-	document.getElementById("data").innerHTML = txt;
-    }
+	table.appendChild(actual_row);
+    });
+    document.getElementById("data").appendChild(table);
 }
 
 function sort_descriptive_table(elem){
@@ -129,7 +240,7 @@ function sort_descriptive_table(elem){
         }
     });
     sort_dir = !sort_dir;
-    show_general(false);
+    show_descriptive();
 }
 
 function get_case(exp, n){
@@ -138,43 +249,102 @@ function get_case(exp, n){
 }
 
 function show_table(index) {
-    var table = "<table border='1'>";
+    document.getElementById("conc_stats").innerHTML = "";
+    document.getElementById("data").innerHTML = "";
+    var table = document.createElement("table");
+    table.setAttribute("border","1");
     for (var prop in results[index]){
-	table += "<tr><th>"+prop+":</th><td>";
+	var row = document.createElement("tr");
+	var name = document.createElement("th");
+	name.innerText = prop;
+	row.appendChild(name);
+	var cell = document.createElement("td");
+	var ref = document.createElement("a");
 	val=results[index][prop];
 	switch(prop){
 	case "file":
-	    table += "<a href=\""+val+"\">"+val+"</a></td></tr>";
+	    ref.setAttribute("href", val);
+	    ref.innerText = val;
+	    cell.appendChild(ref);
+	    row.appendChild(cell);
+	    table.appendChild(row);
+	    row = document.createElement("tr");
+	    name = document.createElement("th");
+	    name.innerText = "Log file";
+	    row.appendChild(name);
+	    cell = document.createElement("td");
+	    ref = document.createElement("a");
 	    var out_file = val.split('.').slice(0,-1).join('.')+".out";
-	    table += "<tr><th>Log file</th><td><a href=\""+out_file+"\">"+out_file+"</a></td></tr>";
+	    ref.setAttribute("href", out_file);
+	    ref.innerText = out_file;
+	    cell.appendChild(ref);
+	    row.appendChild(cell);
 	    break;
 	case "name":
-	    table += "<a href=\""+val+"\">"+val+"</a></td></tr>";
+	    ref = document.createElement("a");
+	    ref.setAttribute("href", val);
+	    ref.innerText = val;
+	    cell.appendChild(ref);
+	    row.appendChild(cell);
 	    break;
 	case "total_time":
-	    table += val + " ms</td></tr>";
-	    break;	  
+	    cell.innerText = val + " ms";
+	    row.appendChild(cell);
+	    break;
 	case "paths":
-	case "paths":
-	    table += "<table border\"2\"><tr><td>";
-	    table += val.length + "</td></tr>";
-	    stats=stats_paths(val);
-	    table += "<tr><td>Time symbolic execution: "+stats.trace+" ms </td></tr>";
-	    table += "<tr><td>Time SNI-checking: "+stats.solve+" ms </td></tr>";
-	    table += "<tr><td>Unknown ins: "+stats.unknown_ins+"</td></tr>";
-	    table += "<tr><td>Unknown labels: "+stats.unknown_labels+"</td></tr>";
-	    // TODO parse an array
-	    table += "<tr><td>Steps per path <table border=\"3\" cellpadding=\"3\" cellspacing=\"3\">";
+	    var inner_table = document.createElement("table");
+	    var inner_row = document.createElement("tr");
+	    var inner_cell = document.createElement("td");
+	    inner_cell.innerText = val.length;
+	    inner_row.appendChild(inner_cell);
+	    inner_table.appendChild(inner_row);
+	    stats=stats_paths(val); 	    // TODO macro for repeating the work
+	    inner_row = document.createElement("tr");
+	    inner_cell = document.createElement("td");
+	    inner_cell.innerText = "Time symbolic execution: "+stats.trace+" ms";
+	    inner_row.appendChild(inner_cell);
+	    inner_table.appendChild(inner_row);
+	    inner_row = document.createElement("tr");
+	    inner_cell = document.createElement("td");
+	    inner_cell.innerText = "Time SNI-checking: "+stats.solve+" ms";
+	    inner_row.appendChild(inner_cell);
+	    inner_table.appendChild(inner_row);
+	    inner_row = document.createElement("tr");
+	    inner_cell = document.createElement("td");
+	    inner_cell.innerText = "Unknown ins: "+stats.unknown_ins;
+	    inner_row.appendChild(inner_cell);
+	    inner_table.appendChild(inner_row);
+	    inner_row = document.createElement("tr");
+	    inner_cell = document.createElement("td");
+	    inner_cell.innerText = "Unknown labels: "+stats.unknown_labels;
+	    inner_row.appendChild(inner_cell);
+	    inner_table.appendChild(inner_row);
+	    inner_row = document.createElement("tr");
+	    inner_cell = document.createElement("td");
+	    inner_cell.innerText = "Steps per path";
+	    var table_level3 = document.createElement("table");
+	    table_level3.setAttribute("border", "3");
+	    table_level3.setAttribute("cellpadding", "3");
+	    table_level3.setAttribute("cellspacing", "3");
+	    var cell_table_level3 = document.createElement("td");
 	    for (var s in stats.steps){
-		table+= "<td>"+s+": "+stats.steps[s]+"</td>";
+		cell_table_level3.innerText = s +": "+stats.steps[s];
+		table_level3.appendChild(cell_table_level3);
+		cell_table_level3 = document.createElement("td");
 	    }
-	    table += "</table></td></tr></table></td></tr>";
+	    inner_cell.appendChild(table_level3);
+	    inner_row.appendChild(inner_cell);
+	    inner_table.appendChild(inner_row);
+	    cell.appendChild(inner_table);
+	    row.appendChild(inner_table);
 	    break;
 	default:
-	    table += val + "</td></tr>";
+	    cell.innerText = val;
+	    row.appendChild(cell);
 	}
+	table.appendChild(row);
     }
-    document.getElementById("data").innerHTML = table;
+    document.getElementById("data").appendChild(table);
 }
 
 function stats_paths(paths) {
@@ -201,9 +371,12 @@ function stats_results(results) {
     var total = results.length-1;
     var timeout = results.filter(r => r.status == "timeout").length;
     var segfault = results.filter(r => r.status == "segfault").length;
-    var analyzed = total-timeout-segfault;
+    var parsing = results.filter(r => r.status == "parsing").length;
+    var parsed = total-parsing;
+    var analyzed= parsed-timeout-segfault;
     var unknown = 0;
     var labels = 0;
+    var indirect = 0;
     results.forEach(function(elem, i) {
 	if(elem.status == "timeout" || elem.status == "segfault") elem.show=false;
 	else elem.show=true;
@@ -215,33 +388,41 @@ function stats_results(results) {
 	    } else {if (st.unknown_labels){
 		labels++;
 		elem.status="label";
-	    }
-		   }
-	}
+ 	    } else {if (st.indirect_jumps){
+ 		indirect++;
+ 		elem.status="indirect";
+ 	    }
+ 		   }}}
     });
     var control = results.filter(r => r.status == "control").length;
     var data = results.filter(r => r.status == "data").length;
     var safe = results.filter(r => r.status == "safe").length;
+    var safe_bound = results.filter(r => r.status == "safe_bound").length;
+    var terminated= analyzed-unknown-labels-indirect;
     return {total:total,
-	    timeout:timeout,
 	    analyzed:analyzed,
-	    data:data,
-	    control:control,
-	    safe:safe,
+	    terminated:terminated,
+	    parsing:parsing,
+	    timeout:timeout,
 	    segfault:segfault,
 	    unknown:unknown,
 	    label:labels,
+	    indirect:indirect,
+	    data:data,
+	    control:control,
+	    safe:safe,
+	    safe_bound:safe_bound
 	   };
 }
 
-function change_view(st){
-    stats = {"times":[], "paths_length":[], "steps":[]};
+function show_stats(st){
+    stats = {"times":[], "n_paths":[], "steps":[]};
     results.forEach(function(elem, i) {
 	if(elem.status == st) {
 	    elem.show = !elem.show;
 	    stats.times.push(elem.total_time);
 	    if (elem.paths){
-		stats.paths_length.push(elem.paths.length);
+		stats.n_paths.push(elem.paths.length);
 		for(var path in elem.paths){
 		    if(elem.paths[path].steps)
 			stats.steps.push(elem.paths[path].steps);
@@ -249,19 +430,47 @@ function change_view(st){
 	    }
 	}
     });
-    // var table = document.createElement("table");
-    // var name = document.createElement("h3"); name.innerText = st;
-    // document.getElementById("conc_stats").appendChild(table);
-    show_general(showing);
-    var txt = "<table border=\"2\">";
-    txt += "<tr><td></td><th>Min</th><th>Avg</th><th>Max</th></tr>";
+    var table = document.createElement("table");
+    table.setAttribute("border", "2");
+    var row = document.createElement("tr");
+    var name = document.createElement("th");
+    var min = document.createElement("th");
+    min.innerText = "Min";
+    var avg = document.createElement("th");
+    avg.innerText = "Avg";
+    var max = document.createElement("th");
+    max.innerText = "Max";
+    row.appendChild(name);
+    row.appendChild(min);
+    row.appendChild(avg);
+    row.appendChild(max);
+    table.appendChild(row);
     for (var x in stats){
-	txt += "<tr><th>"+x+"</th><td>" + Math.min(...stats[x]) + "</td>";
-	txt += "<td>" + stats[x].reduce(add)/stats[x].length + "</td>";
-	txt += "<td>" + Math.max(...stats[x]) + "</td></tr>";
+	row = document.createElement("tr");
+	name = document.createElement("th");
+	name.innerText = x;
+	min = document.createElement("td");
+	min.innerText = Math.min(...stats[x]);
+	avg = document.createElement("td");
+	avg.innerText = stats[x].reduce(add)/stats[x].length;
+	max = document.createElement("td");
+	max.innerText = Math.max(...stats[x]);
+	row.appendChild(name);
+	row.appendChild(min);
+	row.appendChild(avg);
+	row.appendChild(max);
+	table.appendChild(row);
     }
-    txt += "</table>";
-    document.getElementById("conc_stats").innerHTML = "<h3>"+st+":</h3>" + txt;
+    var title = document.createElement("h3");
+    title.innerText = st;
+    // var shown = document.createElement("a");
+    // shown.innerText = "shown: "+ "false";
+    // var button_shown = document.createElement("button");
+    // button_shown.innerText = "Hide/show";
+    document.getElementById("conc_stats").innerHTML = "";
+    document.getElementById("conc_stats").appendChild(title);
+    //document.getElementById("conc_stats").appendChild(shown);
+    document.getElementById("conc_stats").appendChild(table);
 }
 
 function add(accumulator, a) {
@@ -270,11 +479,14 @@ function add(accumulator, a) {
 
 color_status = {
     "safe":"green",
+    "safe_bound":"124871",
     "control":"bb0000",
     "data":"ff2020",
     "label":"777777",
     "unknown":"blue",
     "segfault":"bb7700",
     "timeout":"purple",
-    "unsafe":"red"
+    "unsafe":"red",
+    "indirect_jumps":"599394",
+    "parsing":"cc00ca"
 };
