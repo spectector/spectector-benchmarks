@@ -172,23 +172,21 @@ def groupByIntervals(data, intervals, mode):
 
 def getResult (entry, unknownInstrMode):
     status = entry["status"]
+    
     if status == "timeout":
             return "timeout"
-    if status == "segfault":
+    elif status == "segfault":
             return "segfault"
-    if status == "parsing":
+    elif status == "parsing":
             return "parsing"
-
-    if status == "safe":
+    elif status == "safe":
         if not unknown_ins(entry):
             return "safe"
         else:
             return "safeUnk"
-
-    if status == "safe_bound":
+    elif status == "safe_bound":
         return "safeUnk"
-
-    if status == "data":
+    elif status == "data":
         if  unknownInstrMode == "stop":
             return "data"
         elif unknownInstrMode == "skip":
@@ -196,9 +194,11 @@ def getResult (entry, unknownInstrMode):
                 return "data"
             else:
                 return "dataUnk"
+        elif unknownInstrMode == "auto":
+            return getResult (entry, entry["mode"])
         else:
             assert False
-    if status == "control":
+    elif status == "control":
         if  unknownInstrMode == "stop":
             return "control"
         elif unknownInstrMode == "skip":
@@ -206,9 +206,12 @@ def getResult (entry, unknownInstrMode):
                 return "control"
             else:
                 return "controlUnk"
+        elif unknownInstrMode == "auto":
+            return getResult (entry, entry["mode"])
         else:
             assert False
-    assert False # unsupported value
+    else:
+        assert False # unsupported value
 
 
     # if not unknown_ins(entry):
@@ -251,7 +254,7 @@ def groupByClass(data, mode, unknownInstrMode):
             value = getResult(data[function], unknownInstrMode)
         else:
             print "Unsupported mode"
-            return 0
+            assert False
         if value not in data1:
             data1[value] = {}
         data1[value][function] = data[function]
@@ -415,20 +418,22 @@ def plotValue(data, mode, unknownInstrMode, title="", xLabel="", yLabel="", log=
             print "Unsupported mode"
             return 0
 
-        if  getResult(data[function],unknownInstrMode) == "safe" or  getResult(data[function],unknownInstrMode) ==  "safeUnk":
+        status = getResult(data[function],unknownInstrMode)
+        if  status == "safe" or  status ==  "safeUnk":
             colors.append(green)
-        elif getResult(data[function],unknownInstrMode) == "data" or  getResult(data[function],unknownInstrMode) ==  "dataUnk":
+        elif status == "data" or  status==  "dataUnk":
             colors.append(brightRed)
-        elif getResult(data[function],unknownInstrMode) == "control" or  getResult(data[function],unknownInstrMode) ==  "controlUnk":
+        elif status == "control" or  status ==  "controlUnk":
             colors.append(darkRed)
-        elif getResult(data[function],unknownInstrMode) == "segfault":
+        elif status == "segfault":
             colors.append(blue)
-        elif getResult(data[function],unknownInstrMode) == "timeout":
+        elif status == "timeout":
             colors.append(yellow)
-        elif getResult(data[function],unknownInstrMode) == "parsing":
+        elif status == "parsing":
             colors.append(purple)
         else:
             print "Unsupported status"
+            print status
             return 0
 
         x.append(len(x))
@@ -542,9 +547,9 @@ def plotDoublePie(data, plotParsing=False):
     fig = plt.figure()
     plt.pie(sizesOut, labels=labelsOut, colors=colorsOut, startangle=90, pctdistance=0.85, autopct='%1.1f%%')
     patches = plt.pie(sizesIn,colors=colorsIn,radius=0.75,startangle=90)[0]
-    patches[1].set_hatch('//') 
-    patches[3].set_hatch('//')
-    patches[5].set_hatch('//') 
+    patches[1].set_hatch('///') 
+    patches[3].set_hatch('///')
+    patches[5].set_hatch('///') 
 
     #draw circle
     centre_circle = plt.Circle((0,0),0.5,fc='white')
@@ -556,6 +561,59 @@ def plotDoublePie(data, plotParsing=False):
     # plt.show()
 
     # plt.show()
+
+
+
+def plotCompactDoublePie(data, plotParsing=False):
+    
+    safeAll = ( len(data["safe"].keys())  if "safe" in data.keys() else 0 )+ ( len(data["safeUnk"].keys())  if "safeUnk" in data.keys() else 0)
+    leakAll = ( len(data["data"].keys())  if "data" in data.keys() else 0 ) + ( len(data["dataUnk"].keys())  if "dataUnk" in data.keys() else 0) + ( len(data["control"].keys())  if "control" in data.keys() else 0) +( len(data["controlUnk"].keys())  if "controlUnk" in data.keys() else 0)
+    timeoutAll = (len(data["segfault"].keys())  if "segfault" in data.keys() else 0) + (len(data["timeout"].keys())  if "timeout" in data.keys() else 0)
+    safe = len(data["safe"].keys())  if "safe" in data.keys() else 0
+    leak = (len(data["data"].keys())  if "data" in data.keys() else 0) +(len(data["control"].keys())  if "control" in data.keys() else 0)
+    safeUnk = len(data["safeUnk"].keys())  if "safeUnk" in data.keys() else 0
+    leakUnk = (len(data["dataUnk"].keys())  if "dataUnk" in data.keys() else 0) + ( len(data["controlUnk"].keys())  if "controlUnk" in data.keys() else 0)
+
+    sizesOut = [safeAll, leakAll,  timeoutAll]
+    # explodeOut = (0, 0, 0, 0, 0) 
+    colorsOut = [green,brightRed, yellow]
+
+    sizesIn = [safe, safeUnk, leak, leakUnk,  timeoutAll]
+    # explodeIn = (0, 0, 0, 0, 0, 0, 0, 0) 
+    colorsIn = [green,green,brightRed,  brightRed, yellow]
+
+    print "COMPACT RESULTS: [SAFE, SAFEUNK, LEAK, LEAKUNK, TIMEOUT] = "+str(sizesIn)
+
+    def labels(pct, values):
+        absolute = int(pct/100.*np.sum(values))
+        return "{:.1f}%\n({:d})".format(pct, absolute)
+
+    if plotParsing:
+        labelsOut.append('parsing')
+        parsing = len(data["parsing"].keys())  if "parsing" in data.keys() else 0
+        sizesOut.append(parsing)
+        colorsOut.append(purple)
+        sizesIn.append(parsing)
+        colorsIn.append(purple)
+
+    plt.rcParams['patch.linewidth'] = 0  
+    fig = plt.figure()
+    # labelsOut = ["Secure %.2f%% (%d)"% ( (float(safeAll)*100/(safeAll+leakAll+timeoutAll)) , safeAll ), 
+    #     "Leak %.2f%% (%d)"% ( (float(leakAll)*100/(safeAll+leakAll+timeoutAll)) , leakAll ), 
+    #     "Timeout %.2f%% (%d)"% ( (float(timeoutAll)*100/(safeAll+leakAll+timeoutAll)) , timeoutAll )]
+    labelsOut = ["Secure", "Leak", "Timeout"]
+    plt.pie(sizesOut, labels=labelsOut, colors=colorsOut, startangle=90,  pctdistance=0.8, labeldistance=1.1, autopct=lambda pct: labels(pct, sizesOut))
+    patches = plt.pie(sizesIn,colors=colorsIn,radius=1,startangle=90)[0] 
+    patches[1].set_hatch('///') 
+    patches[3].set_hatch('///')
+
+    #draw circle
+    centre_circle = plt.Circle((0,0),0.5,fc='white')
+    fig = plt.gcf()
+    fig.gca().add_artist(centre_circle)
+
+    plt.axis('equal')
+    return fig
 
 
 def toPDF(filename, figs):
@@ -596,6 +654,42 @@ def merge(dataSkip, dataStop):
 
     return data1
 
+def merge1(dataSkip, dataStop):
+    functions = set(dataSkip.keys()).union(set(dataStop.keys()))
+    data1 ={}
+    for function in functions:
+        valueSkip = ""
+        if function in dataSkip.keys():
+            valueSkip = getResult(dataSkip[function], "skip")
+        valueStop = ""
+        if function in dataStop.keys():
+            valueStop = getResult(dataStop[function], "stop")
+    
+        if valueStop == "control":
+            data1[function] = dataStop[function]
+            data1[function]["mode"] = "stop"
+        elif valueStop == "data":
+            data1[function] = dataStop[function]
+            data1[function]["mode"] = "stop"
+        else:
+            if function in dataSkip.keys():
+                data1[function] = dataSkip[function]
+                data1[function]["mode"] = "skip"
+            
+        # if valueStop != valueSkip:
+        #     print function + " " + valueStop + "  " + valueSkip
+
+    return data1
+
+def compactData(data,unknownInstrMode,compactTimeout, compactLeak):
+    for fnct in data.keys():
+        entry = data[fnct]
+        if getResult(entry, unknownInstrMode) == "segfault" and compactTimeout:
+            entry["status"] = "timeout"
+        if getResult(entry, unknownInstrMode) == "control" and compactLeak:
+            entry["status"] = "data"
+    return data
+
 
 ######## 
 
@@ -617,8 +711,9 @@ def instructionsAnalysis(data, unknownInstrMode, reportName):
 
 def resultsAnalysis(data, unknownInstrMode, reportName, plotParsing=False):
     dataByResult = groupByClass(data, "result", unknownInstrMode)
-    # plotPie(dataByResult)
-    plt = plotDoublePie(dataByResult, plotParsing=plotParsing)
+    printSummaryResults(dataByResult)
+    # plt = plotDoublePie(dataByResult, plotParsing=plotParsing)
+    plt = plotCompactDoublePie(dataByResult, plotParsing=False)
     toPDF(reportName+"results.pdf", [plt])
 
 def timeAnalysis(data, unknownInstrMode, reportName):
@@ -638,20 +733,11 @@ def pathAnalysis(data, unknownInstrMode, reportName):
 
 def resultsComparisonAnalysis(dataSkip, dataStop, reportName):
     data = merge(dataSkip, dataStop)
-    plt = plotDoublePie(data)
-    toPDF(reportName+"results.pdf", [plt])
+    # plt1 = plotDoublePie(data)
+    plt2 = plotCompactDoublePie(data, plotParsing=False)
+    toPDF(reportName+"results.pdf", [plt2])
 
-def printResults(data, dataGrouped):
-    print "COUNT DATA"
-    for f in data.keys():
-        if status == "timeout":
-            timeout += 1
-        if status == "segfault":
-            segfault += 1
-        if status == "parsing":
-            parsing += 1
-
-
+def printSummaryResults(dataGrouped):
     safe = len(dataGrouped["safe"].keys())  if "safe" in dataGrouped.keys() else 0
     dataV = len(dataGrouped["data"].keys())  if "data" in dataGrouped.keys() else 0
     ctrl = len(dataGrouped["control"].keys())  if "control" in dataGrouped.keys() else 0
@@ -661,15 +747,12 @@ def printResults(data, dataGrouped):
     segfault = len(dataGrouped["segfault"].keys())  if "segfault" in dataGrouped.keys() else 0
     timeout = len(dataGrouped["timeout"].keys())  if "timeout" in dataGrouped.keys() else 0
     parsing = len(dataGrouped["parsing"].keys())  if "parsing" in dataGrouped.keys() else 0
-
-    print "GROUPED DATA"
-    print "safe: "+safe+" data: "+dataV+" ctrl: "+ctrl+" safeUnk: "+safeUnk+" dataUnk: "+dataUnk+" ctrlUnk: "+ctrlUnk+" segfault: "+segfault+" timeout: "+timeout+" parsing: "+parsing
-
+    print "safe: "+str(safe)+" data: "+str(dataV)+" ctrl: "+str(ctrl)+" safeUnk: "+str(safeUnk)+" dataUnk: "+str(dataUnk)+" ctrlUnk: "+str(ctrlUnk)+" segfault: "+str(segfault)+" timeout: "+str(timeout)+" parsing: "+str(parsing)
 
 
 
 ### analyse logs for UNKNOWN as SKIP
-pathSkip = "/Users/marco.guarnieri/spectector-results/results_unknown_as_skip/results_xen_clang_linked/out"
+pathSkip = "/Users/marco/spectector-results/results_unknown_as_skip"
 dataSkip = loadData(pathSkip)
 print "Number of files (SKIP) "+str(len(dataSkip))
 resultsAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_", plotParsing=True)
@@ -680,7 +763,7 @@ timeAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_")
 
 
 ### analyse logs for UNKNOWN as STOP
-pathStop = "/Users/marco.guarnieri/spectector-results/results_unknown_as_stop/results_xen_clang_linked/out"
+pathStop = "/Users/marco/spectector-results/results_unknown_as_stop"
 dataStop = loadData(pathStop)
 print "Number of files (STOP) "+str(len(dataStop))
 resultsAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_", plotParsing=True)
@@ -691,6 +774,14 @@ timeAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_")
 
 
 #### COMPARISON RESULTS
+data = merge1(dataSkip, dataStop)
+print "Number of files (MERGE) "+str(len(data))
+resultsAnalysis(data, unknownInstrMode="auto", reportName="merge_", plotParsing=True)
+pathAnalysis(data, unknownInstrMode="auto", reportName="merge_")
+instructionsAnalysis(data, unknownInstrMode="auto", reportName="merge_")
+stepAnalysis(data, unknownInstrMode="auto", reportName="merge_")
+timeAnalysis(data, unknownInstrMode="auto", reportName="merge_")
+
 resultsComparisonAnalysis(dataSkip,dataStop, reportName="comp_")
 
 
