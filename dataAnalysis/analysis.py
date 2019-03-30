@@ -98,6 +98,11 @@ def loadData(path):
             data[filename.replace(path+"/","").replace(".json","")] = json.loads(content)
     return data
 
+def loadSizes(path):
+    with open(path) as f:
+        data = json.load(f)
+        return data
+
 ## get lenght
 def getTotalSteps(entry):
     length = 0
@@ -160,9 +165,11 @@ def groupByIntervals(data, intervals, mode):
                 val = getTime(data[function],"symbExec")
             elif mode == "sniTime":
                 val = getTime(data[function],"sni")
+            elif mode == "LOC":
+                val = data[function]["LOC"]
             else:
-                print "Unsupported mode"
-                return 0
+                print("Unsupported mode")
+                assert False
 
             if val < max and val >= min:
                 if (min,max) not in data1:
@@ -267,6 +274,8 @@ def unknown_ins(entry):
                 pathData = entry["paths"][path]
                 if pathData["unknown_ins"] > 0:
                     return True
+                if len(pathData["unknown_labels"]):
+                    return True
     return False
 
 def unknown_ins_lastTrace(entry):
@@ -274,6 +283,8 @@ def unknown_ins_lastTrace(entry):
         lastPath = entry["paths"]["length"]
         pathData = entry["paths"][str(int(lastPath) -1)]
         if pathData["unknown_ins"] > 0:
+            return True
+        if len(pathData["unknown_labels"]):
             return True
     return False
 
@@ -378,9 +389,81 @@ def stackedBars(dataByLength,  intervals, unknownInstrMode, ignoreParsingErrors 
     plt.xlabel(xLabel)
 
     plt.title(title)
-    plt.xticks(ind, intervals)
+    plt.xticks(ind, zip(*intervals)[1])
     # plt.yticks(np.arange(0, 101, 10))
     plt.legend((p1[0], p2[0], p3[0], p4[0], p5[0], p6[0], p7[0], p8[0],), ('safe', 'safeUnk', 'data', 'ctrl', 'dataUnk', 'ctrlUnk', 'segfault','timeout'))
+
+    # plt.show()
+    return fig
+
+def compactStackedBars(dataByLength,  intervals, unknownInstrMode, ignoreParsingErrors = True, percentage = True, log=False, title="", xLabel="", yLabel="", onlyAnalyzed = False):
+    # def autolabel(rects):
+    #     # Attach some text labels.
+    #     for rect in rects:
+    #         plt.text(rect.get_x() + rect.get_width() / 2.,
+    #                 rect.get_y() + rect.get_height() / 2.,
+    #                 '%f'%rect.get_height(),
+    #                 ha = 'center',
+    #                 va = 'center')
+
+    def autolabel(rects):
+        for rect in rects:
+            height = rect.get_height()
+            plt.text(rect.get_x() + rect.get_width()/2., 1.05*height,
+                    '%d' % int(height),
+                    ha='center', va='bottom')
+    
+    analyzedVals = []
+    timeoutVals = []
+    for min,max in intervals:
+        if (min,max) in dataByLength:
+            values = dataByLength[(min,max)]
+
+            if ignoreParsingErrors:
+                total = float(len([key for key in values.keys() if getResult(values[key], unknownInstrMode) != "parsing"]))
+            else:
+                total = float(len(values.keys()))
+
+            analyzed = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) in {"safe", "data", "control",  "safeUnk", "dataUnk", "controlUnk"} ])
+            timeout = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) in {"timeout","segfault"} ])
+
+            if percentage:
+                analyzedVals.append(100*analyzed/total)
+                timeoutVals.append(100*timeout/total)
+            else:
+                analyzedVals.append(analyzed)
+                timeoutVals.append(timeout)
+        else:
+            analyzedVals.append(0)
+            timeoutVals.append(0)
+
+    #set up the plot
+    N = len(intervals)    
+    ind = np.arange(2*N, step = 2)    # the x locations for the groups
+    width = 0.35       # the width of the bars: can also be len(x) sequence
+
+  
+
+    # convert datasets to numpy
+
+    analyzedVals = np.array(analyzedVals)
+    timeoutVals = np.array(timeoutVals)
+
+    fig = plt.figure()#(figsize=(50,10))
+
+    p1 = plt.bar(ind, analyzedVals, width, color=blue, edgecolor='black', log=log)
+    # p2 = plt.bar(ind, timeoutVals, width, bottom=analyzedVals, color=yellow, edgecolor='black', log=log)
+    if not onlyAnalyzed:
+        p2 = plt.bar(ind+width, timeoutVals, width, color=yellow, edgecolor='black', log=log)
+    # autolabel(p1)
+    plt.ylabel(yLabel)
+    plt.xlabel(xLabel)
+
+    plt.title(title)
+    plt.xticks(ind+width, zip(*intervals)[1], fontsize=14, rotation=90)
+    # plt.yticks(np.arange(0, 101, 10))
+    if not onlyAnalyzed:
+        plt.legend((p1[0], p2[0]), ('Analyzed', 'Timeout'))
 
     # plt.show()
     return fig
@@ -425,7 +508,7 @@ def plotValue(data, mode, unknownInstrMode, title="", xLabel="", yLabel="", log=
             val = getTime(data[function],"sni")
         else:
             print "Unsupported mode"
-            return 0
+            assert False
 
         status = getResult(data[function],unknownInstrMode)
         if  status == "safe" or  status ==  "safeUnk":
@@ -443,7 +526,7 @@ def plotValue(data, mode, unknownInstrMode, title="", xLabel="", yLabel="", log=
         else:
             print "Unsupported status"
             print status
-            return 0
+            assert False
 
         x.append(len(x))
         y.append(val+1 if log else val)   
@@ -690,6 +773,26 @@ def merge1(dataSkip, dataStop):
 
     return data1
 
+def mergeSizes(data, sizes):
+    covered = set()
+    for fnct in data.keys():
+        fnctName = fnct.split(".")[-1]
+        
+        # if fnctName in covered:
+        #     print fnct
+        #     print fnctName
+        #     assert False
+        # else:
+        #     covered.add(fnctName)
+
+        if fnctName in sizes.keys():
+            data[fnct]["LOC"] = sizes[fnctName]
+        else:
+            print fnct 
+            print fnctName
+            assert False
+    return data
+
 def compactData(data,unknownInstrMode,compactTimeout, compactLeak):
     for fnct in data.keys():
         entry = data[fnct]
@@ -700,15 +803,66 @@ def compactData(data,unknownInstrMode,compactTimeout, compactLeak):
     return data
 
 
+def pathLengthTimes(dataByLength, intervals, unknownInstrMode, filterStatus, title, yLabel, xLabel, ignoreParsingErrors=True):
+
+
+     # def autolabel(rects):
+    #     # Attach some text labels.
+    #     for rect in rects:
+    #         plt.text(rect.get_x() + rect.get_width() / 2.,
+    #                 rect.get_y() + rect.get_height() / 2.,
+    #                 '%f'%rect.get_height(),
+    #                 ha = 'center',
+    #                 va = 'center')
+    
+    vals = []
+    for min,max in intervals:
+        if (min,max) in dataByLength:
+            values = dataByLength[(min,max)]
+
+            if ignoreParsingErrors:
+                total = float(len([key for key in values.keys() if getResult(values[key], unknownInstrMode) != "parsing"]))
+            else:
+                total = float(len(values.keys()))
+
+            val = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) in filterStatus ])
+
+        
+            vals.append(vals)
+        else:
+            vals.append(0)
+
+    #set up the plot
+    N = len(intervals)    
+    ind = np.arange(N)    # the x locations for the groups
+    width = 0.35       # the width of the bars: can also be len(x) sequence
+
+    # convert datasets to numpy
+    vals = np.array(vals)
+
+    fig = plt.figure()#(figsize=(50,10))
+
+    p1 = plt.bar(ind, filterStatus, width, color=blue, edgecolor='black', log=log) # autolabel(p1)
+    plt.ylabel(yLabel)
+    plt.xlabel(xLabel)
+
+    plt.title(title)
+    plt.xticks(ind, intervals)
+    plt.show()
+    # return fig
+
+
+
 ######## 
 
 def stepAnalysis(data, unknownInstrMode, reportName):
-    intervals = generateIntervals(0,1900,100)
+    intervals = generateIntervals(0,18000,2000)
     dataBySteps = groupByIntervals(data, intervals, "steps")
-    plt1 = stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=True, title="Results by steps", xLabel="Number of steps", yLabel="Number of programs")
+    plt1 = stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=False, title="Results by steps", xLabel="Number of steps", yLabel="Number of programs")
     plt2 = stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by steps", xLabel="Number of steps", yLabel="Percentage")
     plt3 = plotValue(data, "steps",unknownInstrMode, title="Steps", xLabel="Programs", yLabel="Number of steps", log=False)
-    toPDF(reportName+"steps.pdf", [plt1, plt2, plt3])
+    plt4 = compactStackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=True, title="", xLabel="Number of steps", yLabel="Number of programs (logscale)", onlyAnalyzed = True)
+    toPDF(reportName+"steps.pdf", [plt1, plt2, plt3,plt4])
 
 def instructionsAnalysis(data, unknownInstrMode, reportName):
     intervals = generateIntervals(0,1000,100)
@@ -729,7 +883,7 @@ def timeAnalysis(data, unknownInstrMode, reportName):
     intervals =  generateIntervals(0,40000,5000)
     dataByTime = groupByIntervals(data, intervals, "totalTime")
     plt1 = stackedBars(dataByTime,intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=False)
-    plt2 = plotValue(data, "totalTime", unknownInstrMode, title="Total Time", xLabel="Programs", yLabel="Total time", log=False)
+    plt2 = plotValue(data,  "totalTime", unknownInstrMode, title="Total Time", xLabel="Programs", yLabel="Total time", log=False)
     toPDF(reportName+"time.pdf", [plt1, plt2])
 
 def pathAnalysis(data, unknownInstrMode, reportName):
@@ -758,31 +912,64 @@ def printSummaryResults(dataGrouped):
     parsing = len(dataGrouped["parsing"].keys())  if "parsing" in dataGrouped.keys() else 0
     print "safe: "+str(safe)+" data: "+str(dataV)+" ctrl: "+str(ctrl)+" safeUnk: "+str(safeUnk)+" dataUnk: "+str(dataUnk)+" ctrlUnk: "+str(ctrlUnk)+" segfault: "+str(segfault)+" timeout: "+str(timeout)+" parsing: "+str(parsing)
 
+def printSummaryByIntervals(data,intervals):
+    for min,max in intervals:
+        if (min,max) in data:
+            values = data[(min,max)]
+            safe = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "safe" ])
+            data = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "data" ])
+            control = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "control" ])
+            safeUnk = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "safeUnk" ])
+            dataUnk = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "dataUnk" ])
+            controlUnk = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "controlUnk" ])
+            segfault = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "segfault" ])
+            timeout = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "timeout" ])
+            parsing = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "parsing" ])
+            success = (safe + data + control + safeUnk + dataUnk + controlUnk)
+            fail = (segfault + parsing + timeout)
+            total = success + fail
+            print "[%d,%d]: ANALYZED %d (SAFE = %d, UNSAFE = %d) TIMEOUT %d TOTAL %d"%(min,max, success, (safe+safeUnk), (data + control + dataUnk + controlUnk), fail, total  )
+   
 
+def locAnalysis(data, unknownInstrMode, reportName):
+    intervals = generateIntervals(0,9000,1000)
+    dataByLOC = groupByIntervals(data, intervals, "LOC")
+    # printSummaryByIntervals(data,intervals)
+    # plt3 = stackedBars(dataByLOC, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=False, title="Results by LOC", xLabel="Number of LOC", yLabel="Number of programs")
+    # plt4 = stackedBars(dataByLOC, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by LOC", xLabel="Number of LOC", yLabel="Percentage")
+    plt1 = compactStackedBars(dataByLOC, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=True, title="Results by LOC", xLabel="Number of LOC", yLabel="Number of programs")
+    plt2 = compactStackedBars(dataByLOC, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by LOC", xLabel="Number of LOC", yLabel="Percentage")
+    toPDF(reportName+"LOC.pdf", [plt1,plt2]) #, plt3,plt4])
 
-### analyse logs for UNKNOWN as SKIP
+### paths
 pathSkip = "/Users/marco/spectector-results/results_unknown_as_skip"
-dataSkip = loadData(pathSkip)
-print "Number of files (SKIP) "+str(len(dataSkip))
-resultsAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_", plotParsing=True)
-pathAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_")
-instructionsAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_")
-stepAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_")
-timeAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_")
-
-
-### analyse logs for UNKNOWN as STOP
 pathStop = "/Users/marco/spectector-results/results_unknown_as_stop"
-dataStop = loadData(pathStop)
-print "Number of files (STOP) "+str(len(dataStop))
-resultsAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_", plotParsing=True)
-pathAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_")
-instructionsAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_")
-stepAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_")
-timeAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_")
+pathSizes = "/Users/marco/spectector-results/sizes.json"
+
+
+# ### analyse logs for UNKNOWN as SKIP
+# dataSkip = loadData(pathSkip)
+# print "Number of files (SKIP) "+str(len(dataSkip))
+# resultsAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_", plotParsing=True)
+# pathAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_")
+# instructionsAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_")
+# stepAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_")
+# timeAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_")
+
+
+# ### analyse logs for UNKNOWN as STOP
+# dataStop = loadData(pathStop)
+# print "Number of files (STOP) "+str(len(dataStop))
+# resultsAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_", plotParsing=True)
+# pathAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_")
+# instructionsAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_")
+# stepAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_")
+# timeAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_")
 
 
 #### COMPARISON RESULTS
+dataSkip = loadData(pathSkip)
+dataStop = loadData(pathStop)
 data = merge1(dataSkip, dataStop)
 print "Number of files (MERGE) "+str(len(data))
 resultsAnalysis(data, unknownInstrMode="auto", reportName="merge_", plotParsing=True)
@@ -791,9 +978,14 @@ instructionsAnalysis(data, unknownInstrMode="auto", reportName="merge_")
 stepAnalysis(data, unknownInstrMode="auto", reportName="merge_")
 timeAnalysis(data, unknownInstrMode="auto", reportName="merge_")
 
-resultsComparisonAnalysis(dataSkip,dataStop, reportName="comp_")
+# ### Comparison
+# resultsComparisonAnalysis(dataSkip,dataStop, reportName="comp_")
 
+### PLOT BY FUNCTION SIZE
 
-
-
-
+dataSkip = loadData(pathSkip)
+dataStop = loadData(pathStop)
+sizes = loadSizes(pathSizes)
+data = merge1(dataSkip, dataStop)
+data = mergeSizes(data,sizes)
+locAnalysis(data, unknownInstrMode="auto", reportName="merge_")
