@@ -15,22 +15,36 @@ function loadjs(file, def, callback) {
 
 function init(){
     var stats = stats_results(results);
-    document.getElementById("stats").innerText += "Stats of "+stats.total+" functions ("+stats.analyzed+" analyzed, "+stats.terminated+" terminated)";
+    document.getElementById("stats").innerText += "Stats of "+stats.total+" functions ("+stats.analyzed+" analyzed, "+stats.complete+" complete)";
     var table = document.createElement("table");
     var row = document.createElement("tr");
     for (var x in stats){
-	if (x != "total" && x != "analyzed" && x != "terminated"){
+	if (x != "total" && x != "analyzed" && x != "complete"){
 	    var cell = document.createElement("td");
 	    var button = document.createElement("button");
-	    button.setAttribute("style", "color:"+color_status[x]);
+	    var legend = document.createElement("div");
+	    legend.setAttribute("style", "background-color:"+color_status[x]+"; height: 10px; width :10px");
 	    button.setAttribute("onclick", "show_stats('"+x+"')");
-	    button.innerText = x.toUpperCase()+": "+stats[x];
+	    var name = "";
+	    switch (x){
+	    case "unknown" : name = "Unknown instructions"; break;
+	    case "label" : name = "Unknown label"; break;
+	    case "indirect" : name = "Indirect jumps"; break;
+	    case "data_unknown" : name = "Data leak - stop by unknwon"; break;
+	    case "control_unknown" : name = "Control leak - stop by unknown"; break;
+	    case "data" : name = "Data leak"; break;
+	    case "control" : name = "Control leak"; break;
+	    default: name = x.toUpperCase();
+	    }
+	    button.innerText = name+": "+stats[x];
+	    button.appendChild(legend);
 	    cell.appendChild(button);
 	    row.appendChild(cell);
 	}
     }
     table.appendChild(row);
-    document.getElementById("buttons").innerText = "Press a button to show its elements and toggle the visualization";
+    document.getElementById("buttons").innerText = "Flags used: " + results[results.length-1].flags;
+    document.getElementById("buttons").innerText += "\nPress a button to show its elements and toggle the visualization";
     document.getElementById("buttons").appendChild(table);
     show_general();
 }
@@ -45,6 +59,7 @@ function show_general() { // Draw a table with all the results formatted
     var actual_table = document.createElement("table");
     var actual_row = document.createElement("tr");
     actual_table.setAttribute("border", "1");
+    //actual_table.setAttribute("width", "100%");
     results.forEach(function(elem, i) {
 	if ( i === results.length-1 || !elem.show){return;} // For last element (summary)
 	comp = get_case(elem.name, 1);
@@ -74,7 +89,7 @@ function show_general() { // Draw a table with all the results formatted
 	var color = color_status[elem.status];
 	var cell = document.createElement("td");
 	var contents = document.createElement("a");
-	contents.setAttribute("style", "color:"+color+";");
+	cell.setAttribute("style", "background-color:"+color+";");
 	contents.setAttribute("onclick", "show_table("+i+")");
 	contents.innerText = mit;
 	cell.appendChild(contents);
@@ -371,43 +386,63 @@ function stats_results(results) {
     var total = results.length-1;
     var timeout = results.filter(r => r.status == "timeout").length;
     var segfault = results.filter(r => r.status == "segfault").length;
+    var unknown_error = results.filter(r => r.status == "unknown_error").length;
     var parsing = results.filter(r => r.status == "parsing").length;
     var parsed = total-parsing;
     var analyzed= parsed-timeout-segfault;
     var unknown = 0;
     var labels = 0;
     var indirect = 0;
+    var data_unknown = 0;
+    var control_unknown = 0;
     results.forEach(function(elem, i) {
-	if(elem.status == "timeout" || elem.status == "segfault") elem.show=false;
+	if(elem.status == "timeout" || elem.status == "segfault" || elem.status == "unknown_error") elem.show=false;
 	else elem.show=true;
 	if(elem.paths){
 	    var st = stats_paths(elem.paths); // If last path is unsafe and doesn't have undefined behavior, mark as normally
-	    if (st.unknown_ins){
-		unknown++;
-		elem.status="unknown";
-	    } else {if (st.unknown_labels){
-		labels++;
-		elem.status="label";
- 	    } else {if (st.indirect_jumps){
- 		indirect++;
- 		elem.status="indirect";
- 	    }
- 		   }}}
-    });
+	    if (elem.status != "data" && elem.status != "control"){
+		if (st.unknown_ins){
+		    unknown++;
+		    elem.status="unknown";
+		} else {if (st.unknown_labels){
+		    labels++;
+		    elem.status="label";
+		} else {if (st.indirect_jumps){
+		    indirect++;
+		    elem.status="indirect";
+		}
+		       }}}
+	    else {
+		if (st.unknown_ins || st.unknown_labels || st.indirect_jumps){
+		    switch(elem.status){
+		    case "data":
+			data_unknown++;
+			elem.status="data_unknown";
+			break;
+		    case "control":
+			control_unknown++;
+			elem.status="control_unknown";
+			break;
+		    }
+		}}
+	}});
     var control = results.filter(r => r.status == "control").length;
     var data = results.filter(r => r.status == "data").length;
     var safe = results.filter(r => r.status == "safe").length;
     var safe_bound = results.filter(r => r.status == "safe_bound").length;
-    var terminated= analyzed-unknown-labels-indirect;
+    var complete = analyzed-unknown-labels-indirect;
     return {total:total,
 	    analyzed:analyzed,
-	    terminated:terminated,
+	    complete:complete,
 	    parsing:parsing,
 	    timeout:timeout,
 	    segfault:segfault,
+	    unknown_error:unknown_error,
 	    unknown:unknown,
 	    label:labels,
 	    indirect:indirect,
+	    data_unknown:data_unknown,
+	    control_unknown:control_unknown,
 	    data:data,
 	    control:control,
 	    safe:safe,
@@ -478,15 +513,18 @@ function add(accumulator, a) {
 }
 
 color_status = {
-    "safe":"green",
-    "safe_bound":"124871",
-    "control":"bb0000",
-    "data":"ff2020",
-    "label":"777777",
-    "unknown":"blue",
-    "segfault":"bb7700",
-    "timeout":"purple",
-    "unsafe":"red",
-    "indirect_jumps":"599394",
-    "parsing":"cc00ca"
+    "safe":"#42f221",
+    "safe_bound":"#92c251",
+    "data_unknown":"#ee6868",
+    "data":"#ff2222",
+    "control_unknown":"#dd4030",
+    "control":"#aa0011",
+    "unsafe":"#d20000",
+    "indirect":"#0021ad",
+    "label":"#0044cc",
+    "unknown":"#0088aa",
+    "unknown_error":"#c0c1d0",
+    "segfault":"#eeaa00",
+    "timeout":"#fabada",
+    "parsing":"#cc00ca"
 };
