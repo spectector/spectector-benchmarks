@@ -27,14 +27,15 @@ To pass a list as an option argument, all the elements
     exit 0
 }
 
-function produce_output () {
-    [ "$ret" -eq 124 ] && printf "{\"name\":\"%s\",\"status\":\"timeout\",\"file\":\"%s\",\"entry\":\"%s\"}" "$target" "$outjson" "$func" > "$outjson" # timeout
-    [ "$ret" -eq 139 ] && printf "{\"name\":\"%s\",\"status\":\"segfault\",\"file\":\"%s\",\"entry\":\"%s\"}" "$target" "$outjson" "$func" > "$outjson" # timeout
+function produce_output () { # 1st parameter is target, 2nd outjson, 3rd func, 4th ret
+    [ "$4" -eq 124 ] && printf "{\"name\":\"%s\",\"status\":\"timeout\",\"file\":\"%s\",\"entry\":\"%s\"}," "$1" "$2" "$3" > "$2" # timeout
+    [ "$4" -eq 139 ] && printf "{\"name\":\"%s\",\"status\":\"segfault\",\"file\":\"%s\",\"entry\":\"%s\"}," "$1" "$2" "$3" > "$2" # segfault
 }
+export -f produce_output
 
 function summarize_results () {
     printf "results=[" > "$jsonfile"
-    for f in "$outdir"/*.json; do (cat "${f}"; printf ",";) >> "$jsonfile"; done
+    cat "$outdir"/*.json >> "$jsonfile"
     printf "{\"name\":\"summary\"}]" >> "$jsonfile" # TODO: Fix
 }
 
@@ -70,7 +71,7 @@ all="${tests[@]} ${benchs[@]}"
 cases=${old[@]}
 
 # Parsing of the arguments
-while getopts ":m:p:t:d:o:s:f:q:r:i" option; do
+while getopts ":m:p:t:d:o:s:f:q:r:i:" option; do
     case "${option}" in
 	m) gen=($OPTARG) ;;
 	p) cases=($OPTARG) ;;
@@ -81,7 +82,7 @@ while getopts ":m:p:t:d:o:s:f:q:r:i" option; do
 	o) results=$OPTARG;;
 	s) delete=($OPTARG);;
 	f) flags=$OPTARG;;
-	i) get_entry=true;;
+	i) get_entry=$OPTARG;;
 	r) raw=$OPTARG
 	   gen=();;
 	* ) usage ;;
@@ -163,28 +164,34 @@ fi
 mkdir -p "$outdir"
 
 if ! [ -z $raw ]; then
-    if [ $get_entry ]; then
+    if [ -d $get_entry ]; then
 	if ! [ -d $raw ]; then
-	    printf "%s is not a directory\n" "$all_folder"
+	    printf "%s is not a directory\n" "$raw"
 	    exit 1
 	fi
 	printf "Analyzing all the functions of the files of %s\n" "$raw"
 	type=$(basename $raw)
 	for target in $raw/*.s; do
 	    name=$(basename $target)
-	    entries="./scripts/get_function_names.sh $target"
-	    $entries | while read func; do
+	    assfile=$get_entry/$name # TODO: The directory must be a flag by the user
+	    while read -r func; do
 		outf="$outdir/$type.$name.$func.out"
 		outjson="$outdir/$type.$name.$func.json"
 		outerr="$outdir/$type.$name.$func.err"
+		single_func="[$func]"
+		# Check of parsing
 		printf "%s\t%s\n" "$target" "$func"
-		$runtimeout $timeout $spectector $target $flags --stats "$outjson"\
-	    		    -e $func > $outf 2> $outerr &
+		if ! $spectector $target $flags -e $single_func -a none > $outf 2> $outerr; then
+		    printf "{\"name\":\"%s\",\"status\":\"parsing\",\"file\":\"%s\",\"entry\":\"%s\"}," "$target" "$outjson" "$func" > "$outjson" # parse error
+		    continue
+		fi
+		$runtimeout $timeout $spectector $target $flags --stats\
+			    "$outjson" -e $single_func > $outf 2> $outerr &
 		LAST=$!
 		wait $LAST
 		ret=$?
-		produce_output
-	    done
+		produce_output $target $outjson $func $ret
+	    done < <(./scripts/get_function_names.sh $assfile)
 	done
 	summarize_results
 	exit 0
@@ -213,7 +220,7 @@ if ! [ -z $raw ]; then
 	summarize_results
 	exit 0
     else
-	printf "Review the parameters passed"
+	printf "Review the parameters passed\n"
 	exit 1
     fi
 fi
@@ -263,7 +270,7 @@ for app in ${cases[@]}; do
 			LAST=$!
 			wait $LAST
 			ret=$?
-			produce_output
+			produce_output $target $outjson $func $ret
 		    fi
 		done
 	    done
