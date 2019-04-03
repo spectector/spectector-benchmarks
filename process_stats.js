@@ -30,8 +30,8 @@ function init(){
 	    case "unknown" : name = "Unknown instructions"; break;
 	    case "label" : name = "Unknown label"; break;
 	    case "indirect" : name = "Indirect jumps"; break;
-	    case "data_unknown" : name = "Data leak - stop by unknwon"; break;
-	    case "control_unknown" : name = "Control leak - stop by unknown"; break;
+	    case "data_unknown" : name = "Data leak - w/ unknown"; break;
+	    case "control_unknown" : name = "Control leak - w/ unknown"; break;
 	    case "data" : name = "Data leak"; break;
 	    case "control" : name = "Control leak"; break;
 	    default: name = x.toUpperCase();
@@ -53,6 +53,11 @@ function show_general() { // Draw a table with all the results formatted
     showing = "general";
     document.getElementById("conc_stats").innerHTML = "";
     document.getElementById("data").innerHTML = "";
+    document.getElementById("data").appendChild(document.createElement("br"));
+    var button = document.createElement("button");
+    button.setAttribute("onclick", "sort_rows()");
+    button.innerText = "Sort rows";
+    document.getElementById("data").appendChild(button);
     var txt = "";
     actual_exp = "";
     actual_comp = "";
@@ -91,7 +96,8 @@ function show_general() { // Draw a table with all the results formatted
 	var contents = document.createElement("a");
 	cell.setAttribute("style", "background-color:"+color+";");
 	contents.setAttribute("onclick", "show_table("+i+")");
-	contents.innerText = mit;
+	contents.innerText = "__";
+	//contents.innerText = mit;
 	cell.appendChild(contents);
 	actual_row.appendChild(cell);
     });
@@ -510,6 +516,27 @@ function show_stats(st){
 
 function add(accumulator, a) {
     return accumulator + a;
+}
+
+function sort_rows(){
+    var distinct = [];
+    var current_name = "";
+    var current_l = [];
+    results.forEach(function(elem, i) {
+	if(elem.name == current_name) {
+	    current_l = current_l.concat(elem);
+	} else{
+	    console.log(current_l);
+	    current_l.sort(function(a, b){ return a.status < b.status; });
+	    distinct = distinct.concat(current_l);
+	    current_l = [elem];
+	    current_name = elem.name;
+	}
+    });
+    current_l.sort(function(a, b){ return a.status < b.status; });
+    distinct = distinct.concat(current_l);
+    results = distinct;
+    show_general();
 }
 
 color_status = {
