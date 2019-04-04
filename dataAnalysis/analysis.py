@@ -1,3 +1,6 @@
+#!/usr/bin/python
+
+
 import json
 from os import listdir
 from os.path import isfile, join
@@ -5,6 +8,9 @@ import glob
 from pprint import pprint
 import matplotlib.pyplot as plt
 import numpy as np
+import sys, getopt
+
+from lineCount import sizesFromSource
 
 from matplotlib.backends.backend_pdf import PdfPages
 
@@ -93,6 +99,7 @@ def sanitize(text):
 
 ## load the json data. 
 def loadData(path):
+    print "Loading "+path
     extension = "*.json"
     jsonFiles = glob.glob(path+"/"+extension)
     data = {}
@@ -236,6 +243,8 @@ def getResult (entry, unknownInstrMode):
     
     if status == "timeout":
             return "timeout"
+    elif status == "unknown_error":
+            return "segfault" ## TODO FIX THIS!
     elif status == "segfault":
             return "segfault"
     elif status == "parsing":
@@ -255,7 +264,7 @@ def getResult (entry, unknownInstrMode):
                 return "data"
             else:
                 return "dataUnk"
-        elif unknownInstrMode == "auto":
+        elif unknownInstrMode == "merge":
             return getResult (entry, entry["mode"])
         else:
             assert False
@@ -267,44 +276,57 @@ def getResult (entry, unknownInstrMode):
                 return "control"
             else:
                 return "controlUnk"
-        elif unknownInstrMode == "auto":
+        elif unknownInstrMode == "merge":
             return getResult (entry, entry["mode"])
         else:
+            print "Unsupported mode "+unknownInstrMode
             assert False
     else:
+        print "Unsupported status "+status
         assert False # unsupported value
 
 
-    # if not unknown_ins(entry):
-    #     if entry["status"] == "safe":
-    #         return "safe"
-    #     elif entry["status"] == "safe_bound":
-    #         return "safeUnk"
-    #     elif entry["status"] == "data":
-    #         return "data"
-    #     elif entry["status"] == "control":
-    #         return "control"
-    #     else:
-    #         assert False
-    # else:
-    #     if entry["status"] == "safe" or entry["status"] == "safe_bound":
-    #         return "safeUnk"
-    #     elif entry["status"] == "data":
-    #         if unknownInstrMode == "skip":
-    #             return "dataUnk"
-    #         elif  unknownInstrMode == "stop":
-    #             return "data"
-    #         else:
-    #             assert False
-    #     elif entry["status"] == "control":
-    #         if unknownInstrMode == "skip":
-    #             return "controlUnk"
-    #         elif  unknownInstrMode == "stop":
-    #             return "control"
-    #         else:
-    #             assert False
-    #     else:
-    #         assert False
+def getTraceResult (entry, unknownInstrMode):
+    status = entry["status"]
+    
+    if status == "timeout":
+            return "timeout"
+    elif status == "segfault":
+            return "segfault"
+    elif status == "parsing":
+            return "parsing"
+    elif status == "safe":
+        if entry["unknown_ins"] == 0 and len(entry["unknown_labels"]) == 0:
+            return "safe"
+        else:
+            return "safeUnk"
+    elif status == "safe_bound":
+        return "safeUnk"
+    elif status == "data":
+        if  unknownInstrMode == "stop":
+            return "data"
+        elif unknownInstrMode == "skip":
+            if entry["unknown_ins"] == 0 and len(entry["unknown_labels"]) == 0:
+                return "data"
+            else:
+                return "dataUnk"
+        else:
+            print "Unsupported mode "+unknownInstrMode
+            assert False
+    elif status == "control":
+        if  unknownInstrMode == "stop":
+            return "control"
+        elif unknownInstrMode == "skip":
+            if entry["unknown_ins"] == 0 and len(entry["unknown_labels"]) == 0:
+                return "control"
+            else:
+                return "controlUnk"
+        else:
+            print "Unsupported mode "+unknownInstrMode
+            assert False
+    else:
+        print "Unsupported status "+status
+        assert False # unsupported value
 
 
 ## group the functions 
@@ -584,7 +606,7 @@ def plotValue(data, mode, unknownInstrMode, title="", xLabel="", yLabel="", log=
             colors.append(brightRed)
         elif status == "control" or  status ==  "controlUnk":
             colors.append(darkRed)
-        elif status == "segfault":
+        elif status in {"segfault", "unknown_error"}:
             colors.append(blue)
         elif status == "timeout":
             colors.append(yellow)
@@ -807,10 +829,6 @@ def merge(dataSkip, dataStop):
                 if valueSkip not in data1:
                     data1[valueSkip] = {}
                 data1[valueSkip][function] = dataSkip[function]
-            
-        # if valueStop != valueSkip:
-        #     print function + " " + valueStop + "  " + valueSkip
-
     return data1
 
 def merge1(dataSkip, dataStop):
@@ -834,24 +852,13 @@ def merge1(dataSkip, dataStop):
             if function in dataSkip.keys():
                 data1[function] = dataSkip[function]
                 data1[function]["mode"] = "skip"
-            
-        # if valueStop != valueSkip:
-        #     print function + " " + valueStop + "  " + valueSkip
-
+        
     return data1
 
 def mergeSizes(data, sizes):
-    covered = set()
     for fnct in data.keys():
         fnctName = fnct.split(".")[-1]
         
-        # if fnctName in covered:
-        #     print fnct
-        #     print fnctName
-        #     assert False
-        # else:
-        #     covered.add(fnctName)
-
         if fnctName in sizes.keys():
             data[fnct]["LOC"] = sizes[fnctName]
         else:
@@ -871,8 +878,6 @@ def compactData(data,unknownInstrMode,compactTimeout, compactLeak):
 
 
 def pathLengthTimes(dataByLength, intervals, unknownInstrMode, filterStatus, title, yLabel, xLabel, ignoreParsingErrors=True):
-
-
      # def autolabel(rects):
     #     # Attach some text labels.
     #     for rect in rects:
@@ -919,12 +924,12 @@ def pathLengthTimes(dataByLength, intervals, unknownInstrMode, filterStatus, tit
     # return fig
 
 
-def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLabel="", log=False):
+def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLabel="", xValues = "incremental", threshold=10000, log=False):
     y = []
     x = []
     colors=[]
     for path in data:
-        if mode == "SNI_Time":
+        if mode == "sni_time":
             val = path["time_solve"]
         elif mode == "trace_length":
             val = path["trace_length"]
@@ -932,46 +937,36 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
             print "Unsupported mode"
             assert False
 
+        if xValues != "incremental" and path[xValues] > threshold:
+            continue
 
-        x.append(len(x))
+        x.append(len(x) if xValues == "incremental" else path[xValues])
         y.append(val+1 if log else val)   
-        colors.append(blue)
 
-        # status = getResult(data[function],unknownInstrMode)
-        # if  status == "safe" or  status ==  "safeUnk":
-        #     colors.append(green)
-        # elif status == "data" or  status==  "dataUnk":
-        #     colors.append(brightRed)
-        # elif status == "control" or  status ==  "controlUnk":
-        #     colors.append(darkRed)
-        # elif status == "segfault":
-        #     colors.append(blue)
-        # elif status == "timeout":
-        #     colors.append(yellow)
-        # elif status == "parsing":
-        #     colors.append(purple)
-        # else:
-        #     print "Unsupported status"
-        #     print status
-        #     assert False
-
-        
-    # plt.scatter(x,y)
-    # plt.show()
+        if getTraceResult(path,unknownInstrMode) in {"safe", "safeUnk"}:
+            colors.append(green)
+        elif getTraceResult(path,unknownInstrMode) in {"data", "control", "dataUnk", "controlUnk"}:
+            colors.append(brightRed)
+        elif getTraceResult(path,unknownInstrMode) == "timeout":
+            colors.append(yellow)
+        else:
+            print "Unsupported status"
+            assert False
 
     fig = plt.figure()
     ax = plt.gca()
-    ax.scatter(x ,y , c=colors, alpha=1, edgecolors='none')
+    ax.scatter(x ,y , c=colors, alpha=0.3, edgecolors='none')
     if log:
         ax.set_yscale('log')
     plt.title(title)    
     plt.xlabel(xLabel)
     plt.ylabel(yLabel)
-    plt.show()
-    # return fig
+
+    
+    return fig
 
 
-def scatterClusteredCategorical(data, intervals, mode,  title = "", xLabel = "", yLabel = "", log = False):
+def scatterClusteredCategorical(data, intervals, mode, unknownInstrMode, title = "", xLabel = "", yLabel = "", log = False):
     y = []
     x = []
     colors=[]
@@ -991,20 +986,28 @@ def scatterClusteredCategorical(data, intervals, mode,  title = "", xLabel = "",
                     assert False
                 x.append(n)
                 y.append(val+1 if log else val)   
-                colors.append(blue)
+                
+                if getTraceResult(path,unknownInstrMode) in {"safe", "safeUnk"}:
+                    colors.append(green)
+                elif getTraceResult(path,unknownInstrMode) in {"data", "control", "dataUnk", "controlUnk"}:
+                    colors.append(brightRed)
+                elif getTraceResult(path,unknownInstrMode) == "timeout":
+                    colors.append(yellow)
+                else:
+                    print "Unsupported status"
+                    assert False
         n+=1
-    # plt.scatter(x,y)
-    # plt.show()
 
     fig = plt.figure()
     ax = plt.gca()
-    ax.scatter(x ,y , c=colors, alpha=1, edgecolors='none')
+    ax.scatter(x ,y , c=colors, alpha=.5, edgecolors='none')
     if log:
         ax.set_yscale('log')
     plt.title(title)    
     plt.xlabel(xLabel)
     plt.ylabel(yLabel)
-    plt.show()
+    
+    return fig
 
 ######## 
 
@@ -1047,11 +1050,6 @@ def pathAnalysis(data, unknownInstrMode, reportName):
     plt3 = plotValue(data, "paths", unknownInstrMode, title="Paths", xLabel="Programs", yLabel="Number of paths", log=False)
     toPDF(reportName+"paths.pdf", [plt1, plt2, plt3])
 
-def resultsComparisonAnalysis(dataSkip, dataStop, reportName):
-    data = merge(dataSkip, dataStop)
-    # plt1 = plotDoublePie(data)
-    plt2 = plotCompactDoublePie(data, plotParsing=False)
-    toPDF(reportName+"results.pdf", [plt2])
 
 def printSummaryResults(dataGrouped):
     safe = len(dataGrouped["safe"].keys())  if "safe" in dataGrouped.keys() else 0
@@ -1065,7 +1063,7 @@ def printSummaryResults(dataGrouped):
     parsing = len(dataGrouped["parsing"].keys())  if "parsing" in dataGrouped.keys() else 0
     print "safe: "+str(safe)+" data: "+str(dataV)+" ctrl: "+str(ctrl)+" safeUnk: "+str(safeUnk)+" dataUnk: "+str(dataUnk)+" ctrlUnk: "+str(ctrlUnk)+" segfault: "+str(segfault)+" timeout: "+str(timeout)+" parsing: "+str(parsing)
 
-def printSummaryByIntervals(data,intervals):
+def printSummaryByIntervals(data,intervals, unknownInstrMode):
     for min,max in intervals:
         if (min,max) in data:
             values = data[(min,max)]
@@ -1106,91 +1104,187 @@ def traceAnalysis(data, unknownInstrMode, reportName):
     plt3 = plotValue(data, "trace", unknownInstrMode, title="Traces", xLabel="Programs", yLabel="Trace Length", log=False)
     toPDF(reportName+"trace.pdf", [plt1,plt2, plt3])
 
-### paths
-pathSkip = "/Users/marco/spectector-results/results_unknown_as_skip"
-pathStop = "/Users/marco/spectector-results/results_unknown_as_stop"
-pathSizes = "/Users/marco/spectector-results/sizes.json"
-
-### load data
-dataSkip = loadData(pathSkip)
 
 
-### load paths
-pathsSkip = collectPaths(dataSkip)
-#### TODO - We must gather path information also for those functions that time-out
-####### TODO - Can we get a status attribute per path (safe, unsafe, timeout)?
-#### TODO - We need partial path information for the symbolic execution 
+def printSummary(clusteredData, intervals, attr):
+    for min,max in intervals:
+        minVal = None
+        maxVal = None
+        traceNr = 0
+        if (min,max) in clusteredData.keys():
+            traceNr = len(clusteredData[(min,max)])
+            for path in clusteredData[(min,max)]:
+                if minVal == None:
+                    minVal = path[attr]
+                if maxVal == None:
+                    minVal = path[attr]
+                if path[attr] < minVal:
+                    minVal = path[attr]
+                if path[attr] > maxVal:
+                    maxVal = path[attr]
+        print "[%d,%d]: MIN %d MAX %d # %d"%(min,max, (minVal if minVal != None else 0), (maxVal if maxVal != None else 0), traceNr )
 
 
-### group paths
-intervals = generateIntervals(0,10000,500)
-clusteredData = groupPathsByIntervals(pathsSkip, intervals, "trace_length")
-# scatterPlotPathsValue(pathsSkip, mode="trace_length", unknownInstrMode="skip", title="", xLabel="", yLabel="", log=False)
+def main(argv):
+    try:
+        opts, args = getopt.getopt(argv,'', ["source=","sizes=", "unsupported-as-skip=", "unsupported-as-stop=", "mode=", "analysis="])
+    except getopt.GetoptError:
+        print "Wrong usage. See below."
+        print "Usage: dataAnalysis [options]"
+        print "Options:"
+        print "     --source <file>                 Source file"
+        print "     --sizes <file>                  JSON file with the function sizes"
+        print "     --unsupported-as-skip <file>    Logs generated using unsupported-as-skip"
+        print "     --unsupported-as-stop <file>    Logs generated using unsupported-as-stop"
+        print "     --merge                         Merge unsupported-as-skip and unsupported-as-stop logs"
+        sys.exit(2)
 
-for min,max in intervals:
-    minVal = None
-    maxVal = None
-    traceNr = 0
-    if (min,max) in clusteredData.keys():
-        traceNr = len(clusteredData[(min,max)])
-        for path in clusteredData[(min,max)]:
-            if minVal == None:
-                minVal = path["trace_length"]
-            if maxVal == None:
-                minVal = path["trace_length"]
-            if path["trace_length"] < minVal:
-                minVal = path["trace_length"]
-            if path["trace_length"] > maxVal:
-                maxVal = path["trace_length"]
-    print "[%d,%d]: MIN %d MAX %d # %d"%(min,max, (minVal if minVal != None else 0), (maxVal if maxVal != None else 0), traceNr )
-
-scatterClusteredCategorical(clusteredData, intervals, mode="sni_time",  title = "", xLabel = "", yLabel = "", log = False)
-# histogramPaths(clusteredData, unknownInstrMode="skip", title="", xLabel="", yLabel="", log=True)
-
-
-'''
-### analyse logs for UNKNOWN as SKIP
-dataSkip = loadData(pathSkip)
-print "Number of files (SKIP) "+str(len(dataSkip))
-resultsAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_", plotParsing=True)
-pathAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_")
-instructionsAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_")
-stepAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_")
-timeAnalysis(dataSkip, unknownInstrMode="skip", reportName="skip_")
-
-
-### analyse logs for UNKNOWN as STOP
-dataStop = loadData(pathStop)
-print "Number of files (STOP) "+str(len(dataStop))
-resultsAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_", plotParsing=True)
-pathAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_")
-instructionsAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_")
-stepAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_")
-timeAnalysis(dataStop, unknownInstrMode="stop", reportName="stop_")
+    ### Initialized from cmd line
+    pathSrc = None
+    pathSize = None
+    pathStop = None
+    pathSkip = None
+    merge = False
+    analysis = None
+    dataSkip = None
+    dataStop = None
+    pathSize = None
+    sizes = None
+    for opt, arg in opts:
+        if opt == '-h':
+            print "Usage: dataAnalysis [options]"
+            print "Options:"
+            print "     --source <file>                 Source file"
+            print "     --sizes <file>                  JSON file with the function sizes"
+            print "     --unsupported-as-skip <file>    Logs generated using unsupported-as-skip"
+            print "     --unsupported-as-stop <file>    Logs generated using unsupported-as-stop"
+            print "     --mode  (skip|stop|merge)       Choose which data to plot"
+            print "     --analysis (all|                Choose analysis type"
+            sys.exit()
+        elif opt == "--source":
+            pathSrc = arg
+        elif opt == "--sizes":
+            pathSize = arg
+        elif opt == "--unsupported-as-skip":
+            pathSkip = arg
+        elif opt == "--unsupported-as-stop":
+            pathStop = arg
+        elif opt == "--mode":
+            mode = arg
+        elif opt == "--analysis":
+            analysis = arg
+        else:
+            print "Unsupported option" + opt
+            assert False
 
 
-#### COMPARISON RESULTS
-dataSkip = loadData(pathSkip)
-dataStop = loadData(pathStop)
-data = merge1(dataSkip, dataStop)
-print "Number of files (MERGE) "+str(len(data))
-resultsAnalysis(data, unknownInstrMode="auto", reportName="merge_", plotParsing=True)
-pathAnalysis(data, unknownInstrMode="auto", reportName="merge_")
-instructionsAnalysis(data, unknownInstrMode="auto", reportName="merge_")
-stepAnalysis(data, unknownInstrMode="auto", reportName="merge_")
-timeAnalysis(data, unknownInstrMode="auto", reportName="merge_")
 
-### Comparison
-resultsComparisonAnalysis(dataSkip,dataStop, reportName="comp_")
+    ### load data
+    if pathStop is not None:
+        dataStop = loadData(pathStop)
+    if pathSkip is not None:
+        dataSkip = loadData(pathSkip) 
+    if pathSize is not None:
+        sizes = loadSizes(pathSize)
+    elif pathSrc is not None:
+        sizes = sizesFromSource(pathSrc)
+    
 
-### PLOT BY FUNCTION SIZE
+    if analysis == "all":
+        if mode == "skip":
+            if dataSkip is not None:
+                data = dataSkip
+            else:
+                print "Pass a file with the --unsupported-as-skip option"
+                assert False
+        elif mode == "stop":
+            if dataStop is not None:
+                data = dataStop
+            else:
+                print "Pass a file with the --unsupported-as-stop option"
+                assert False
+        elif mode == "merge":
+            if dataSkip is not None:
+                if dataStop is not None:
+                    data = merge1(dataSkip, dataStop)
+                else:
+                    print "Pass a file with the --unsupported-as-stop option"
+                    assert False
+            else:
+                print "Pass a file with the --unsupported-as-skip option"
+                assert False
+        else:
+            print "Unsupported mode"
+            assert False
+        print "Number of files: %d"%len(data)
+        resultsAnalysis(data, unknownInstrMode=mode, reportName=mode+"_")
+        pathAnalysis(data, unknownInstrMode=mode, reportName=mode+"_")
+        instructionsAnalysis(data, unknownInstrMode=mode, reportName=mode+"_")
+        stepAnalysis(data, unknownInstrMode=mode, reportName=mode+"_")
+        timeAnalysis(data, unknownInstrMode=mode, reportName=mode+"_")
+    elif analysis == "sni":
+        if mode == "skip":
+            if dataSkip is not None:
+                data = dataSkip
+            else:
+                print "Pass a file with the --unsupported-as-skip option"
+                assert False
+        elif mode == "stop":
+            if dataStop is not None:
+                data = dataStop
+            else:
+                print "Pass a file with the --unsupported-as-stop option"
+                assert False
+        elif mode == "merge":
+            if dataSkip is not None:
+                if dataStop is not None:
+                    data = merge1(dataSkip, dataStop)
+                else:
+                    print "Pass a file with the --unsupported-as-stop option"
+                    assert False
+            else:
+                print "Pass a file with the --unsupported-as-skip option"
+                assert False
+        else:
+            print "Unsupported mode"
+            assert False
 
-dataSkip = loadData(pathSkip)
-dataStop = loadData(pathStop)
-sizes = loadSizes(pathSizes)
-data = merge1(dataSkip, dataStop)
-data = mergeSizes(data,sizes)
-locAnalysis(data, unknownInstrMode="auto", reportName="merge_")
-traceAnalysis(dataSkip, unknownInstrMode="skip", reportName="merge_")
-traceAnalysis(dataStop, unknownInstrMode="stop", reportName="merge_")
-'''
+        paths = collectPaths(data)
+        #### TODO - We must gather path information also for those functions that time-out
+        #### TODO - We need partial path information for the symbolic execution 
+
+        intervals = generateIntervals(0,10000,100)
+
+        clusteredData = groupPathsByIntervals(paths, intervals, "trace_length")
+        printSummary(clusteredData, intervals, "trace_length")
+        plt1 = scatterClusteredCategorical(clusteredData, intervals, mode="sni_time", unknownInstrMode=mode,  title = "", xLabel = "", yLabel = "", log = True)
+        plt2 = scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", log=True)
+        plt3 = scatterPlotPathsValue(paths, "trace_length", unknownInstrMode=mode, title="", xLabel="", yLabel="", log=True)
+        plt4 = scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", xValues="trace_length", threshold=12000, log=True)
+        toPDF(mode+"_sni.pdf", [plt1, plt2, plt3, plt4])
+    elif analysis == "fnct_size":
+        if dataSkip is not None:
+            if dataStop is not None:
+                if sizes is not None:
+                    ### PLOT BY FUNCTION SIZE
+                    data = merge1(dataSkip, dataStop)
+                    data = mergeSizes(data,sizes)
+                    locAnalysis(data, unknownInstrMode="merge", reportName="merge_")
+                    traceAnalysis(dataSkip, unknownInstrMode="skip", reportName="merge_")
+                    traceAnalysis(dataStop, unknownInstrMode="stop", reportName="merge_")
+                else:
+                    print "Pass either a file containing function sizes with the --sizes option or a source file with the --source option"
+                    assert False
+            else:
+                print "Pass a file with the --unsupported-as-stop option"
+                assert False
+        else:
+            print "Pass a file with the --unsupported-as-skip option"
+            assert False
+    else:
+        print "Specify analysis"
+        assert False
+
+if __name__ == "__main__":
+   main(sys.argv[1:])
+

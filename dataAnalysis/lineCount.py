@@ -61,16 +61,9 @@ def recursiveLengths(lengths, deps):
                 # print "Update %s from %d to %d"%(f,recLengths[f] if f in recLengths.keys() else 0,value )
                 recLengths[f] = value
     return recLengths
+    
 
-lengths, deps = read("/Users/marco/spectector-results/general.s")
-deepLengths = recursiveLengths(lengths, deps)
-max = 0
-key = None
-for f in deepLengths.keys():
-    if deepLengths[f] > max:
-        max = deepLengths[f]
-        key = f
-
-import json
-with open('/Users/marco/spectector-results/sizes.json', 'w') as outfile:
-    json.dump(deepLengths, outfile)
+def sizesFromSource(srcPath):
+    lengths, deps = read(srcPath)
+    deepLengths = recursiveLengths(lengths, deps)
+    return deepLengths
