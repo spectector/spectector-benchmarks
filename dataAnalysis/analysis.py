@@ -970,7 +970,6 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
     plt.title(title)    
     plt.xlabel(xLabel)
     plt.ylabel(yLabel)
-
     
     return fig
 
@@ -1077,6 +1076,7 @@ def getSymbolicStatus(stats, pathLength):
 
 def extractSymbExecDataAndCollectPaths(data):
     paths = []
+    n = 0
     for function in data.keys():
         functionData = data[function]
         if "paths" in functionData.keys():
@@ -1090,8 +1090,10 @@ def extractSymbExecDataAndCollectPaths(data):
                             pathData["symbolic_time"] = entry["time"]
                             pathData["symbolic_status"] = getSymbolicStatus(stats, entry["len"])
                             paths.append(pathData)
+                            n+=1
                     else:
                         paths.append(pathData)
+    print "Created %d paths with symbolic information"%n
     return paths
     
 
@@ -1183,8 +1185,6 @@ def sniAnalysis(data, mode):
 
 def symbExecAnalysis(data,mode):
     paths = extractSymbExecDataAndCollectPaths(data)
-    for path in paths:
-        print path
     print "Total paths %d"%len(paths)
 
     plt = scatterPlotPathsValue(paths, "symbolic_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", xValues="symbolic_length", colorsMode="symbolic_status", threshold=12000, log=True)
@@ -1320,7 +1320,31 @@ def main(argv):
 
         sniAnalysis(data, mode)
     elif analysis == "symb":
-        data = dataStop
+        if mode == "skip":
+            if dataSkip is not None:
+                data = dataSkip
+            else:
+                print "Pass a file with the --unsupported-as-skip option"
+                assert False
+        elif mode == "stop":
+            if dataStop is not None:
+                data = dataStop
+            else:
+                print "Pass a file with the --unsupported-as-stop option"
+                assert False
+        elif mode == "merge":
+            if dataSkip is not None:
+                if dataStop is not None:
+                    data = merge1(dataSkip, dataStop)
+                else:
+                    print "Pass a file with the --unsupported-as-stop option"
+                    assert False
+            else:
+                print "Pass a file with the --unsupported-as-skip option"
+                assert False
+        else:
+            print "Unsupported mode"
+            assert False
         symbExecAnalysis(data,mode)
     elif analysis == "fnct_size":
         if dataSkip is not None:
@@ -1342,7 +1366,7 @@ def main(argv):
             print "Pass a file with the --unsupported-as-skip option"
             assert False
     else:
-        print "Specify analysis"
+        print "Unsupported analysis"
         assert False
 
 if __name__ == "__main__":
