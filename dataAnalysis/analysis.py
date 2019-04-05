@@ -305,7 +305,7 @@ def getTraceResult (entry, unknownInstrMode):
     elif status == "data":
         if  unknownInstrMode == "stop":
             return "data"
-        elif unknownInstrMode == "skip":
+        elif unknownInstrMode in {"skip","merge"}:
             if entry["unknown_ins"] == 0 and len(entry["unknown_labels"]) == 0:
                 return "data"
             else:
@@ -316,7 +316,7 @@ def getTraceResult (entry, unknownInstrMode):
     elif status == "control":
         if  unknownInstrMode == "stop":
             return "control"
-        elif unknownInstrMode == "skip":
+        elif unknownInstrMode in {"skip","merge"}:
             if entry["unknown_ins"] == 0 and len(entry["unknown_labels"]) == 0:
                 return "control"
             else:
@@ -1009,7 +1009,59 @@ def scatterClusteredCategorical(data, intervals, mode, unknownInstrMode, title =
     
     return fig
 
-######## 
+
+def printSummary(clusteredData, intervals, attr):
+    for min,max in intervals:
+        minVal = None
+        maxVal = None
+        traceNr = 0
+        if (min,max) in clusteredData.keys():
+            traceNr = len(clusteredData[(min,max)])
+            for path in clusteredData[(min,max)]:
+                if minVal == None:
+                    minVal = path[attr]
+                if maxVal == None:
+                    minVal = path[attr]
+                if path[attr] < minVal:
+                    minVal = path[attr]
+                if path[attr] > maxVal:
+                    maxVal = path[attr]
+        print "[%d,%d]: MIN %d MAX %d # %d"%(min,max, (minVal if minVal != None else 0), (maxVal if maxVal != None else 0), traceNr )
+
+def printSummaryResults(dataGrouped):
+    safe = len(dataGrouped["safe"].keys())  if "safe" in dataGrouped.keys() else 0
+    dataV = len(dataGrouped["data"].keys())  if "data" in dataGrouped.keys() else 0
+    ctrl = len(dataGrouped["control"].keys())  if "control" in dataGrouped.keys() else 0
+    safeUnk = len(dataGrouped["safeUnk"].keys())  if "safeUnk" in dataGrouped.keys() else 0
+    dataUnk = len(dataGrouped["dataUnk"].keys())  if "dataUnk" in dataGrouped.keys() else 0
+    ctrlUnk = len(dataGrouped["controlUnk"].keys())  if "controlUnk" in dataGrouped.keys() else 0
+    segfault = len(dataGrouped["segfault"].keys())  if "segfault" in dataGrouped.keys() else 0
+    timeout = len(dataGrouped["timeout"].keys())  if "timeout" in dataGrouped.keys() else 0
+    parsing = len(dataGrouped["parsing"].keys())  if "parsing" in dataGrouped.keys() else 0
+    print "safe: "+str(safe)+" data: "+str(dataV)+" ctrl: "+str(ctrl)+" safeUnk: "+str(safeUnk)+" dataUnk: "+str(dataUnk)+" ctrlUnk: "+str(ctrlUnk)+" segfault: "+str(segfault)+" timeout: "+str(timeout)+" parsing: "+str(parsing)
+
+def printSummaryByIntervals(data,intervals, unknownInstrMode):
+    for min,max in intervals:
+        if (min,max) in data:
+            values = data[(min,max)]
+            safe = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "safe" ])
+            data = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "data" ])
+            control = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "control" ])
+            safeUnk = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "safeUnk" ])
+            dataUnk = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "dataUnk" ])
+            controlUnk = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "controlUnk" ])
+            segfault = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "segfault" ])
+            timeout = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "timeout" ])
+            parsing = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "parsing" ])
+            success = (safe + data + control + safeUnk + dataUnk + controlUnk)
+            fail = (segfault + parsing + timeout)
+            total = success + fail
+            print "[%d,%d]: ANALYZED %d (SAFE = %d, UNSAFE = %d) TIMEOUT %d TOTAL %d"%(min,max, success, (safe+safeUnk), (data + control + dataUnk + controlUnk), fail, total  )
+   
+
+#############
+############# ANALYSES
+#############
 
 def stepAnalysis(data, unknownInstrMode, reportName):
     intervals = generateIntervals(0,18000,2000)
@@ -1050,38 +1102,6 @@ def pathAnalysis(data, unknownInstrMode, reportName):
     plt3 = plotValue(data, "paths", unknownInstrMode, title="Paths", xLabel="Programs", yLabel="Number of paths", log=False)
     toPDF(reportName+"paths.pdf", [plt1, plt2, plt3])
 
-
-def printSummaryResults(dataGrouped):
-    safe = len(dataGrouped["safe"].keys())  if "safe" in dataGrouped.keys() else 0
-    dataV = len(dataGrouped["data"].keys())  if "data" in dataGrouped.keys() else 0
-    ctrl = len(dataGrouped["control"].keys())  if "control" in dataGrouped.keys() else 0
-    safeUnk = len(dataGrouped["safeUnk"].keys())  if "safeUnk" in dataGrouped.keys() else 0
-    dataUnk = len(dataGrouped["dataUnk"].keys())  if "dataUnk" in dataGrouped.keys() else 0
-    ctrlUnk = len(dataGrouped["controlUnk"].keys())  if "controlUnk" in dataGrouped.keys() else 0
-    segfault = len(dataGrouped["segfault"].keys())  if "segfault" in dataGrouped.keys() else 0
-    timeout = len(dataGrouped["timeout"].keys())  if "timeout" in dataGrouped.keys() else 0
-    parsing = len(dataGrouped["parsing"].keys())  if "parsing" in dataGrouped.keys() else 0
-    print "safe: "+str(safe)+" data: "+str(dataV)+" ctrl: "+str(ctrl)+" safeUnk: "+str(safeUnk)+" dataUnk: "+str(dataUnk)+" ctrlUnk: "+str(ctrlUnk)+" segfault: "+str(segfault)+" timeout: "+str(timeout)+" parsing: "+str(parsing)
-
-def printSummaryByIntervals(data,intervals, unknownInstrMode):
-    for min,max in intervals:
-        if (min,max) in data:
-            values = data[(min,max)]
-            safe = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "safe" ])
-            data = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "data" ])
-            control = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "control" ])
-            safeUnk = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "safeUnk" ])
-            dataUnk = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "dataUnk" ])
-            controlUnk = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "controlUnk" ])
-            segfault = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "segfault" ])
-            timeout = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "timeout" ])
-            parsing = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "parsing" ])
-            success = (safe + data + control + safeUnk + dataUnk + controlUnk)
-            fail = (segfault + parsing + timeout)
-            total = success + fail
-            print "[%d,%d]: ANALYZED %d (SAFE = %d, UNSAFE = %d) TIMEOUT %d TOTAL %d"%(min,max, success, (safe+safeUnk), (data + control + dataUnk + controlUnk), fail, total  )
-   
-
 def locAnalysis(data, unknownInstrMode, reportName):
     intervals = generateIntervals(0,9000,1000)
     dataByLOC = groupByIntervals(data, intervals, "LOC")
@@ -1104,26 +1124,27 @@ def traceAnalysis(data, unknownInstrMode, reportName):
     plt3 = plotValue(data, "trace", unknownInstrMode, title="Traces", xLabel="Programs", yLabel="Trace Length", log=False)
     toPDF(reportName+"trace.pdf", [plt1,plt2, plt3])
 
+def sniAnalysis(data, mode):
+    dataByResult = groupByClass(data, "result", mode)
+    printSummaryResults(dataByResult)
+    paths = collectPaths(data)
+    print "Total paths %d"%len(paths)
+    #### TODO - We must gather path information also for those functions that time-out
+    #### TODO - We need partial path information for the symbolic execution 
 
+    intervals = generateIntervals(0,10000,100)
 
-def printSummary(clusteredData, intervals, attr):
-    for min,max in intervals:
-        minVal = None
-        maxVal = None
-        traceNr = 0
-        if (min,max) in clusteredData.keys():
-            traceNr = len(clusteredData[(min,max)])
-            for path in clusteredData[(min,max)]:
-                if minVal == None:
-                    minVal = path[attr]
-                if maxVal == None:
-                    minVal = path[attr]
-                if path[attr] < minVal:
-                    minVal = path[attr]
-                if path[attr] > maxVal:
-                    maxVal = path[attr]
-        print "[%d,%d]: MIN %d MAX %d # %d"%(min,max, (minVal if minVal != None else 0), (maxVal if maxVal != None else 0), traceNr )
+    clusteredData = groupPathsByIntervals(paths, intervals, "trace_length")
+    printSummary(clusteredData, intervals, "trace_length")
+    plt1 = scatterClusteredCategorical(clusteredData, intervals, mode="sni_time", unknownInstrMode=mode,  title = "", xLabel = "", yLabel = "", log = True)
+    plt2 = scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", log=True)
+    plt3 = scatterPlotPathsValue(paths, "trace_length", unknownInstrMode=mode, title="", xLabel="", yLabel="", log=True)
+    plt4 = scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", xValues="trace_length", threshold=12000, log=True)
+    toPDF(mode+"_sni.pdf", [plt1, plt2, plt3, plt4])
 
+#############
+############# MAIN
+#############
 
 def main(argv):
     try:
@@ -1249,19 +1270,7 @@ def main(argv):
             print "Unsupported mode"
             assert False
 
-        paths = collectPaths(data)
-        #### TODO - We must gather path information also for those functions that time-out
-        #### TODO - We need partial path information for the symbolic execution 
-
-        intervals = generateIntervals(0,10000,100)
-
-        clusteredData = groupPathsByIntervals(paths, intervals, "trace_length")
-        printSummary(clusteredData, intervals, "trace_length")
-        plt1 = scatterClusteredCategorical(clusteredData, intervals, mode="sni_time", unknownInstrMode=mode,  title = "", xLabel = "", yLabel = "", log = True)
-        plt2 = scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", log=True)
-        plt3 = scatterPlotPathsValue(paths, "trace_length", unknownInstrMode=mode, title="", xLabel="", yLabel="", log=True)
-        plt4 = scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", xValues="trace_length", threshold=12000, log=True)
-        toPDF(mode+"_sni.pdf", [plt1, plt2, plt3, plt4])
+        sniAnalysis(data, mode)
     elif analysis == "fnct_size":
         if dataSkip is not None:
             if dataStop is not None:
