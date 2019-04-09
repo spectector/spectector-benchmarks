@@ -13,7 +13,7 @@ import sys, getopt
 from lineCount import sizesFromSource
 
 from matplotlib.backends.backend_pdf import PdfPages
-
+import copy
 import matplotlib
 from math import sqrt
 SPINE_COLOR = 'gray'
@@ -897,10 +897,12 @@ def pathLengthTimes(dataByLength, intervals, unknownInstrMode, filterStatus, tit
     # return fig
 
 
-def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLabel="", xValues = "incremental", threshold=10000, colorsMode= "status" , log=False):
+def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLabel="", xValues = "incremental", threshold=10000, colorsMode= "status" , log=False, avoidReps = False):
     y = []
     x = []
     colors=[]
+    skip = 0
+    plotted = set({})
     for path in data:
         if mode == "sni_time":
             if "time_solve" not in path.keys():
@@ -934,11 +936,23 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
             assert False
 
         if xValues != "incremental" and path[xValues] > threshold:
+            skip += 1
             continue
 
+        xVal = len(x) if xValues == "incremental" else path[xValues]
+        yVal = val+1 if log else val
+
+        if avoidReps:
+            if (xVal,yVal) in plotted:
+                continue
+            else:
+                x.append(xVal)
+                y.append(yVal)  
+        else:        
+            x.append(xVal)
+            y.append(yVal)   
         
-        x.append(len(x) if xValues == "incremental" else path[xValues])
-        y.append(val+1 if log else val)   
+        plotted.add((xVal,yVal))
 
         if colorsMode == "status":
             if getTraceResult(path,unknownInstrMode) in {"safe", "safeUnk"}:
@@ -962,15 +976,28 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
             print "Unsupported color mode"
             assert False
 
+
+    
+    print "Plotted %d data"%len(plotted)
+
     fig = plt.figure()
     ax = plt.gca()
+
+    x = np.array(x)
+    y = np.array(y)
+
     ax.scatter(x ,y , c=colors, alpha=0.3, edgecolors='none')
     if log:
         ax.set_yscale('log')
     plt.title(title)    
+    plt.ylim([0, y.max()])
+    plt.xlim([0, x.max()])
+    # plt.grid()
     plt.xlabel(xLabel)
     plt.ylabel(yLabel)
     
+    print "Ignored %d paths over the threshold %d"%(skip,threshold)
+
     return fig
 
 
@@ -1012,9 +1039,14 @@ def scatterClusteredCategorical(data, intervals, mode, unknownInstrMode, title =
 
     fig = plt.figure()
     ax = plt.gca()
+    x = np.array(x)
+    y = np.array(y)
     ax.scatter(x ,y , c=colors, alpha=.5, edgecolors='none')
     if log:
         ax.set_yscale('log')
+    
+    plt.ylim([0, y.max()])
+    plt.xlim([0, x.max()])
     plt.title(title)    
     plt.xlabel(xLabel)
     plt.ylabel(yLabel)
@@ -1077,23 +1109,30 @@ def getSymbolicStatus(stats, pathLength):
 def extractSymbExecDataAndCollectPaths(data):
     paths = []
     n = 0
+    m = 0
     for function in data.keys():
         functionData = data[function]
         if "paths" in functionData.keys():
             for path in functionData["paths"]:
                 if path != 'length': ## needed because we have a length entry in the json
-                    pathData = functionData["paths"][path]
+                    pathData = copy.deepcopy(functionData["paths"][path])
                     if "concolic_stats" in pathData.keys():
                         stats = pathData["concolic_stats"]
-                        for entry in stats:
-                            pathData["symbolic_length"] = entry["len"]
-                            pathData["symbolic_time"] = entry["time"]
-                            pathData["symbolic_status"] = getSymbolicStatus(stats, entry["len"])
+                        if len(stats) >0:
+                            for entry in stats:
+                                pathData = copy.deepcopy(pathData)
+                                pathData["symbolic_length"] = entry["len"]
+                                pathData["symbolic_time"] = entry["time"]
+                                pathData["symbolic_status"] = getSymbolicStatus(stats, entry["len"])
+                                paths.append(pathData)
+                                n+=1
+                        else:
                             paths.append(pathData)
-                            n+=1
+                            m +=1
                     else:
                         paths.append(pathData)
-    print "Created %d paths with symbolic information"%n
+                        m +=1
+    print "%d paths with symbolic information and %d paths without symbolic information"%(n,m)
     return paths
     
 
@@ -1173,21 +1212,21 @@ def sniAnalysis(data, mode):
     #### TODO - We must gather path information also for those functions that time-out
     #### TODO - We need partial path information for the symbolic execution 
 
-    intervals = generateIntervals(0,10000,100)
+    intervals = generateIntervals(0,5000,50)
 
     clusteredData = groupPathsByIntervals(paths, intervals, "trace_length")
     printSummary(clusteredData, intervals, "trace_length")
     plt1 = scatterClusteredCategorical(clusteredData, intervals, mode="sni_time", unknownInstrMode=mode,  title = "", xLabel = "", yLabel = "",  colorsMode="status", log = True)
     plt2 = scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", colorsMode="status", log=True)
     plt3 = scatterPlotPathsValue(paths, "trace_length", unknownInstrMode=mode, title="", xLabel="", yLabel="", colorsMode="status", log=True)
-    plt4 = scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", xValues="trace_length", colorsMode="status", threshold=12000, log=True)
+    plt4 = scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", xValues="trace_length", colorsMode="status", threshold=5000, log=True)
     toPDF(mode+"_sni.pdf", [plt1, plt2, plt3, plt4])
 
 def symbExecAnalysis(data,mode):
     paths = extractSymbExecDataAndCollectPaths(data)
     print "Total paths %d"%len(paths)
 
-    plt = scatterPlotPathsValue(paths, "symbolic_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", xValues="symbolic_length", colorsMode="symbolic_status", threshold=12000, log=True)
+    plt = scatterPlotPathsValue(paths, "symbolic_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", xValues="symbolic_length", colorsMode="symbolic_status", threshold=2500, log=True, avoidReps = False)
     toPDF(mode+"_symb.pdf", [plt])
 
 #############
