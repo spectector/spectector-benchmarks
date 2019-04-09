@@ -1103,7 +1103,7 @@ def printSummaryByIntervals(data,intervals, unknownInstrMode):
             print "[%d,%d]: ANALYZED %d (SAFE = %d, UNSAFE = %d) TIMEOUT %d TOTAL %d"%(min,max, success, (safe+safeUnk), (data + control + dataUnk + controlUnk), fail, total  )
 
 def getSymbolicStatus(stats, pathLength):
-    return "sat" if (pathLength == max([key["len"] for key in stats])) else "unsat"
+    return "sat" if (pathLength == min([key["len"] for key in stats])) else "unsat"
 
 
 def extractSymbExecDataAndCollectPaths(data):
