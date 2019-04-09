@@ -1115,7 +1115,7 @@ def extractSymbExecDataAndCollectPaths(data):
         if "paths" in functionData.keys():
             for path in functionData["paths"]:
                 if path != 'length': ## needed because we have a length entry in the json
-                    pathData = copy.deepcopy(functionData["paths"][path])
+                    pathData = functionData["paths"][path]
                     if "concolic_stats" in pathData.keys():
                         stats = pathData["concolic_stats"]
                         if len(stats) >0:
