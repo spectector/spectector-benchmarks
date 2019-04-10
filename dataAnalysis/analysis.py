@@ -281,6 +281,8 @@ def getResult (entry, unknownInstrMode):
         else:
             print "Unsupported mode "+unknownInstrMode
             assert False
+    elif status == "unknown_noninter":
+            return "timeout_sni"
     else:
         print "Unsupported status "+status
         assert False # unsupported value
@@ -324,6 +326,8 @@ def getTraceResult (entry, unknownInstrMode):
         else:
             print "Unsupported mode "+unknownInstrMode
             assert False
+    elif status == "unknown_noninter":
+        return "timeout_sni"
     else:
         print "Unsupported status "+status
         assert False # unsupported value
@@ -903,6 +907,7 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
     colors=[]
     skip = 0
     plotted = set({})
+    i = 0
     for path in data:
         if mode == "sni_time":
             if "time_solve" not in path.keys():
@@ -959,10 +964,11 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
                 colors.append(green)
             elif getTraceResult(path,unknownInstrMode) in {"data", "control", "dataUnk", "controlUnk"}:
                 colors.append(brightRed)
-            elif getTraceResult(path,unknownInstrMode) == "timeout":
-                colors.append(yellow)
+            elif getTraceResult(path,unknownInstrMode) == "timeout_sni":
+                i+=1
+                colors.append(blue)
             else:
-                print "Unsupported status"
+                print "Unsupported status "+getTraceResult(path,unknownInstrMode)
                 assert False
         elif colorsMode == "symbolic_status":
             if path[colorsMode] == "sat":
@@ -979,7 +985,7 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
 
     
     print "Plotted %d data"%len(plotted)
-
+    print "TIMEOUT_SNI %d"%i
     fig = plt.figure()
     ax = plt.gca()
 
@@ -1027,10 +1033,10 @@ def scatterClusteredCategorical(data, intervals, mode, unknownInstrMode, title =
                         colors.append(green)
                     elif getTraceResult(path,unknownInstrMode) in {"data", "control", "dataUnk", "controlUnk"}:
                         colors.append(brightRed)
-                    elif getTraceResult(path,unknownInstrMode) == "timeout":
+                    elif getTraceResult(path,unknownInstrMode) == "timeout_sni":
                         colors.append(yellow)
                     else:
-                        print "Unsupported status"
+                        print "Unsupported status "+getTraceResult(path,unknownInstrMode)
                         assert False
                 else:
                     print "Unsupported colors mode"
@@ -1052,6 +1058,121 @@ def scatterClusteredCategorical(data, intervals, mode, unknownInstrMode, title =
     plt.ylabel(yLabel)
     
     return fig
+
+def pathStackedBars(pathsByIntervals,  intervals, unknownInstrMode, ignoreParsingErrors = True, percentage = True, log=False, title="", xLabel="", yLabel="", onlyAnalyzed = False, onlyTimeout = False, onlySafe = False, colorsMode = "status"):
+    # def autolabel(rects):
+    #     # Attach some text labels.
+    #     for rect in rects:
+    #         plt.text(rect.get_x() + rect.get_width() / 2.,
+    #                 rect.get_y() + rect.get_height() / 2.,
+    #                 '%f'%rect.get_height(),
+    #                 ha = 'center',
+    #                 va = 'center')
+
+    def autolabel(rects):
+        for rect in rects:
+            height = rect.get_height()
+            plt.text(rect.get_x() + rect.get_width()/2., 1.05*height,
+                    '%d' % int(height),
+                    ha='center', va='bottom')
+    
+    greenVals = []
+    redVals = []
+    blueVals = []
+    for min,max in intervals:
+        getTraceResult
+        if (min,max) in pathsByIntervals:
+            paths = pathsByIntervals[(min,max)]
+
+            greenVal = 0
+            redVal = 0
+            blueVal = 0
+
+            if colorsMode == "status":
+                greenVal = len([path for path in paths if getTraceResult(path,unknownInstrMode) in {"safe", "safeUnk"}])
+                redVal = len([path for path in  paths if getTraceResult(path,unknownInstrMode) in {"data", "control", "dataUnk", "controlUnk"}])
+                blueVal = len([path for path in  paths if getTraceResult(path,unknownInstrMode) in {"timeout", "segfault", "timeout_sni"}])
+            elif colorsMode == "symbolic_status":
+                greenVal = len([path for path in  paths if path[colorsMode] == "sat"])
+                redVal = len([path for path in  paths if path[colorsMode] == "unsat"])
+                blueVal = len([path for path in  paths if path[colorsMode] == "unknown"])
+            else:
+                print "Unsupported color mode"
+                assert False
+
+            total = float(greenVal + redVal + blueVal)
+
+            if percentage:
+                greenVals.append(100*greenVal/total)
+                redVals.append(100*redVal/total)
+                blueVals.append(100*blueVal/total)
+            else:
+                append(greenVal)
+                redVals.append(redVal)
+                blueVals.append(blueVal)
+        else:
+            if log:
+                greenVals.append(1)
+                redVals.append(1)
+                blueVals.append(1)
+            else:
+                greenVals.append(0)
+                redVals.append(0)
+                blueVals.append(0)
+
+    #set up the plot
+    N = len(intervals)    
+    ind = np.arange(2*N, step = 2)    # the x locations for the groups
+    width = 1       # the width of the bars: can also be len(x) sequence
+
+  
+
+    # convert datasets to numpy
+
+    greenVals = np.array(greenVals)
+    redVals = np.array(redVals)
+    blueVals = np.array(blueVals)
+
+    if onlyAnalyzed:
+        blueVals = greenVals + redVals
+
+    fig = plt.figure()#(figsize=(50,10))
+
+    if percentage:
+        if onlyAnalyzed:
+            p1 = plt.bar(ind,  greenVals + redVals, width, color=blue, edgecolor='black', log=log)
+        elif onlyTimeout: 
+            p1  = plt.bar(ind,  blueVals, width, color=blue, edgecolor='black', log=log)
+        else:
+            p1  = plt.bar(ind,  blueVals, width, color=blue, edgecolor='black', log=log)
+            p2 = plt.bar(ind, greenVals, width, bottom=blueVals, color=green, edgecolor='black', log=log)
+            p3 = plt.bar(ind, redVals, width, bottom=blueVals+greenVals, color=brightRed, edgecolor='black', log=log)
+    else:
+        if onlyAnalyzed:
+            p1 = plt.bar(ind, greenVals + redVals, width, color=blue, edgecolor='black', log=log)
+        elif onlyTimeout:
+            p1 = plt.bar(ind, blueVals, width, color=blue, edgecolor='black', log=log)
+        else:
+            p1 = plt.bar(ind, blueVals, width, color=blue, edgecolor='black', log=log)
+            p2 = plt.bar(ind+width, greenVals, width, color=green, edgecolor='black', log=log)
+            p3 = plt.bar(ind+2*width, redVals, width, color=brightRed, edgecolor='black', log=log)
+
+    plt.ylabel(yLabel)
+    plt.xlabel(xLabel)
+
+    plt.title(title)
+    plt.xticks(ind+width, zip(*intervals)[1], fontsize=14, rotation=90)
+
+    if percentage:
+        plt.ylim([0, 100])
+        # plt.xlim([0, x.max()])
+    else:
+        plt.ylim([0, y.max()])
+        # plt.xlim([0, x.max()])
+
+    return fig
+
+
 
 
 def printSummary(clusteredData, intervals, attr):
@@ -1120,10 +1241,11 @@ def extractSymbExecDataAndCollectPaths(data):
                         stats = pathData["concolic_stats"]
                         if len(stats) >0:
                             for entry in stats:
+                                print entry
                                 pathData = copy.deepcopy(pathData)
                                 pathData["symbolic_length"] = entry["len"]
                                 pathData["symbolic_time"] = entry["time"]
-                                pathData["symbolic_status"] = getSymbolicStatus(stats, entry["len"])
+                                pathData["symbolic_status"] = entry["status"] # getSymbolicStatus(stats, entry["len"])
                                 paths.append(pathData)
                                 n+=1
                         else:
@@ -1220,7 +1342,9 @@ def sniAnalysis(data, mode):
     plt2 = scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", colorsMode="status", log=True)
     plt3 = scatterPlotPathsValue(paths, "trace_length", unknownInstrMode=mode, title="", xLabel="", yLabel="", colorsMode="status", log=True)
     plt4 = scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", xValues="trace_length", colorsMode="status", threshold=5000, log=True)
-    toPDF(mode+"_sni.pdf", [plt1, plt2, plt3, plt4])
+    plt5 = pathStackedBars(clusteredData,  intervals, unknownInstrMode=mode, percentage = True, log=False, title="", xLabel="", yLabel="", colorsMode = "status", onlyAnalyzed = False, onlyTimeout = True)
+    
+    toPDF(mode+"_sni.pdf", [plt1, plt2, plt3, plt4, plt5])
 
 def symbExecAnalysis(data,mode):
     paths = extractSymbExecDataAndCollectPaths(data)
