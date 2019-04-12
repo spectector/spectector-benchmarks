@@ -99,7 +99,7 @@ def sanitize(text):
 
 ## load the json data. 
 def loadData(path):
-    print "Loading "+path
+    print("Loading "+path)
     extension = "*.json"
     jsonFiles = glob.glob(path+"/"+extension)
     data = {}
@@ -126,7 +126,7 @@ def collectPaths(data):
             for path in functionData["paths"]:
                 if path != 'length': ## needed because we have a length entry in the json
                     pathData = functionData["paths"][path]
-                    paths.append(pathData)
+                    paths.append(copy.deepcopy(pathData))
     return paths
 
 
@@ -166,7 +166,10 @@ def getTotalPc(entry):
 ## get number of explored paths
 def getTotalPaths(entry):
     if "paths" in entry:
-        return len(entry["paths"])
+        if "length" in entry["paths"].keys():
+            return len(entry["paths"])-1 ### the data contains 
+        else:
+            return len(entry["paths"])
     return 0
 
 ## get time
@@ -227,6 +230,10 @@ def groupPathsByIntervals(data, intervals, mode):
                 val = path["time_solve"]
             elif mode == "trace_length":
                 val = path["trace_length"]
+            elif mode == "symbolic_length":
+                if "symbolic_length" not in path.keys():
+                    continue
+                val = path["symbolic_length"]
             else:
                 print("Unsupported mode")
                 assert False
@@ -975,8 +982,11 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
                 colors.append(green)
             elif path[colorsMode] == "unsat":
                 colors.append(brightRed)
+            elif path[colorsMode] == "unknown":
+                colors.append(blue)
+                i+=1
             else:
-                print "Unsupported status"
+                print "Unsupported status "+path[colorsMode]
                 assert False
         else:
             print "Unsupported color mode"
@@ -985,7 +995,7 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
 
     
     print "Plotted %d data"%len(plotted)
-    print "TIMEOUT_SNI %d"%i
+    print "Plotted timeouts %d"%i
     fig = plt.figure()
     ax = plt.gca()
 
@@ -1241,13 +1251,53 @@ def extractSymbExecDataAndCollectPaths(data):
                         stats = pathData["concolic_stats"]
                         if len(stats) >0:
                             for entry in stats:
-                                print entry
                                 pathData = copy.deepcopy(pathData)
                                 pathData["symbolic_length"] = entry["len"]
                                 pathData["symbolic_time"] = entry["time"]
                                 pathData["symbolic_status"] = entry["status"] # getSymbolicStatus(stats, entry["len"])
                                 paths.append(pathData)
                                 n+=1
+                        else:
+                            paths.append(pathData)
+                            m +=1
+                    else:
+                        paths.append(pathData)
+                        m +=1
+    print "%d paths with symbolic information and %d paths without symbolic information"%(n,m)
+    return paths
+
+def extractSymbExecDataAndCollectPathsIncremental(data):
+    paths = []
+    n = 0
+    m = 0
+    for function in data.keys():
+        functionData = data[function]
+        if "paths" in functionData.keys():
+            for path in functionData["paths"]:
+                if path != 'length': ## needed because we have a length entry in the json
+                    pathData = functionData["paths"][path]
+                    if "concolic_stats" in pathData.keys():
+                        stats = pathData["concolic_stats"]
+                        if len(stats) >0:
+                            length = None
+                            time = 0
+                            status = None
+                            for entry in stats:
+                                if length is None:
+                                    length = int(entry["len"])
+                                    status = entry["status"]
+                                    time = float(entry["time"])
+                                else:
+                                    time += float(entry["time"])
+                                    if int(entry["len"]) < length:
+                                        length = int(entry["len"])
+                                        status = entry["status"]
+                            pathData = copy.deepcopy(pathData)
+                            pathData["symbolic_length"] = length
+                            pathData["symbolic_time"] = time
+                            pathData["symbolic_status"] = status # getSymbolicStatus(stats, entry["len"])
+                            paths.append(pathData)
+                            n+=1
                         else:
                             paths.append(pathData)
                             m +=1
@@ -1334,7 +1384,7 @@ def sniAnalysis(data, mode):
     #### TODO - We must gather path information also for those functions that time-out
     #### TODO - We need partial path information for the symbolic execution 
 
-    intervals = generateIntervals(0,5000,50)
+    intervals = generateIntervals(0,5000,200)
 
     clusteredData = groupPathsByIntervals(paths, intervals, "trace_length")
     printSummary(clusteredData, intervals, "trace_length")
@@ -1348,10 +1398,15 @@ def sniAnalysis(data, mode):
 
 def symbExecAnalysis(data,mode):
     paths = extractSymbExecDataAndCollectPaths(data)
+    # paths = extractSymbExecDataAndCollectPathsIncremental(data)
     print "Total paths %d"%len(paths)
+    intervals = generateIntervals(0,20000,200)
 
-    plt = scatterPlotPathsValue(paths, "symbolic_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", xValues="symbolic_length", colorsMode="symbolic_status", threshold=2500, log=True, avoidReps = False)
-    toPDF(mode+"_symb.pdf", [plt])
+    clusteredData = groupPathsByIntervals(paths, intervals, "symbolic_length")
+    plt1 = scatterPlotPathsValue(paths, "symbolic_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", xValues="symbolic_length", colorsMode="symbolic_status", threshold=20000, log=True, avoidReps = False)
+    plt2 = scatterPlotPathsValue(paths, "symbolic_length", unknownInstrMode=mode, title="", xLabel="", yLabel="", colorsMode="symbolic_status", log=False)
+    plt3 = pathStackedBars(clusteredData,  intervals, unknownInstrMode=mode, percentage = True, log=False, title="", xLabel="", yLabel="", colorsMode = "symbolic_status", onlyAnalyzed = False, onlyTimeout = True)
+    toPDF(mode+"_symb.pdf", [plt1, plt2, plt3])
 
 #############
 ############# MAIN
