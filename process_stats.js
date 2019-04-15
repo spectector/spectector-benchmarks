@@ -27,11 +27,11 @@ function init(){
 	    button.setAttribute("onclick", "show_stats('"+x+"')");
 	    var name = "";
 	    switch (x){
-	    case "unknown" : name = "Unknown instructions"; break;
+	    case "unsupported" : name = "Unsupported instructions"; break;
 	    case "label" : name = "Unknown label"; break;
 	    case "indirect" : name = "Indirect jumps"; break;
-	    case "data_unknown" : name = "Data leak - w/ unknown"; break;
-	    case "control_unknown" : name = "Control leak - w/ unknown"; break;
+	    case "data_unsupported" : name = "Data leak - w/ unsupported"; break;
+	    case "control_unsupported" : name = "Control leak - w/ unsupported"; break;
 	    case "data" : name = "Data leak"; break;
 	    case "control" : name = "Control leak"; break;
 	    default: name = x.toUpperCase();
@@ -210,12 +210,12 @@ function show_descriptive() { // Draw a table with all the results formatted
 		inner_table.appendChild(inner_row);
 		inner_row = document.createElement("tr");
 		inner_cell = document.createElement("td");
-		inner_cell.innerText = "Unknown ins: "+stats.unknown_ins;
+		inner_cell.innerText = "Unsupported ins: "+stats.unsupported_ins;
 		inner_row.appendChild(inner_cell);
 		inner_table.appendChild(inner_row);
 		inner_row = document.createElement("tr");
 		inner_cell = document.createElement("td");
-		inner_cell.innerText = "Unknown labels: "+stats.unknown_labels;
+		inner_cell.innerText = "Unkown labels: "+stats.unknown_labels;
 		inner_row.appendChild(inner_cell);
 		inner_table.appendChild(inner_row);
 		inner_row = document.createElement("tr");
@@ -332,7 +332,7 @@ function show_table(index) {
 	    inner_table.appendChild(inner_row);
 	    inner_row = document.createElement("tr");
 	    inner_cell = document.createElement("td");
-	    inner_cell.innerText = "Unknown ins: "+stats.unknown_ins;
+	    inner_cell.innerText = "Unsupported ins: "+stats.unsupported_ins;
 	    inner_row.appendChild(inner_cell);
 	    inner_table.appendChild(inner_row);
 	    inner_row = document.createElement("tr");
@@ -373,19 +373,33 @@ function stats_paths(paths) {
     var solve = 0;
     var steps = []; // min, avg, max
     var total_steps = 0;
-    var unknown_ins = 0;
+    var unsupported_ins = 0;
     var unknown_labels = 0;
+    var status_unknown = false;
     for (var path in paths){
 	if( paths[path].time_trace ){
 	    trace += paths[path].time_trace;
 	    solve += paths[path].time_solve;
 	    steps.push(paths[path].steps);
 	    total_steps += paths[path].steps;
-	    unknown_ins += paths[path].unknown_ins;
+	    unsupported_ins += paths[path].unsupported_ins;
 	    unknown_labels += paths[path].unknown_labels.length;
+	    if ( paths[path] == "unknown" ){
+		status_unknown = true;
+	    }
 	}
     }
-    return {trace:trace, solve:solve, steps:{min:Math.min(...steps), avg:total_steps/paths.length, max:Math.max(...steps), total:total_steps}, unknown_ins:unknown_ins, last:paths[(paths.length-1)], unknown_labels:unknown_labels};
+    return {trace:trace,
+	    solve:solve,
+	    steps:{
+		min:Math.min(...steps),
+		avg:total_steps/paths.length,
+		max:Math.max(...steps),
+		total:total_steps},
+	    unsupported_ins:unsupported_ins,
+	    last:paths[(paths.length-1)],
+	    unknown_labels:unknown_labels,
+	    status_unknown:status_unknown};
 }
 
 function stats_results(results) {
@@ -396,38 +410,41 @@ function stats_results(results) {
     var parsing = results.filter(r => r.status == "parsing").length;
     var parsed = total-parsing;
     var analyzed= parsed-timeout-segfault;
-    var unknown = 0;
+    var unsupported = 0;
     var labels = 0;
     var indirect = 0;
-    var data_unknown = 0;
-    var control_unknown = 0;
+    var smt_timeout = 0;
+    var data_unsupported = 0;
+    var control_unsupported = 0;
     results.forEach(function(elem, i) {
 	if(elem.status == "timeout" || elem.status == "segfault" || elem.status == "unknown_error") elem.show=false;
 	else elem.show=true;
 	if(elem.paths){
 	    var st = stats_paths(elem.paths); // If last path is unsafe and doesn't have undefined behavior, mark as normally
 	    if (elem.status != "data" && elem.status != "control"){
-		if (st.unknown_ins){
-		    unknown++;
-		    elem.status="unknown";
+		if (st.unsupported_ins){
+		    unsupported++;
+		    elem.status="unsupported";
 		} else {if (st.unknown_labels){
 		    labels++;
 		    elem.status="label";
 		} else {if (st.indirect_jumps){
 		    indirect++;
 		    elem.status="indirect";
-		}
-		       }}}
+		} else {if (st.status_unknown){
+		    smt_timeout++;
+		    elem.status="smt_timeout";
+		}}}}}
 	    else {
-		if (st.unknown_ins || st.unknown_labels || st.indirect_jumps){
+		if (st.unsupported_ins || st.unknown_labels || st.indirect_jumps || st.status_unknown){
 		    switch(elem.status){
 		    case "data":
-			data_unknown++;
-			elem.status="data_unknown";
+			data_unsupported++;
+			elem.status="data_unsupported";
 			break;
 		    case "control":
-			control_unknown++;
-			elem.status="control_unknown";
+			control_unsupported++;
+			elem.status="control_unsupported";
 			break;
 		    }
 		}}
@@ -436,7 +453,7 @@ function stats_results(results) {
     var data = results.filter(r => r.status == "data").length;
     var safe = results.filter(r => r.status == "safe").length;
     var safe_bound = results.filter(r => r.status == "safe_bound").length;
-    var complete = analyzed-unknown-labels-indirect;
+    var complete = analyzed-unsupported-labels-indirect;
     return {total:total,
 	    analyzed:analyzed,
 	    complete:complete,
@@ -444,15 +461,16 @@ function stats_results(results) {
 	    timeout:timeout,
 	    segfault:segfault,
 	    unknown_error:unknown_error,
-	    unknown:unknown,
+	    unsupported:unsupported,
 	    label:labels,
 	    indirect:indirect,
-	    data_unknown:data_unknown,
-	    control_unknown:control_unknown,
+	    data_unsupported:data_unsupported,
+	    control_unsupported:control_unsupported,
 	    data:data,
 	    control:control,
 	    safe:safe,
-	    safe_bound:safe_bound
+	    safe_bound:safe_bound,
+	    smt_timeout:smt_timeout
 	   };
 }
 
@@ -542,15 +560,16 @@ function sort_rows(){
 color_status = {
     "safe":"#42f221",
     "safe_bound":"#92c251",
-    "data_unknown":"#ee6868",
+    "data_unsupported":"#ee6868",
     "data":"#ff2222",
-    "control_unknown":"#dd4030",
+    "control_unsupported":"#dd4030",
     "control":"#aa0011",
     "unsafe":"#d20000",
     "indirect":"#0021ad",
     "label":"#0044cc",
-    "unknown":"#0088aa",
+    "unsupported":"#0088aa",
     "unknown_error":"#c0c1d0",
+    "smt_timeout":"#48421a",
     "segfault":"#eeaa00",
     "timeout":"#fabada",
     "parsing":"#cc00ca"

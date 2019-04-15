@@ -1,0 +1,14 @@
+old=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15)
+new=(16 17 18 19 20 21 22 23 24 25 26 27)
+benchs=(bubblesort cbzero crscat crschr crscmp cstrcspn cstrncat cstrpbrk
+	insertionsort selectionsort substring sumofthird wildcard)
+test_suite=(flops-6 objinst evalloop flops-7 linpack-pc oourafft revertBits
+	    ackermann exptree flops-8 lists Oscar richards_benchmark fannkuch
+	    flops lowercase partialsums salsa20 almabench fasta floyd-warshall
+	    lpbench perlin ary3 fbench fp-convert Perm sieve pi spectral-norm
+	    mandel-2 polybench strcat Bubblesort ffbench mandel puzzle cholesky
+	    fib2 matmul_f64_4x4 Puzzle chomp fldry matrix queens FloatMM
+	    heapsort methcall Queens flops-1 hello misr Quicksort Towers
+	    flops-2 himenobmtxpa random Treesort dry flops-3 huffbench n-body
+	    RealMM dt flops-4 IntMM nestedloop recursive flops-5 nsieve-bits
+	    ReedSolomon whetstone)
