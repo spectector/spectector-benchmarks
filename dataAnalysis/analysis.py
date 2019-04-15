@@ -13,7 +13,7 @@ import sys, getopt
 from lineCount import sizesFromSource
 
 from matplotlib.backends.backend_pdf import PdfPages
-
+import copy
 import matplotlib
 from math import sqrt
 SPINE_COLOR = 'gray'
@@ -99,7 +99,7 @@ def sanitize(text):
 
 ## load the json data. 
 def loadData(path):
-    print "Loading "+path
+    print("Loading "+path)
     extension = "*.json"
     jsonFiles = glob.glob(path+"/"+extension)
     data = {}
@@ -126,7 +126,7 @@ def collectPaths(data):
             for path in functionData["paths"]:
                 if path != 'length': ## needed because we have a length entry in the json
                     pathData = functionData["paths"][path]
-                    paths.append(pathData)
+                    paths.append(copy.deepcopy(pathData))
     return paths
 
 
@@ -166,7 +166,10 @@ def getTotalPc(entry):
 ## get number of explored paths
 def getTotalPaths(entry):
     if "paths" in entry:
-        return len(entry["paths"])
+        if "length" in entry["paths"].keys():
+            return len(entry["paths"])-1 ### the data contains 
+        else:
+            return len(entry["paths"])
     return 0
 
 ## get time
@@ -227,6 +230,10 @@ def groupPathsByIntervals(data, intervals, mode):
                 val = path["time_solve"]
             elif mode == "trace_length":
                 val = path["trace_length"]
+            elif mode == "symbolic_length":
+                if "symbolic_length" not in path.keys():
+                    continue
+                val = path["symbolic_length"]
             else:
                 print("Unsupported mode")
                 assert False
@@ -281,6 +288,8 @@ def getResult (entry, unknownInstrMode):
         else:
             print "Unsupported mode "+unknownInstrMode
             assert False
+    elif status == "unknown_noninter":
+            return "timeout_sni"
     else:
         print "Unsupported status "+status
         assert False # unsupported value
@@ -296,7 +305,7 @@ def getTraceResult (entry, unknownInstrMode):
     elif status == "parsing":
             return "parsing"
     elif status == "safe":
-        if entry["unknown_ins"] == 0 and len(entry["unknown_labels"]) == 0:
+        if entry["unsupported_ins"] == 0 and len(entry["unknown_labels"]) == 0:
             return "safe"
         else:
             return "safeUnk"
@@ -305,8 +314,8 @@ def getTraceResult (entry, unknownInstrMode):
     elif status == "data":
         if  unknownInstrMode == "stop":
             return "data"
-        elif unknownInstrMode == "skip":
-            if entry["unknown_ins"] == 0 and len(entry["unknown_labels"]) == 0:
+        elif unknownInstrMode in {"skip","merge"}:
+            if entry["unsupported_ins"] == 0 and len(entry["unknown_labels"]) == 0:
                 return "data"
             else:
                 return "dataUnk"
@@ -316,14 +325,16 @@ def getTraceResult (entry, unknownInstrMode):
     elif status == "control":
         if  unknownInstrMode == "stop":
             return "control"
-        elif unknownInstrMode == "skip":
-            if entry["unknown_ins"] == 0 and len(entry["unknown_labels"]) == 0:
+        elif unknownInstrMode in {"skip","merge"}:
+            if entry["unsupported_ins"] == 0 and len(entry["unknown_labels"]) == 0:
                 return "control"
             else:
                 return "controlUnk"
         else:
             print "Unsupported mode "+unknownInstrMode
             assert False
+    elif status == "unknown_noninter":
+        return "timeout_sni"
     else:
         print "Unsupported status "+status
         assert False # unsupported value
@@ -348,7 +359,7 @@ def unknown_ins(entry):
         for path in entry["paths"]:
             if path != 'length': ## needed because we have a length entry in the json
                 pathData = entry["paths"][path]
-                if pathData["unknown_ins"] > 0:
+                if pathData["unsupported_ins"] > 0:
                     return True
                 if len(pathData["unknown_labels"]):
                     return True
@@ -358,7 +369,7 @@ def unknown_ins_lastTrace(entry):
     if "paths" in entry:
         lastPath = entry["paths"]["length"]
         pathData = entry["paths"][str(int(lastPath) -1)]
-        if pathData["unknown_ins"] > 0:
+        if pathData["unsupported_ins"] > 0:
             return True
         if len(pathData["unknown_labels"]):
             return True
@@ -548,32 +559,11 @@ def compactStackedBars(dataByLength,  intervals, unknownInstrMode, ignoreParsing
 
     plt.title(title)
     plt.xticks(ind+width, zip(*intervals)[1], fontsize=14, rotation=90)
-    # plt.yticks(np.arange(0, 101, 10))
     if not onlyAnalyzed:
         plt.legend((p1[0], p2[0]), ('Analyzed', 'Timeout'))
 
-    # plt.show()
     return fig
 
-# def plotSizes(dataByLength,  intervals,  title="", xLabel="", yLabel="", log=False):
-#     sizes = []
-#     for min,max in intervals:
-#         if (min,max) in dataByLength:
-#             values = dataByLength[(min,max)]
-#             sizes.append(len(values.keys()))
-#         else:
-#             sizes.append(0)
-
-#     plt.figure(figsize=(50,10))
-    
-#     N = len(intervals)    
-#     ind = np.arange(N)    # the x locations for the groups
-#     width = 0.35    
-
-#     p1 = plt.bar(ind, sizes, width,  edgecolor='black', title=title, xlabel=xLabel, ylabel=yLabel, log=log)
-
-
-#     plt.show()
 
 ## visualize lengths
 def plotValue(data, mode, unknownInstrMode, title="", xLabel="", yLabel="", log=False):
@@ -619,8 +609,6 @@ def plotValue(data, mode, unknownInstrMode, title="", xLabel="", yLabel="", log=
 
         x.append(len(x))
         y.append(val+1 if log else val)   
-    # plt.scatter(x,y)
-    # plt.show()
 
     fig = plt.figure()
     ax = plt.gca()
@@ -630,7 +618,6 @@ def plotValue(data, mode, unknownInstrMode, title="", xLabel="", yLabel="", log=
     plt.title(title)    
     plt.xlabel(xLabel)
     plt.ylabel(yLabel)
-    # plt.show()
     return fig
 
 def any_number_range(a,b,s=1):
@@ -690,9 +677,6 @@ def plotPie(data,filename="tmp.pdf"):
     
     ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
 
-    # plt.tight_layout()
-    # plt.savefig(filename)
-    # plt.show()
     return fig1
 
 def plotDoublePie(data, plotParsing=False):
@@ -754,7 +738,7 @@ def plotCompactDoublePie(data, plotParsing=False):
     leak = (len(data["data"].keys())  if "data" in data.keys() else 0) +(len(data["control"].keys())  if "control" in data.keys() else 0)
     safeUnk = len(data["safeUnk"].keys())  if "safeUnk" in data.keys() else 0
     leakUnk = (len(data["dataUnk"].keys())  if "dataUnk" in data.keys() else 0) + ( len(data["controlUnk"].keys())  if "controlUnk" in data.keys() else 0)
-
+    labelsOut = ["Secure", "Leak", "Timeout"]
     sizesOut = [safeAll, leakAll,  timeoutAll]
     # explodeOut = (0, 0, 0, 0, 0) 
     colorsOut = [green,brightRed, yellow]
@@ -782,7 +766,7 @@ def plotCompactDoublePie(data, plotParsing=False):
     # labelsOut = ["Secure %.2f%% (%d)"% ( (float(safeAll)*100/(safeAll+leakAll+timeoutAll)) , safeAll ), 
     #     "Leak %.2f%% (%d)"% ( (float(leakAll)*100/(safeAll+leakAll+timeoutAll)) , leakAll ), 
     #     "Timeout %.2f%% (%d)"% ( (float(timeoutAll)*100/(safeAll+leakAll+timeoutAll)) , timeoutAll )]
-    labelsOut = ["Secure", "Leak", "Timeout"]
+    
     plt.pie(sizesOut, labels=labelsOut, colors=colorsOut, startangle=90,  pctdistance=0.8, labeldistance=1.1, autopct=lambda pct: labels(pct, sizesOut))
     patches = plt.pie(sizesIn,colors=colorsIn,radius=1,startangle=90)[0] 
     patches[1].set_hatch('///') 
@@ -924,13 +908,39 @@ def pathLengthTimes(dataByLength, intervals, unknownInstrMode, filterStatus, tit
     # return fig
 
 
-def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLabel="", xValues = "incremental", threshold=10000, log=False):
+def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLabel="", xValues = "incremental", threshold=10000, colorsMode= "status" , log=False, avoidReps = False):
     y = []
     x = []
     colors=[]
+    skip = 0
+    plotted = set({})
+    i = 0
     for path in data:
         if mode == "sni_time":
+            if "time_solve" not in path.keys():
+                continue
+        if mode == "symbolic_time":
+            if "symbolic_time" not in path.keys():
+                continue
+        if mode == "trace_length":
+            if "trace_length" not in path.keys():
+                continue
+        if mode == "symbolic_length":
+            if "symbolic_length" not in path.keys():
+                continue
+        if xValues != "incremental":
+            if xValues not in path.keys():
+                continue
+        if colorsMode not in path.keys():
+            continue
+
+
+        if mode == "sni_time":
             val = path["time_solve"]
+        elif mode == "symbolic_time":
+            val = path["symbolic_time"]
+        elif mode == "symbolic_length":
+            val = path["symbolic_length"]
         elif mode == "trace_length":
             val = path["trace_length"]
         else:
@@ -938,35 +948,76 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
             assert False
 
         if xValues != "incremental" and path[xValues] > threshold:
+            skip += 1
             continue
 
-        x.append(len(x) if xValues == "incremental" else path[xValues])
-        y.append(val+1 if log else val)   
+        xVal = len(x) if xValues == "incremental" else path[xValues]
+        yVal = val+1 if log else val
 
-        if getTraceResult(path,unknownInstrMode) in {"safe", "safeUnk"}:
-            colors.append(green)
-        elif getTraceResult(path,unknownInstrMode) in {"data", "control", "dataUnk", "controlUnk"}:
-            colors.append(brightRed)
-        elif getTraceResult(path,unknownInstrMode) == "timeout":
-            colors.append(yellow)
+        if avoidReps:
+            if (xVal,yVal) in plotted:
+                continue
+            else:
+                x.append(xVal)
+                y.append(yVal)  
+        else:        
+            x.append(xVal)
+            y.append(yVal)   
+        
+        plotted.add((xVal,yVal))
+
+        if colorsMode == "status":
+            if getTraceResult(path,unknownInstrMode) in {"safe", "safeUnk"}:
+                colors.append(green)
+            elif getTraceResult(path,unknownInstrMode) in {"data", "control", "dataUnk", "controlUnk"}:
+                colors.append(brightRed)
+            elif getTraceResult(path,unknownInstrMode) == "timeout_sni":
+                i+=1
+                colors.append(blue)
+            else:
+                print "Unsupported status "+getTraceResult(path,unknownInstrMode)
+                assert False
+        elif colorsMode == "symbolic_status":
+            if path[colorsMode] == "sat":
+                colors.append(green)
+            elif path[colorsMode] == "unsat":
+                colors.append(brightRed)
+            elif path[colorsMode] == "unknown":
+                colors.append(blue)
+                i+=1
+            else:
+                print "Unsupported status "+path[colorsMode]
+                assert False
         else:
-            print "Unsupported status"
+            print "Unsupported color mode"
             assert False
 
+
+    
+    print "Plotted %d data"%len(plotted)
+    print "Plotted timeouts %d"%i
     fig = plt.figure()
     ax = plt.gca()
+
+    x = np.array(x)
+    y = np.array(y)
+
     ax.scatter(x ,y , c=colors, alpha=0.3, edgecolors='none')
     if log:
         ax.set_yscale('log')
     plt.title(title)    
+    plt.ylim([0, y.max()])
+    plt.xlim([0, x.max()])
+    # plt.grid()
     plt.xlabel(xLabel)
     plt.ylabel(yLabel)
-
     
+    print "Ignored %d paths over the threshold %d"%(skip,threshold)
+
     return fig
 
 
-def scatterClusteredCategorical(data, intervals, mode, unknownInstrMode, title = "", xLabel = "", yLabel = "", log = False):
+def scatterClusteredCategorical(data, intervals, mode, unknownInstrMode, title = "", xLabel = "", yLabel = "", colorsMode = "status", log = False):
     y = []
     x = []
     colors=[]
@@ -987,29 +1038,282 @@ def scatterClusteredCategorical(data, intervals, mode, unknownInstrMode, title =
                 x.append(n)
                 y.append(val+1 if log else val)   
                 
-                if getTraceResult(path,unknownInstrMode) in {"safe", "safeUnk"}:
-                    colors.append(green)
-                elif getTraceResult(path,unknownInstrMode) in {"data", "control", "dataUnk", "controlUnk"}:
-                    colors.append(brightRed)
-                elif getTraceResult(path,unknownInstrMode) == "timeout":
-                    colors.append(yellow)
+                if colorsMode == "status":
+                    if getTraceResult(path,unknownInstrMode) in {"safe", "safeUnk"}:
+                        colors.append(green)
+                    elif getTraceResult(path,unknownInstrMode) in {"data", "control", "dataUnk", "controlUnk"}:
+                        colors.append(brightRed)
+                    elif getTraceResult(path,unknownInstrMode) == "timeout_sni":
+                        colors.append(yellow)
+                    else:
+                        print "Unsupported status "+getTraceResult(path,unknownInstrMode)
+                        assert False
                 else:
-                    print "Unsupported status"
+                    print "Unsupported colors mode"
                     assert False
         n+=1
 
     fig = plt.figure()
     ax = plt.gca()
+    x = np.array(x)
+    y = np.array(y)
     ax.scatter(x ,y , c=colors, alpha=.5, edgecolors='none')
     if log:
         ax.set_yscale('log')
+    
+    plt.ylim([0, y.max()])
+    plt.xlim([0, x.max()])
     plt.title(title)    
     plt.xlabel(xLabel)
     plt.ylabel(yLabel)
     
     return fig
 
-######## 
+def pathStackedBars(pathsByIntervals,  intervals, unknownInstrMode, ignoreParsingErrors = True, percentage = True, log=False, title="", xLabel="", yLabel="", onlyAnalyzed = False, onlyTimeout = False, onlySafe = False, colorsMode = "status"):
+    # def autolabel(rects):
+    #     # Attach some text labels.
+    #     for rect in rects:
+    #         plt.text(rect.get_x() + rect.get_width() / 2.,
+    #                 rect.get_y() + rect.get_height() / 2.,
+    #                 '%f'%rect.get_height(),
+    #                 ha = 'center',
+    #                 va = 'center')
+
+    def autolabel(rects):
+        for rect in rects:
+            height = rect.get_height()
+            plt.text(rect.get_x() + rect.get_width()/2., 1.05*height,
+                    '%d' % int(height),
+                    ha='center', va='bottom')
+    
+    greenVals = []
+    redVals = []
+    blueVals = []
+    for min,max in intervals:
+        getTraceResult
+        if (min,max) in pathsByIntervals:
+            paths = pathsByIntervals[(min,max)]
+
+            greenVal = 0
+            redVal = 0
+            blueVal = 0
+
+            if colorsMode == "status":
+                greenVal = len([path for path in paths if getTraceResult(path,unknownInstrMode) in {"safe", "safeUnk"}])
+                redVal = len([path for path in  paths if getTraceResult(path,unknownInstrMode) in {"data", "control", "dataUnk", "controlUnk"}])
+                blueVal = len([path for path in  paths if getTraceResult(path,unknownInstrMode) in {"timeout", "segfault", "timeout_sni"}])
+            elif colorsMode == "symbolic_status":
+                greenVal = len([path for path in  paths if path[colorsMode] == "sat"])
+                redVal = len([path for path in  paths if path[colorsMode] == "unsat"])
+                blueVal = len([path for path in  paths if path[colorsMode] == "unknown"])
+            else:
+                print "Unsupported color mode"
+                assert False
+
+            total = float(greenVal + redVal + blueVal)
+
+            if percentage:
+                greenVals.append(100*greenVal/total)
+                redVals.append(100*redVal/total)
+                blueVals.append(100*blueVal/total)
+            else:
+                append(greenVal)
+                redVals.append(redVal)
+                blueVals.append(blueVal)
+        else:
+            if log:
+                greenVals.append(1)
+                redVals.append(1)
+                blueVals.append(1)
+            else:
+                greenVals.append(0)
+                redVals.append(0)
+                blueVals.append(0)
+
+    #set up the plot
+    N = len(intervals)    
+    ind = np.arange(2*N, step = 2)    # the x locations for the groups
+    width = 1       # the width of the bars: can also be len(x) sequence
+
+  
+
+    # convert datasets to numpy
+
+    greenVals = np.array(greenVals)
+    redVals = np.array(redVals)
+    blueVals = np.array(blueVals)
+
+    if onlyAnalyzed:
+        blueVals = greenVals + redVals
+
+    fig = plt.figure()#(figsize=(50,10))
+
+    if percentage:
+        if onlyAnalyzed:
+            p1 = plt.bar(ind,  greenVals + redVals, width, color=blue, edgecolor='black', log=log)
+        elif onlyTimeout: 
+            p1  = plt.bar(ind,  blueVals, width, color=blue, edgecolor='black', log=log)
+        else:
+            p1  = plt.bar(ind,  blueVals, width, color=blue, edgecolor='black', log=log)
+            p2 = plt.bar(ind, greenVals, width, bottom=blueVals, color=green, edgecolor='black', log=log)
+            p3 = plt.bar(ind, redVals, width, bottom=blueVals+greenVals, color=brightRed, edgecolor='black', log=log)
+    else:
+        if onlyAnalyzed:
+            p1 = plt.bar(ind, greenVals + redVals, width, color=blue, edgecolor='black', log=log)
+        elif onlyTimeout:
+            p1 = plt.bar(ind, blueVals, width, color=blue, edgecolor='black', log=log)
+        else:
+            p1 = plt.bar(ind, blueVals, width, color=blue, edgecolor='black', log=log)
+            p2 = plt.bar(ind+width, greenVals, width, color=green, edgecolor='black', log=log)
+            p3 = plt.bar(ind+2*width, redVals, width, color=brightRed, edgecolor='black', log=log)
+
+    plt.ylabel(yLabel)
+    plt.xlabel(xLabel)
+
+    plt.title(title)
+    plt.xticks(ind+width, zip(*intervals)[1], fontsize=14, rotation=90)
+
+    if percentage:
+        plt.ylim([0, 100])
+        # plt.xlim([0, x.max()])
+    else:
+        plt.ylim([0, y.max()])
+        # plt.xlim([0, x.max()])
+
+    return fig
+
+
+
+
+def printSummary(clusteredData, intervals, attr):
+    for min,max in intervals:
+        minVal = None
+        maxVal = None
+        traceNr = 0
+        if (min,max) in clusteredData.keys():
+            traceNr = len(clusteredData[(min,max)])
+            for path in clusteredData[(min,max)]:
+                if minVal == None:
+                    minVal = path[attr]
+                if maxVal == None:
+                    minVal = path[attr]
+                if path[attr] < minVal:
+                    minVal = path[attr]
+                if path[attr] > maxVal:
+                    maxVal = path[attr]
+        print "[%d,%d]: MIN %d MAX %d # %d"%(min,max, (minVal if minVal != None else 0), (maxVal if maxVal != None else 0), traceNr )
+
+def printSummaryResults(dataGrouped):
+    safe = len(dataGrouped["safe"].keys())  if "safe" in dataGrouped.keys() else 0
+    dataV = len(dataGrouped["data"].keys())  if "data" in dataGrouped.keys() else 0
+    ctrl = len(dataGrouped["control"].keys())  if "control" in dataGrouped.keys() else 0
+    safeUnk = len(dataGrouped["safeUnk"].keys())  if "safeUnk" in dataGrouped.keys() else 0
+    dataUnk = len(dataGrouped["dataUnk"].keys())  if "dataUnk" in dataGrouped.keys() else 0
+    ctrlUnk = len(dataGrouped["controlUnk"].keys())  if "controlUnk" in dataGrouped.keys() else 0
+    segfault = len(dataGrouped["segfault"].keys())  if "segfault" in dataGrouped.keys() else 0
+    timeout = len(dataGrouped["timeout"].keys())  if "timeout" in dataGrouped.keys() else 0
+    parsing = len(dataGrouped["parsing"].keys())  if "parsing" in dataGrouped.keys() else 0
+    print "safe: "+str(safe)+" data: "+str(dataV)+" ctrl: "+str(ctrl)+" safeUnk: "+str(safeUnk)+" dataUnk: "+str(dataUnk)+" ctrlUnk: "+str(ctrlUnk)+" segfault: "+str(segfault)+" timeout: "+str(timeout)+" parsing: "+str(parsing)
+
+def printSummaryByIntervals(data,intervals, unknownInstrMode):
+    for min,max in intervals:
+        if (min,max) in data:
+            values = data[(min,max)]
+            safe = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "safe" ])
+            data = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "data" ])
+            control = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "control" ])
+            safeUnk = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "safeUnk" ])
+            dataUnk = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "dataUnk" ])
+            controlUnk = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "controlUnk" ])
+            segfault = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "segfault" ])
+            timeout = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "timeout" ])
+            parsing = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "parsing" ])
+            success = (safe + data + control + safeUnk + dataUnk + controlUnk)
+            fail = (segfault + parsing + timeout)
+            total = success + fail
+            print "[%d,%d]: ANALYZED %d (SAFE = %d, UNSAFE = %d) TIMEOUT %d TOTAL %d"%(min,max, success, (safe+safeUnk), (data + control + dataUnk + controlUnk), fail, total  )
+
+def getSymbolicStatus(stats, pathLength):
+    return "sat" if (pathLength == min([key["len"] for key in stats])) else "unsat"
+
+
+def extractSymbExecDataAndCollectPaths(data):
+    paths = []
+    n = 0
+    m = 0
+    for function in data.keys():
+        functionData = data[function]
+        if "paths" in functionData.keys():
+            for path in functionData["paths"]:
+                if path != 'length': ## needed because we have a length entry in the json
+                    pathData = functionData["paths"][path]
+                    if "concolic_stats" in pathData.keys():
+                        stats = pathData["concolic_stats"]
+                        if len(stats) >0:
+                            for entry in stats:
+                                pathData = copy.deepcopy(pathData)
+                                pathData["symbolic_length"] = entry["len"]
+                                pathData["symbolic_time"] = entry["time"]
+                                pathData["symbolic_status"] = entry["status"] # getSymbolicStatus(stats, entry["len"])
+                                paths.append(pathData)
+                                n+=1
+                        else:
+                            paths.append(pathData)
+                            m +=1
+                    else:
+                        paths.append(pathData)
+                        m +=1
+    print "%d paths with symbolic information and %d paths without symbolic information"%(n,m)
+    return paths
+
+def extractSymbExecDataAndCollectPathsIncremental(data):
+    paths = []
+    n = 0
+    m = 0
+    for function in data.keys():
+        functionData = data[function]
+        if "paths" in functionData.keys():
+            for path in functionData["paths"]:
+                if path != 'length': ## needed because we have a length entry in the json
+                    pathData = functionData["paths"][path]
+                    if "concolic_stats" in pathData.keys():
+                        stats = pathData["concolic_stats"]
+                        if len(stats) >0:
+                            length = None
+                            time = 0
+                            status = None
+                            for entry in stats:
+                                if length is None:
+                                    length = int(entry["len"])
+                                    status = entry["status"]
+                                    time = float(entry["time"])
+                                else:
+                                    time += float(entry["time"])
+                                    if int(entry["len"]) < length:
+                                        length = int(entry["len"])
+                                        status = entry["status"]
+                            pathData = copy.deepcopy(pathData)
+                            pathData["symbolic_length"] = length
+                            pathData["symbolic_time"] = time
+                            pathData["symbolic_status"] = status # getSymbolicStatus(stats, entry["len"])
+                            paths.append(pathData)
+                            n+=1
+                        else:
+                            paths.append(pathData)
+                            m +=1
+                    else:
+                        paths.append(pathData)
+                        m +=1
+    print "%d paths with symbolic information and %d paths without symbolic information"%(n,m)
+    return paths
+    
+
+
+
+
+#############
+############# ANALYSES
+#############
 
 def stepAnalysis(data, unknownInstrMode, reportName):
     intervals = generateIntervals(0,18000,2000)
@@ -1050,38 +1354,6 @@ def pathAnalysis(data, unknownInstrMode, reportName):
     plt3 = plotValue(data, "paths", unknownInstrMode, title="Paths", xLabel="Programs", yLabel="Number of paths", log=False)
     toPDF(reportName+"paths.pdf", [plt1, plt2, plt3])
 
-
-def printSummaryResults(dataGrouped):
-    safe = len(dataGrouped["safe"].keys())  if "safe" in dataGrouped.keys() else 0
-    dataV = len(dataGrouped["data"].keys())  if "data" in dataGrouped.keys() else 0
-    ctrl = len(dataGrouped["control"].keys())  if "control" in dataGrouped.keys() else 0
-    safeUnk = len(dataGrouped["safeUnk"].keys())  if "safeUnk" in dataGrouped.keys() else 0
-    dataUnk = len(dataGrouped["dataUnk"].keys())  if "dataUnk" in dataGrouped.keys() else 0
-    ctrlUnk = len(dataGrouped["controlUnk"].keys())  if "controlUnk" in dataGrouped.keys() else 0
-    segfault = len(dataGrouped["segfault"].keys())  if "segfault" in dataGrouped.keys() else 0
-    timeout = len(dataGrouped["timeout"].keys())  if "timeout" in dataGrouped.keys() else 0
-    parsing = len(dataGrouped["parsing"].keys())  if "parsing" in dataGrouped.keys() else 0
-    print "safe: "+str(safe)+" data: "+str(dataV)+" ctrl: "+str(ctrl)+" safeUnk: "+str(safeUnk)+" dataUnk: "+str(dataUnk)+" ctrlUnk: "+str(ctrlUnk)+" segfault: "+str(segfault)+" timeout: "+str(timeout)+" parsing: "+str(parsing)
-
-def printSummaryByIntervals(data,intervals, unknownInstrMode):
-    for min,max in intervals:
-        if (min,max) in data:
-            values = data[(min,max)]
-            safe = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "safe" ])
-            data = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "data" ])
-            control = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "control" ])
-            safeUnk = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "safeUnk" ])
-            dataUnk = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "dataUnk" ])
-            controlUnk = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "controlUnk" ])
-            segfault = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "segfault" ])
-            timeout = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "timeout" ])
-            parsing = len([key for key in values.keys() if getResult(values[key],unknownInstrMode) == "parsing" ])
-            success = (safe + data + control + safeUnk + dataUnk + controlUnk)
-            fail = (segfault + parsing + timeout)
-            total = success + fail
-            print "[%d,%d]: ANALYZED %d (SAFE = %d, UNSAFE = %d) TIMEOUT %d TOTAL %d"%(min,max, success, (safe+safeUnk), (data + control + dataUnk + controlUnk), fail, total  )
-   
-
 def locAnalysis(data, unknownInstrMode, reportName):
     intervals = generateIntervals(0,9000,1000)
     dataByLOC = groupByIntervals(data, intervals, "LOC")
@@ -1104,26 +1376,41 @@ def traceAnalysis(data, unknownInstrMode, reportName):
     plt3 = plotValue(data, "trace", unknownInstrMode, title="Traces", xLabel="Programs", yLabel="Trace Length", log=False)
     toPDF(reportName+"trace.pdf", [plt1,plt2, plt3])
 
+def sniAnalysis(data, mode):
+    dataByResult = groupByClass(data, "result", mode)
+    printSummaryResults(dataByResult)
+    paths = collectPaths(data)
+    print "Total paths %d"%len(paths)
+    #### TODO - We must gather path information also for those functions that time-out
+    #### TODO - We need partial path information for the symbolic execution 
 
+    intervals = generateIntervals(0,5000,200)
 
-def printSummary(clusteredData, intervals, attr):
-    for min,max in intervals:
-        minVal = None
-        maxVal = None
-        traceNr = 0
-        if (min,max) in clusteredData.keys():
-            traceNr = len(clusteredData[(min,max)])
-            for path in clusteredData[(min,max)]:
-                if minVal == None:
-                    minVal = path[attr]
-                if maxVal == None:
-                    minVal = path[attr]
-                if path[attr] < minVal:
-                    minVal = path[attr]
-                if path[attr] > maxVal:
-                    maxVal = path[attr]
-        print "[%d,%d]: MIN %d MAX %d # %d"%(min,max, (minVal if minVal != None else 0), (maxVal if maxVal != None else 0), traceNr )
+    clusteredData = groupPathsByIntervals(paths, intervals, "trace_length")
+    printSummary(clusteredData, intervals, "trace_length")
+    plt1 = scatterClusteredCategorical(clusteredData, intervals, mode="sni_time", unknownInstrMode=mode,  title = "", xLabel = "", yLabel = "",  colorsMode="status", log = True)
+    plt2 = scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", colorsMode="status", log=True)
+    plt3 = scatterPlotPathsValue(paths, "trace_length", unknownInstrMode=mode, title="", xLabel="", yLabel="", colorsMode="status", log=True)
+    plt4 = scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", xValues="trace_length", colorsMode="status", threshold=5000, log=True)
+    plt5 = pathStackedBars(clusteredData,  intervals, unknownInstrMode=mode, percentage = True, log=False, title="", xLabel="", yLabel="", colorsMode = "status", onlyAnalyzed = False, onlyTimeout = True)
+    
+    toPDF(mode+"_sni.pdf", [plt1, plt2, plt3, plt4, plt5])
 
+def symbExecAnalysis(data,mode):
+    paths = extractSymbExecDataAndCollectPaths(data)
+    # paths = extractSymbExecDataAndCollectPathsIncremental(data)
+    print "Total paths %d"%len(paths)
+    intervals = generateIntervals(0,20000,200)
+
+    clusteredData = groupPathsByIntervals(paths, intervals, "symbolic_length")
+    plt1 = scatterPlotPathsValue(paths, "symbolic_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", xValues="symbolic_length", colorsMode="symbolic_status", threshold=20000, log=True, avoidReps = False)
+    plt2 = scatterPlotPathsValue(paths, "symbolic_length", unknownInstrMode=mode, title="", xLabel="", yLabel="", colorsMode="symbolic_status", log=False)
+    plt3 = pathStackedBars(clusteredData,  intervals, unknownInstrMode=mode, percentage = True, log=False, title="", xLabel="", yLabel="", colorsMode = "symbolic_status", onlyAnalyzed = False, onlyTimeout = True)
+    toPDF(mode+"_symb.pdf", [plt1, plt2, plt3])
+
+#############
+############# MAIN
+#############
 
 def main(argv):
     try:
@@ -1249,19 +1536,34 @@ def main(argv):
             print "Unsupported mode"
             assert False
 
-        paths = collectPaths(data)
-        #### TODO - We must gather path information also for those functions that time-out
-        #### TODO - We need partial path information for the symbolic execution 
-
-        intervals = generateIntervals(0,10000,100)
-
-        clusteredData = groupPathsByIntervals(paths, intervals, "trace_length")
-        printSummary(clusteredData, intervals, "trace_length")
-        plt1 = scatterClusteredCategorical(clusteredData, intervals, mode="sni_time", unknownInstrMode=mode,  title = "", xLabel = "", yLabel = "", log = True)
-        plt2 = scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", log=True)
-        plt3 = scatterPlotPathsValue(paths, "trace_length", unknownInstrMode=mode, title="", xLabel="", yLabel="", log=True)
-        plt4 = scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", xValues="trace_length", threshold=12000, log=True)
-        toPDF(mode+"_sni.pdf", [plt1, plt2, plt3, plt4])
+        sniAnalysis(data, mode)
+    elif analysis == "symb":
+        if mode == "skip":
+            if dataSkip is not None:
+                data = dataSkip
+            else:
+                print "Pass a file with the --unsupported-as-skip option"
+                assert False
+        elif mode == "stop":
+            if dataStop is not None:
+                data = dataStop
+            else:
+                print "Pass a file with the --unsupported-as-stop option"
+                assert False
+        elif mode == "merge":
+            if dataSkip is not None:
+                if dataStop is not None:
+                    data = merge1(dataSkip, dataStop)
+                else:
+                    print "Pass a file with the --unsupported-as-stop option"
+                    assert False
+            else:
+                print "Pass a file with the --unsupported-as-skip option"
+                assert False
+        else:
+            print "Unsupported mode"
+            assert False
+        symbExecAnalysis(data,mode)
     elif analysis == "fnct_size":
         if dataSkip is not None:
             if dataStop is not None:
@@ -1282,7 +1584,7 @@ def main(argv):
             print "Pass a file with the --unsupported-as-skip option"
             assert False
     else:
-        print "Specify analysis"
+        print "Unsupported analysis"
         assert False
 
 if __name__ == "__main__":
