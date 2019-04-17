@@ -14,12 +14,15 @@ function usage () {
   -d SUITE     test, benchmarks, new, all
   -o DIR       Output directory
   -f FLAG      Pass all the flags to spectector
-  -r FILE      The file must contain all the files and its corresponding 
-     	       function to analyze (relative to that directory)
+  -r FILE      The file must contain all the files and its
+     	       corresponding function to analyze(relative
+	        to that directory)
   -i           Analyze all the functions of the files
+  -z JOBS      Number of parallel jobs launched
+  -j 	       File where the jobs are going to be written
 
-By default it will be executed with all the compilers, all the Paul Kocher
-examples and a timeout of 30 seconds
+By default it will be executed with all the compilers, all
+ the Paul Kocher examples and a timeout of 30 seconds
 
 To pass a list as an option argument, all the elements
  must be quoted and separated by spaces.
@@ -36,42 +39,31 @@ export -f produce_output
 function summarize_results () {
     printf "results=[" > "$jsonfile"
     cat "$outdir"/*.json >> "$jsonfile"
-    printf "{\"name\":\"summary\"}]" >> "$jsonfile" # TODO: Fix
+    printf "{\"name\":\"summary\",\"flags\":\"%s\"}]" "${flags[@]}" >> "$jsonfile" # TODO: Fix
 }
 
-function clean_up {
+function clean_up { # TODO: Kill parallel instances
     kill $LAST 2> /dev/null
     summarize_results
     exit 1
 }
 
-gen=(microsoft intel clang gcc)
+gen=(microsoft "microsoft-19" intel clang gcc)
 timeout=30
 IFS=' '
 results=results
 opts=(.o0 .o2)
+n_parallel=4
 
-# Suites # TODO - Insert on an external file
-old=(01 02 03 04 05 06 07 08 09 10 11ker 12 13 14 15)
-new=(16 17 18 19 20 21 22 23 24 25 26 27)
-benchs=(bubblesort cbzero crscat crschr crscmp cstrcspn cstrncat cstrpbrk
-	insertionsort selectionsort substring sumofthird wildcard)
-test_suite=(flops-6 objinst evalloop flops-7 linpack-pc oourafft revertBits
-	    ackermann exptree flops-8 lists Oscar richards_benchmark fannkuch
-	    flops lowercase partialsums salsa20 almabench fasta floyd-warshall
-	    lpbench perlin ary3 fbench fp-convert Perm sieve pi spectral-norm
-	    mandel-2 polybench strcat Bubblesort ffbench mandel puzzle cholesky
-	    fib2 matmul_f64_4x4 Puzzle chomp fldry matrix queens FloatMM
-	    heapsort methcall Queens flops-1 hello misr Quicksort Towers
-	    flops-2 himenobmtxpa random Treesort dry flops-3 huffbench n-body
-	    RealMM dt flops-4 IntMM nestedloop recursive flops-5 nsieve-bits
-	    ReedSolomon whetstone)
+# Suites
+source suites
 tests="${old[@]} ${new[@]}"
 all="${tests[@]} ${benchs[@]}"
 cases=${old[@]}
+jobs_file=/tmp/jobs
 
 # Parsing of the arguments
-while getopts ":m:p:t:d:o:s:f:q:r:i:" option; do
+while getopts ":m:p:t:d:o:s:f:q:r:i:z:j:" option; do
     case "${option}" in
 	m) gen=($OPTARG) ;;
 	p) cases=($OPTARG) ;;
@@ -85,6 +77,8 @@ while getopts ":m:p:t:d:o:s:f:q:r:i:" option; do
 	i) get_entry=$OPTARG;;
 	r) raw=$OPTARG
 	   gen=();;
+	z) n_parallel=$OPTARG;;
+	j) jobs_file=$OPTARG;;
 	* ) usage ;;
     esac
 done
@@ -101,6 +95,9 @@ for compiler in ${gen[@]}; do
 	intel ) mits+="ICC\t\t\t\t"
 	    	lmi+="UNP\t\tFEN\t\t"
 	    	lop+="-O0\t-O2\t-O0\t-O2\t" ;;
+	microsoft-19 ) mits+="MIC\t\t\t\t"
+	    	       lmi+="UNP\t\tFEN\t\t"
+	    	       lop+="-O0\t-O2\t-O0\t-O2\t" ;;
 	microsoft ) mits+="MIC\t\t\t\t"
 	    	    lmi+="UNP\t\tFEN\t\t"
 	    	    lop+="-O0\t-O2\t-O0\t-O2\t" ;;
@@ -151,8 +148,8 @@ outdir=$results/out
 old_folder=$results/$(date "+%Y.%m.%d-%H.%M.%S")
 mkdir -p $old_folder
 find $results -maxdepth 1 -type f -exec mv {} $old_folder \;
-rm -f $results/consult.html
 mv $outdir $old_folder 2> /dev/null
+mkdir -p "$outdir" # Write the output files
 
 if which gtimeout > /dev/null 2>&1; then
     runtimeout=gtimeout # for macOS (GNU coreutils)
@@ -160,8 +157,6 @@ else
     runtimeout=timeout
 fi
 
-# Write the output files
-mkdir -p "$outdir"
 
 if ! [ -z $raw ]; then
     if [ -d $get_entry ]; then
@@ -171,28 +166,20 @@ if ! [ -z $raw ]; then
 	fi
 	printf "Analyzing all the functions of the files of %s\n" "$raw"
 	type=$(basename $raw)
+	echo "" > $jobs_file
 	for target in $raw/*.s; do
 	    name=$(basename $target)
-	    assfile=$get_entry/$name # TODO: The directory must be a flag by the user
+	    assfile=$get_entry/$name
 	    while read -r func; do
 		outf="$outdir/$type.$name.$func.out"
 		outjson="$outdir/$type.$name.$func.json"
 		outerr="$outdir/$type.$name.$func.err"
 		single_func="[$func]"
 		# Check of parsing
-		printf "%s\t%s\n" "$target" "$func"
-		if ! $spectector $target $flags -e $single_func -a none > $outf 2> $outerr; then
-		    printf "{\"name\":\"%s\",\"status\":\"parsing\",\"file\":\"%s\",\"entry\":\"%s\"}," "$target" "$outjson" "$func" > "$outjson" # parse error
-		    continue
-		fi
-		$runtimeout $timeout $spectector $target $flags --stats\
-			    "$outjson" -e $single_func > $outf 2> $outerr &
-		LAST=$!
-		wait $LAST
-		ret=$?
-		produce_output $target $outjson $func $ret
+		echo "printf \"%s\t%s\n\" \"$target\" \"$func\"; $spectector $target $flags -e $single_func -a none > $outf 2> $outerr; if [ $? -ne 0 ]; then printf \"{\\\"name\\\":\\\"%s\\\",\\\"status\\\":\\\"parsing\\\",\\\"file\\\":\\\"%s\\\",\\\"entry\\\":\\\"%s\\\"},\" \"$target\" \"$outjson\" \"$func\" > \"$outjson\"; exit; fi; $runtimeout $timeout $spectector $target $flags --stats \"$outjson\" -e $single_func > $outf 2> $outerr; ret=\$?; if [ \$ret -eq 124 ]; then printf \"{\\\"name\\\":\\\"%s\\\",\\\"status\\\":\\\"timeout\\\",\\\"file\\\":\\\"%s\\\",\\\"entry\\\":\\\"%s\\\"},\" \"$target\" \"$outjson\" \"$func\" > \"$outjson\"; elif [ \$ret -eq 139 ]; then printf \"{\\\"name\\\":\\\"%s\\\",\\\"status\\\":\\\"segfault\\\",\\\"file\\\":\\\"%s\\\",\\\"entry\\\":\\\"%s\\\"},\" \"$target\" \"$outjson\" \"$func\" > \"$outjson\"; elif [ \$ret -ne 0 ]; then printf \"{\\\"name\\\":\\\"%s\\\",\\\"status\\\":\\\"unknown_error\\\",\\\"file\\\":\\\"%s\\\",\\\"entry\\\":\\\"%s\\\"},\" \"$target\" \"$outjson\" \"$func\" > \"$outjson\"; fi" >> $jobs_file
 	    done < <(./scripts/get_function_names.sh $assfile)
 	done
+	parallel -j$n_parallel :::: $jobs_file
 	summarize_results
 	exit 0
     elif [ -f $raw ]; then
@@ -243,6 +230,7 @@ for app in ${cases[@]}; do
 		"intel") experiments=(any lfence);;
 		"gcc") experiments=(any slh);;
 		"microsoft") experiments=(any lfence) && extension=asm;;
+		"microsoft-19") experiments=(any lfence) && extension=asm;;
 	    esac
 	    for ex in ${experiments[@]}; do
 		for opt in ${opts[@]}; do
