@@ -9,6 +9,7 @@ from pprint import pprint
 import matplotlib.pyplot as plt
 import numpy as np
 import sys, getopt
+import datetime
 
 from lineCount import sizesFromSource
 
@@ -286,12 +287,12 @@ def getResult (entry, unknownInstrMode):
         elif unknownInstrMode == "merge":
             return getResult (entry, entry["mode"])
         else:
-            print "Unsupported mode "+unknownInstrMode
+            print("Unsupported mode "+unknownInstrMode)
             assert False
     elif status == "unknown_noninter":
             return "timeout_sni"
     else:
-        print "Unsupported status "+status
+        print("Unsupported status "+status)
         assert False # unsupported value
 
 
@@ -320,7 +321,7 @@ def getTraceResult (entry, unknownInstrMode):
             else:
                 return "dataUnk"
         else:
-            print "Unsupported mode "+unknownInstrMode
+            print ("Unsupported mode "+unknownInstrMode )
             assert False
     elif status == "control":
         if  unknownInstrMode == "stop":
@@ -331,12 +332,12 @@ def getTraceResult (entry, unknownInstrMode):
             else:
                 return "controlUnk"
         else:
-            print "Unsupported mode "+unknownInstrMode
+            print("Unsupported mode "+unknownInstrMode)
             assert False
     elif status == "unknown_noninter":
         return "timeout_sni"
     else:
-        print "Unsupported status "+status
+        print("Unsupported status "+status)
         assert False # unsupported value
 
 
@@ -347,7 +348,7 @@ def groupByClass(data, mode, unknownInstrMode):
         if mode == "result":
             value = getResult(data[function], unknownInstrMode)
         else:
-            print "Unsupported mode"
+            print("Unsupported mode "+mode)
             assert False
         if value not in data1:
             data1[value] = {}
@@ -586,7 +587,7 @@ def plotValue(data, mode, unknownInstrMode, title="", xLabel="", yLabel="", log=
         elif mode == "trace":
             val = getTracesLength(data[function])
         else:
-            print "Unsupported mode"
+            print ("Unsupported mode "+mode)
             assert False
 
         status = getResult(data[function],unknownInstrMode)
@@ -603,8 +604,7 @@ def plotValue(data, mode, unknownInstrMode, title="", xLabel="", yLabel="", log=
         elif status == "parsing":
             colors.append(purple)
         else:
-            print "Unsupported status"
-            print status
+            print("Unsupported status "+status)
             assert False
 
         x.append(len(x))
@@ -747,7 +747,7 @@ def plotCompactDoublePie(data, plotParsing=False):
     # explodeIn = (0, 0, 0, 0, 0, 0, 0, 0) 
     colorsIn = [green,green,brightRed,  brightRed, yellow]
 
-    print "COMPACT RESULTS: [SAFE, SAFEUNK, LEAK, LEAKUNK, TIMEOUT] = "+str(sizesIn)
+    print ("COMPACT RESULTS: [SAFE, SAFEUNK, LEAK, LEAKUNK, TIMEOUT] = "+str(sizesIn))
 
     def labels(pct, values):
         absolute = int(pct/100.*np.sum(values))
@@ -846,8 +846,6 @@ def mergeSizes(data, sizes):
         if fnctName in sizes.keys():
             data[fnct]["LOC"] = sizes[fnctName]
         else:
-            print fnct 
-            print fnctName
             assert False
     return data
 
@@ -944,7 +942,7 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
         elif mode == "trace_length":
             val = path["trace_length"]
         else:
-            print "Unsupported mode"
+            print ("Unsupported mode "+mode)
             assert False
 
         if xValues != "incremental" and path[xValues] > threshold:
@@ -1376,11 +1374,12 @@ def traceAnalysis(data, unknownInstrMode, reportName):
     plt3 = plotValue(data, "trace", unknownInstrMode, title="Traces", xLabel="Programs", yLabel="Trace Length", log=False)
     toPDF(reportName+"trace.pdf", [plt1,plt2, plt3])
 
-def sniAnalysis(data, mode):
+def sniAnalysis(data, mode, prefix):
+    threshold = 5000
     dataByResult = groupByClass(data, "result", mode)
     printSummaryResults(dataByResult)
     paths = collectPaths(data)
-    print "Total paths %d"%len(paths)
+    print("Total paths %d"%len(paths))
     #### TODO - We must gather path information also for those functions that time-out
     #### TODO - We need partial path information for the symbolic execution 
 
@@ -1391,22 +1390,22 @@ def sniAnalysis(data, mode):
     plt1 = scatterClusteredCategorical(clusteredData, intervals, mode="sni_time", unknownInstrMode=mode,  title = "", xLabel = "", yLabel = "",  colorsMode="status", log = True)
     plt2 = scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", colorsMode="status", log=True)
     plt3 = scatterPlotPathsValue(paths, "trace_length", unknownInstrMode=mode, title="", xLabel="", yLabel="", colorsMode="status", log=True)
-    plt4 = scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", xValues="trace_length", colorsMode="status", threshold=5000, log=True)
+    plt4 = scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", xValues="trace_length", colorsMode="status", threshold=threshold, log=True)
     plt5 = pathStackedBars(clusteredData,  intervals, unknownInstrMode=mode, percentage = True, log=False, title="", xLabel="", yLabel="", colorsMode = "status", onlyAnalyzed = False, onlyTimeout = True)
     
-    toPDF(mode+"_sni.pdf", [plt1, plt2, plt3, plt4, plt5])
+    toPDF(prefix+"_"+mode+"_sni.pdf", [plt1, plt2, plt3, plt4, plt5])
 
-def symbExecAnalysis(data,mode):
+def symbExecAnalysis(data,mode, prefix):
     paths = extractSymbExecDataAndCollectPaths(data)
     # paths = extractSymbExecDataAndCollectPathsIncremental(data)
-    print "Total paths %d"%len(paths)
+    print("Total paths %d"%len(paths))
     intervals = generateIntervals(0,20000,200)
 
     clusteredData = groupPathsByIntervals(paths, intervals, "symbolic_length")
     plt1 = scatterPlotPathsValue(paths, "symbolic_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", xValues="symbolic_length", colorsMode="symbolic_status", threshold=20000, log=True, avoidReps = False)
     plt2 = scatterPlotPathsValue(paths, "symbolic_length", unknownInstrMode=mode, title="", xLabel="", yLabel="", colorsMode="symbolic_status", log=False)
     plt3 = pathStackedBars(clusteredData,  intervals, unknownInstrMode=mode, percentage = True, log=False, title="", xLabel="", yLabel="", colorsMode = "symbolic_status", onlyAnalyzed = False, onlyTimeout = True)
-    toPDF(mode+"_symb.pdf", [plt1, plt2, plt3])
+    toPDF(prefix+"_"+mode+"_symb.pdf", [plt1, plt2, plt3])
 
 #############
 ############# MAIN
@@ -1414,7 +1413,7 @@ def symbExecAnalysis(data,mode):
 
 def main(argv):
     try:
-        opts, args = getopt.getopt(argv,'', ["source=","sizes=", "unsupported-as-skip=", "unsupported-as-stop=", "mode=", "analysis="])
+        opts, args = getopt.getopt(argv,'h', ["source=","sizes=", "unsupported-as-skip=", "unsupported-as-stop=", "mode=", "analysis=", "prefix="])
     except getopt.GetoptError:
         print "Wrong usage. See below."
         print "Usage: dataAnalysis [options]"
@@ -1423,7 +1422,9 @@ def main(argv):
         print "     --sizes <file>                  JSON file with the function sizes"
         print "     --unsupported-as-skip <file>    Logs generated using unsupported-as-skip"
         print "     --unsupported-as-stop <file>    Logs generated using unsupported-as-stop"
-        print "     --merge                         Merge unsupported-as-skip and unsupported-as-stop logs"
+        print "     --mode  (skip|stop|merge)       Choose which data to plot"
+        print "     --analysis                      Choose analysis type"
+        print "     --prefix                        Prefix for output files (default is date)"
         sys.exit(2)
 
     ### Initialized from cmd line
@@ -1437,6 +1438,7 @@ def main(argv):
     dataStop = None
     pathSize = None
     sizes = None
+    prefix = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     for opt, arg in opts:
         if opt == '-h':
             print "Usage: dataAnalysis [options]"
@@ -1446,7 +1448,8 @@ def main(argv):
             print "     --unsupported-as-skip <file>    Logs generated using unsupported-as-skip"
             print "     --unsupported-as-stop <file>    Logs generated using unsupported-as-stop"
             print "     --mode  (skip|stop|merge)       Choose which data to plot"
-            print "     --analysis (all|                Choose analysis type"
+            print "     --analysis                      Choose analysis type"
+            print "     --prefix                        Prefix for output files (default is date)"
             sys.exit()
         elif opt == "--source":
             pathSrc = arg
@@ -1460,6 +1463,8 @@ def main(argv):
             mode = arg
         elif opt == "--analysis":
             analysis = arg
+        elif opt == "--prefix":
+            prefix = arg
         else:
             print "Unsupported option" + opt
             assert False
@@ -1504,11 +1509,11 @@ def main(argv):
             print "Unsupported mode"
             assert False
         print "Number of files: %d"%len(data)
-        resultsAnalysis(data, unknownInstrMode=mode, reportName=mode+"_")
-        pathAnalysis(data, unknownInstrMode=mode, reportName=mode+"_")
-        instructionsAnalysis(data, unknownInstrMode=mode, reportName=mode+"_")
-        stepAnalysis(data, unknownInstrMode=mode, reportName=mode+"_")
-        timeAnalysis(data, unknownInstrMode=mode, reportName=mode+"_")
+        resultsAnalysis(data, unknownInstrMode=mode, reportName=prefix+"_"+mode+"_")
+        pathAnalysis(data, unknownInstrMode=mode, reportName=prefix+"_"+mode+"_")
+        instructionsAnalysis(data, unknownInstrMode=mode, reportName=prefix+"_"+mode+"_")
+        stepAnalysis(data, unknownInstrMode=mode, reportName=prefix+"_"+mode+"_")
+        timeAnalysis(data, unknownInstrMode=mode, reportName=prefix+"_"+mode+"_")
     elif analysis == "sni":
         if mode == "skip":
             if dataSkip is not None:
@@ -1536,7 +1541,7 @@ def main(argv):
             print "Unsupported mode"
             assert False
 
-        sniAnalysis(data, mode)
+        sniAnalysis(data, mode, prefix)
     elif analysis == "symb":
         if mode == "skip":
             if dataSkip is not None:
@@ -1555,15 +1560,15 @@ def main(argv):
                 if dataStop is not None:
                     data = merge1(dataSkip, dataStop)
                 else:
-                    print "Pass a file with the --unsupported-as-stop option"
+                    print("Pass a file with the --unsupported-as-stop option")
                     assert False
             else:
-                print "Pass a file with the --unsupported-as-skip option"
+                print("Pass a file with the --unsupported-as-skip option")
                 assert False
         else:
-            print "Unsupported mode"
+            print("Unsupported mode")
             assert False
-        symbExecAnalysis(data,mode)
+        symbExecAnalysis(data,mode, prefix)
     elif analysis == "fnct_size":
         if dataSkip is not None:
             if dataStop is not None:
@@ -1571,9 +1576,9 @@ def main(argv):
                     ### PLOT BY FUNCTION SIZE
                     data = merge1(dataSkip, dataStop)
                     data = mergeSizes(data,sizes)
-                    locAnalysis(data, unknownInstrMode="merge", reportName="merge_")
-                    traceAnalysis(dataSkip, unknownInstrMode="skip", reportName="merge_")
-                    traceAnalysis(dataStop, unknownInstrMode="stop", reportName="merge_")
+                    locAnalysis(data, unknownInstrMode="merge", reportName=prefix+"_merge_")
+                    traceAnalysis(dataSkip, unknownInstrMode="skip", reportName=prefix+"_merge_")
+                    traceAnalysis(dataStop, unknownInstrMode="stop", reportName=prefix+"_merge_")
                 else:
                     print "Pass either a file containing function sizes with the --sizes option or a source file with the --source option"
                     assert False
