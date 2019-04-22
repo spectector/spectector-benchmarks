@@ -6,10 +6,12 @@ from os import listdir
 from os.path import isfile, join
 import glob
 from pprint import pprint
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import sys, getopt
 import datetime
+import re
 
 from lineCount import sizesFromSource
 
@@ -19,51 +21,51 @@ import matplotlib
 from math import sqrt
 SPINE_COLOR = 'gray'
 
-def latexify(fig_width=None, fig_height=None, columns=1):
-    """Set up matplotlib's RC params for LaTeX plotting.
-    Call this before plotting a figure.
+# def latexify(fig_width=None, fig_height=None, columns=1):
+#     """Set up matplotlib's RC params for LaTeX plotting.
+#     Call this before plotting a figure.
 
-    Parameters
-    ----------
-    fig_width : float, optional, inches
-    fig_height : float,  optional, inches
-    columns : {1, 2}
-    """
+#     Parameters
+#     ----------
+#     fig_width : float, optional, inches
+#     fig_height : float,  optional, inches
+#     columns : {1, 2}
+#     """
 
-    # code adapted from http://www.scipy.org/Cookbook/Matplotlib/LaTeX_Examples
+#     # code adapted from http://www.scipy.org/Cookbook/Matplotlib/LaTeX_Examples
 
-    # Width and max height in inches for IEEE journals taken from
-    # computer.org/cms/Computer.org/Journal%20templates/transactions_art_guide.pdf
+#     # Width and max height in inches for IEEE journals taken from
+#     # computer.org/cms/Computer.org/Journal%20templates/transactions_art_guide.pdf
 
-    assert(columns in [1,2])
+#     assert(columns in [1,2])
 
-    if fig_width is None:
-        fig_width = 3.39 if columns==1 else 6.9 # width in inches
+#     if fig_width is None:
+#         fig_width = 3.39 if columns==1 else 6.9 # width in inches
 
-    if fig_height is None:
-        golden_mean = (sqrt(5)-1.0)/2.0    # Aesthetic ratio
-        fig_height = fig_width*golden_mean # height in inches
+#     if fig_height is None:
+#         golden_mean = (sqrt(5)-1.0)/2.0    # Aesthetic ratio
+#         fig_height = fig_width*golden_mean # height in inches
 
-    MAX_HEIGHT_INCHES = 8.0
-    if fig_height > MAX_HEIGHT_INCHES:
-        print("WARNING: fig_height too large:" + fig_height + 
-              "so will reduce to" + MAX_HEIGHT_INCHES + "inches.")
-        fig_height = MAX_HEIGHT_INCHES
+#     MAX_HEIGHT_INCHES = 8.0
+#     if fig_height > MAX_HEIGHT_INCHES:
+#         print("WARNING: fig_height too large:" + fig_height + 
+#               "so will reduce to" + MAX_HEIGHT_INCHES + "inches.")
+#         fig_height = MAX_HEIGHT_INCHES
 
-    params = {'backend': 'ps',
-              'text.latex.preamble': ['\usepackage{gensymb}'],
-              'axes.labelsize': 8, # fontsize for x and y labels (was 10)
-              'axes.titlesize': 8,
-              'text.fontsize': 8, # was 10
-              'legend.fontsize': 8, # was 10
-              'xtick.labelsize': 8,
-              'ytick.labelsize': 8,
-              'text.usetex': True,
-              'figure.figsize': [fig_width,fig_height],
-              'font.family': 'serif'
-    }
+#     params = {'backend': 'ps',
+#               'text.latex.preamble': ['\usepackage{gensymb}'],
+#               'axes.labelsize': 8, # fontsize for x and y labels (was 10)
+#               'axes.titlesize': 8,
+#               'text.fontsize': 8, # was 10
+#               'legend.fontsize': 8, # was 10
+#               'xtick.labelsize': 8,
+#               'ytick.labelsize': 8,
+#               'text.usetex': True,
+#               'figure.figsize': [fig_width,fig_height],
+#               'font.family': 'serif'
+#     }
 
-    matplotlib.rcParams.update(params)
+#     matplotlib.rcParams.update(params)
 
 
 def format_axes(ax):
@@ -91,27 +93,58 @@ blue = "#1620A8"
 yellow = "#C6A600"  
 purple = "#800080"
 
-def sanitize(text):
+def sanitizeData(text):
+     ## needed to handle bugs in the JSON generation :-)
+    if text.endswith(","):
+        text = text[:-1]
     keywords = ["status","name", "file", "entry"]
     for keyword in keywords:
         text = text.replace(keyword+":", "\""+keyword+"\":")
     return text
 
 
+def sanitizePathData(text):
+     ## needed to handle bugs in the JSON generation :-)
+    if text.endswith(","):
+        text = text[:-1]
+    text += "]"
+    keywords = ["status","name", "file", "entry"]
+    for keyword in keywords:
+        text = text.replace(keyword+":", "\""+keyword+"\":")
+    toRemove = re.findall( r'\"path[0-9]*\"=', text)
+    for kywd in toRemove:
+        text = text.replace(kywd, "")
+    return text
+
+
 ## load the json data. 
 def loadData(path):
-    print("Loading "+path)
+    print("Loading data from "+path)
     extension = "*.json"
     jsonFiles = glob.glob(path+"/"+extension)
     data = {}
     for filename in jsonFiles:
         with open(filename) as f:
             content = f.read()
-            ## needed to handle bug in the JSON generation :-)
-            if content.endswith(","):
-                content = content[:-1]
-            content = sanitize(content)
+            content = sanitizeData(content)
             data[filename.replace(path+"/","").replace(".json","")] = json.loads(content)
+    
+    print("Loaded %d files"%len(data))
+    return data
+
+def loadPaths(path):
+    print("Loading path data from "+path)
+    extension = "*.json_paths"
+    jsonFiles = glob.glob(path+"/"+extension)
+    data = []
+    for filename in jsonFiles:
+        with open(filename) as f:
+            content = f.read()
+            content = sanitizePathData(content)
+            # print(content)
+            data.extend(json.loads(content))
+
+    print("Loaded %d paths"%len(data))
     return data
 
 def loadSizes(path):
@@ -896,7 +929,7 @@ def pathLengthTimes(dataByLength, intervals, unknownInstrMode, filterStatus, tit
 
     fig = plt.figure()#(figsize=(50,10))
 
-    p1 = plt.bar(ind, filterStatus, width, color=blue, edgecolor='black', log=log) # autolabel(p1)
+    p1 = plt.bar(ind, filterStatus, width, color=blue, edgecolor='black') # autolabel(p1)
     plt.ylabel(yLabel)
     plt.xlabel(xLabel)
 
@@ -906,7 +939,7 @@ def pathLengthTimes(dataByLength, intervals, unknownInstrMode, filterStatus, tit
     # return fig
 
 
-def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLabel="", xValues = "incremental", threshold=10000, colorsMode= "status" , log=False, avoidReps = False):
+def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLabel="", xValues = "incremental", threshold=10000, colorsMode= "status" , markersize=None, log=False, avoidReps = False, rasterized=True):
     y = []
     x = []
     colors=[]
@@ -916,20 +949,30 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
     for path in data:
         if mode == "sni_time":
             if "time_solve" not in path.keys():
+                # print("Ignore data point (no time_solve)")
                 continue
         if mode == "symbolic_time":
             if "symbolic_time" not in path.keys():
+                # print("Ignore data point (no symbolic_time)")
+                continue
+        if mode == "time_trace":
+            if "time_trace" not in path.keys():
+                # print("Ignore data point (no time_trace)")
                 continue
         if mode == "trace_length":
             if "trace_length" not in path.keys():
+                # print("Ignore data point (no trace_length)")
                 continue
         if mode == "symbolic_length":
             if "symbolic_length" not in path.keys():
+                # print("Ignore data point (no symbolic_length)")
                 continue
         if xValues != "incremental":
             if xValues not in path.keys():
+                # print("Ignore data point (no xValue "+xValues+")")
                 continue
-        if colorsMode not in path.keys():
+        if colorsMode != "noColor" and colorsMode not in path.keys():
+            # print("Ignore data point (no colorsMode "+colorsMode+")")
             continue
 
 
@@ -941,6 +984,8 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
             val = path["symbolic_length"]
         elif mode == "trace_length":
             val = path["trace_length"]
+        elif mode == "time_trace":
+            val = path["time_trace"]
         else:
             print ("Unsupported mode "+mode)
             assert False
@@ -973,7 +1018,7 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
                 i+=1
                 colors.append(blue)
             else:
-                print "Unsupported status "+getTraceResult(path,unknownInstrMode)
+                print("Unsupported status "+getTraceResult(path,unknownInstrMode))
                 assert False
         elif colorsMode == "symbolic_status":
             if path[colorsMode] == "sat":
@@ -984,23 +1029,28 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
                 colors.append(blue)
                 i+=1
             else:
-                print "Unsupported status "+path[colorsMode]
+                print("Unsupported status "+path[colorsMode])
                 assert False
+        elif colorsMode == "noColor":
+                colors.append(blue)
         else:
-            print "Unsupported color mode"
+            print("Unsupported color mode")
             assert False
 
 
     
-    print "Plotted %d data"%len(plotted)
-    print "Plotted timeouts %d"%i
+    print("Plotted %d data"%len(plotted))
+    print("Plotted timeouts %d"%i)
     fig = plt.figure()
     ax = plt.gca()
 
     x = np.array(x)
     y = np.array(y)
 
-    ax.scatter(x ,y , c=colors, alpha=0.3, edgecolors='none')
+    if markersize is not None:
+        ax.scatter(x ,y , c=colors, alpha=0.3, edgecolors='none', s = markersize, rasterized=rasterized)
+    else:
+        ax.scatter(x ,y , c=colors, alpha=0.3, edgecolors='none', rasterized=rasterized)
     if log:
         ax.set_yscale('log')
     plt.title(title)    
@@ -1010,12 +1060,12 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
     plt.xlabel(xLabel)
     plt.ylabel(yLabel)
     
-    print "Ignored %d paths over the threshold %d"%(skip,threshold)
+    print("Ignored %d paths over the threshold %d"%(skip,threshold))
 
     return fig
 
 
-def scatterClusteredCategorical(data, intervals, mode, unknownInstrMode, title = "", xLabel = "", yLabel = "", colorsMode = "status", log = False):
+def scatterClusteredCategorical(data, intervals, mode, unknownInstrMode, title = "", xLabel = "", yLabel = "", colorsMode = "status", log = False, rasterized=True):
     y = []
     x = []
     colors=[]
@@ -1031,7 +1081,7 @@ def scatterClusteredCategorical(data, intervals, mode, unknownInstrMode, title =
                 if mode == "sni_time":
                     val = path["time_solve"]
                 else:
-                    print "Unsupported mode"
+                    print("Unsupported mode")
                     assert False
                 x.append(n)
                 y.append(val+1 if log else val)   
@@ -1044,10 +1094,10 @@ def scatterClusteredCategorical(data, intervals, mode, unknownInstrMode, title =
                     elif getTraceResult(path,unknownInstrMode) == "timeout_sni":
                         colors.append(yellow)
                     else:
-                        print "Unsupported status "+getTraceResult(path,unknownInstrMode)
+                        print("Unsupported status "+getTraceResult(path,unknownInstrMode))
                         assert False
                 else:
-                    print "Unsupported colors mode"
+                    print("Unsupported colors mode")
                     assert False
         n+=1
 
@@ -1055,7 +1105,7 @@ def scatterClusteredCategorical(data, intervals, mode, unknownInstrMode, title =
     ax = plt.gca()
     x = np.array(x)
     y = np.array(y)
-    ax.scatter(x ,y , c=colors, alpha=.5, edgecolors='none')
+    ax.scatter(x ,y , c=colors, alpha=.5, edgecolors='none', rasterized = rasterized)
     if log:
         ax.set_yscale('log')
     
@@ -1088,7 +1138,6 @@ def pathStackedBars(pathsByIntervals,  intervals, unknownInstrMode, ignoreParsin
     redVals = []
     blueVals = []
     for min,max in intervals:
-        getTraceResult
         if (min,max) in pathsByIntervals:
             paths = pathsByIntervals[(min,max)]
 
@@ -1105,7 +1154,7 @@ def pathStackedBars(pathsByIntervals,  intervals, unknownInstrMode, ignoreParsin
                 redVal = len([path for path in  paths if path[colorsMode] == "unsat"])
                 blueVal = len([path for path in  paths if path[colorsMode] == "unknown"])
             else:
-                print "Unsupported color mode"
+                print("Unsupported color mode "+colorsMode)
                 assert False
 
             total = float(greenVal + redVal + blueVal)
@@ -1115,7 +1164,7 @@ def pathStackedBars(pathsByIntervals,  intervals, unknownInstrMode, ignoreParsin
                 redVals.append(100*redVal/total)
                 blueVals.append(100*blueVal/total)
             else:
-                append(greenVal)
+                greenVals.append(greenVal)
                 redVals.append(redVal)
                 blueVals.append(blueVal)
         else:
@@ -1174,9 +1223,9 @@ def pathStackedBars(pathsByIntervals,  intervals, unknownInstrMode, ignoreParsin
     if percentage:
         plt.ylim([0, 100])
         # plt.xlim([0, x.max()])
-    else:
-        plt.ylim([0, y.max()])
-        # plt.xlim([0, x.max()])
+    # else:
+    #     plt.ylim([0, y.max()])
+    #     # plt.xlim([0, x.max()])
 
     return fig
 
@@ -1199,7 +1248,7 @@ def printSummary(clusteredData, intervals, attr):
                     minVal = path[attr]
                 if path[attr] > maxVal:
                     maxVal = path[attr]
-        print "[%d,%d]: MIN %d MAX %d # %d"%(min,max, (minVal if minVal != None else 0), (maxVal if maxVal != None else 0), traceNr )
+        print("[%d,%d]: MIN %d MAX %d # %d"%(min,max, (minVal if minVal != None else 0), (maxVal if maxVal != None else 0), traceNr ))
 
 def printSummaryResults(dataGrouped):
     safe = len(dataGrouped["safe"].keys())  if "safe" in dataGrouped.keys() else 0
@@ -1211,7 +1260,7 @@ def printSummaryResults(dataGrouped):
     segfault = len(dataGrouped["segfault"].keys())  if "segfault" in dataGrouped.keys() else 0
     timeout = len(dataGrouped["timeout"].keys())  if "timeout" in dataGrouped.keys() else 0
     parsing = len(dataGrouped["parsing"].keys())  if "parsing" in dataGrouped.keys() else 0
-    print "safe: "+str(safe)+" data: "+str(dataV)+" ctrl: "+str(ctrl)+" safeUnk: "+str(safeUnk)+" dataUnk: "+str(dataUnk)+" ctrlUnk: "+str(ctrlUnk)+" segfault: "+str(segfault)+" timeout: "+str(timeout)+" parsing: "+str(parsing)
+    print("safe: "+str(safe)+" data: "+str(dataV)+" ctrl: "+str(ctrl)+" safeUnk: "+str(safeUnk)+" dataUnk: "+str(dataUnk)+" ctrlUnk: "+str(ctrlUnk)+" segfault: "+str(segfault)+" timeout: "+str(timeout)+" parsing: "+str(parsing))
 
 def printSummaryByIntervals(data,intervals, unknownInstrMode):
     for min,max in intervals:
@@ -1229,11 +1278,63 @@ def printSummaryByIntervals(data,intervals, unknownInstrMode):
             success = (safe + data + control + safeUnk + dataUnk + controlUnk)
             fail = (segfault + parsing + timeout)
             total = success + fail
-            print "[%d,%d]: ANALYZED %d (SAFE = %d, UNSAFE = %d) TIMEOUT %d TOTAL %d"%(min,max, success, (safe+safeUnk), (data + control + dataUnk + controlUnk), fail, total  )
+            print("[%d,%d]: ANALYZED %d (SAFE = %d, UNSAFE = %d) TIMEOUT %d TOTAL %d"%(min,max, success, (safe+safeUnk), (data + control + dataUnk + controlUnk), fail, total  ))
 
 def getSymbolicStatus(stats, pathLength):
     return "sat" if (pathLength == min([key["len"] for key in stats])) else "unsat"
 
+
+def extractSymbExecData(paths, mode):
+    newPaths = []
+    n = 0
+    m = 0
+    for path in paths:
+        if "concolic_stats" in path.keys():
+            stats = path["concolic_stats"]
+            pathData = {} # copy.deepcopy(path)
+            if len(stats) >0:
+                if mode == "expand":
+                    for entry in stats:
+                        pathData = {} # copy.deepcopy(path)
+                        pathData["symbolic_length"] = entry["len"]
+                        pathData["symbolic_time"] = entry["time"]
+                        pathData["symbolic_status"] = entry["status"]
+                        newPaths.append(pathData)
+                        n+=1
+                elif mode == "incremental":
+                    length = None
+                    time = 0
+                    status = None
+                    for entry in stats:
+                        if length is None:
+                            length = int(entry["len"])
+                            status = entry["status"]
+                            time = float(entry["time"])
+                        else:
+                            time += float(entry["time"])
+                            if int(entry["len"]) < length:
+                                status = entry["status"]
+                                # length = int(entry["len"]) ### see below!
+                            if int(entry["len"]) > length:
+                                length = int(entry["len"])
+                    pathData["symbolic_length"] = length
+                    pathData["symbolic_time"] = time
+                    pathData["symbolic_status"] = status 
+                    pathData["time_trace"] = path["time_trace"]
+                    pathData["trace_length"] = path["trace_length"]
+                    newPaths.append(pathData)
+                    n+=1
+                else:
+                    print("Unsupported mode "+mode)
+                    assert False
+            else:
+                newPaths.append(path)
+                m +=1
+        else:
+            newPaths.append(path)
+            m +=1
+    print("%d paths with symbolic information and %d paths without symbolic information"%(n,m))
+    return newPaths
 
 def extractSymbExecDataAndCollectPaths(data):
     paths = []
@@ -1261,7 +1362,7 @@ def extractSymbExecDataAndCollectPaths(data):
                     else:
                         paths.append(pathData)
                         m +=1
-    print "%d paths with symbolic information and %d paths without symbolic information"%(n,m)
+    print("%d paths with symbolic information and %d paths without symbolic information"%(n,m))
     return paths
 
 def extractSymbExecDataAndCollectPathsIncremental(data):
@@ -1302,7 +1403,7 @@ def extractSymbExecDataAndCollectPathsIncremental(data):
                     else:
                         paths.append(pathData)
                         m +=1
-    print "%d paths with symbolic information and %d paths without symbolic information"%(n,m)
+    print("%d paths with symbolic information and %d paths without symbolic information"%(n,m))
     return paths
     
 
@@ -1316,41 +1417,46 @@ def extractSymbExecDataAndCollectPathsIncremental(data):
 def stepAnalysis(data, unknownInstrMode, reportName):
     intervals = generateIntervals(0,18000,2000)
     dataBySteps = groupByIntervals(data, intervals, "steps")
-    plt1 = stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=False, title="Results by steps", xLabel="Number of steps", yLabel="Number of programs")
-    plt2 = stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by steps", xLabel="Number of steps", yLabel="Percentage")
-    plt3 = plotValue(data, "steps",unknownInstrMode, title="Steps", xLabel="Programs", yLabel="Number of steps", log=False)
-    plt4 = compactStackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=True, title="", xLabel="Number of steps", yLabel="Number of programs (logscale)", onlyAnalyzed = True)
-    toPDF(reportName+"steps.pdf", [plt1, plt2, plt3,plt4])
+    plots = []
+    plots.append(stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=False, title="Results by steps", xLabel="Number of steps", yLabel="Number of programs"))
+    plots.append(stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by steps", xLabel="Number of steps", yLabel="Percentage"))
+    plots.append(plotValue(data, "steps",unknownInstrMode, title="Steps", xLabel="Programs", yLabel="Number of steps", log=False))
+    plots.append(compactStackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=True, title="", xLabel="Number of steps", yLabel="Number of programs (logscale)", onlyAnalyzed = True))
+    toPDF(reportName+"steps.pdf", plots)
 
 def instructionsAnalysis(data, unknownInstrMode, reportName):
     intervals = generateIntervals(0,1000,100)
     dataBySteps = groupByIntervals(data, intervals, "instructions")
-    plt1 = stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=False, title="Results by instructions", xLabel="Number of instructions", yLabel="Number of programs")
-    plt2 = stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by instructions", xLabel="Number of instructions", yLabel="Percentage")
-    plt3 = plotValue(data, "instructions", unknownInstrMode, title="instructions", xLabel="Programs", yLabel="Number of instructions", log=False)
-    toPDF(reportName+"instructions.pdf", [plt1, plt2, plt3])
+    plots = []
+    plots.append(stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=False, title="Results by instructions", xLabel="Number of instructions", yLabel="Number of programs"))
+    plots.append(stackedBars(dataBySteps, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by instructions", xLabel="Number of instructions", yLabel="Percentage"))
+    plots.append(plotValue(data, "instructions", unknownInstrMode, title="instructions", xLabel="Programs", yLabel="Number of instructions", log=False))
+    toPDF(reportName+"instructions.pdf", plots)
 
 def resultsAnalysis(data, unknownInstrMode, reportName, plotParsing=False):
     dataByResult = groupByClass(data, "result", unknownInstrMode)
     printSummaryResults(dataByResult)
     # plt = plotDoublePie(dataByResult, plotParsing=plotParsing)
-    plt = plotCompactDoublePie(dataByResult, plotParsing=False)
-    toPDF(reportName+"results.pdf", [plt])
+    plots = []
+    plots.append(plotCompactDoublePie(dataByResult, plotParsing=False))
+    toPDF(reportName+"results.pdf", plots)
 
 def timeAnalysis(data, unknownInstrMode, reportName):
     intervals =  generateIntervals(0,40000,5000)
     dataByTime = groupByIntervals(data, intervals, "totalTime")
-    plt1 = stackedBars(dataByTime,intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=False)
-    plt2 = plotValue(data,  "totalTime", unknownInstrMode, title="Total Time", xLabel="Programs", yLabel="Total time", log=False)
-    toPDF(reportName+"time.pdf", [plt1, plt2])
+    plots = []
+    plots.append(stackedBars(dataByTime,intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=False))
+    plots.append(plotValue(data,  "totalTime", unknownInstrMode, title="Total Time", xLabel="Programs", yLabel="Total time", log=False))
+    toPDF(reportName+"time.pdf", plots)
 
 def pathAnalysis(data, unknownInstrMode, reportName):
     intervals = generateIntervals(0,30,2)
     dataByPaths = groupByIntervals(data, intervals, "paths")
-    plt1 = stackedBars(dataByPaths, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=False, title="Results by paths", xLabel="Number of instructions", yLabel="Number of programs")
-    plt2 = stackedBars(dataByPaths, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by paths", xLabel="Number of instructions", yLabel="Percentage")
-    plt3 = plotValue(data, "paths", unknownInstrMode, title="Paths", xLabel="Programs", yLabel="Number of paths", log=False)
-    toPDF(reportName+"paths.pdf", [plt1, plt2, plt3])
+    plots = []
+    plots.append(stackedBars(dataByPaths, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=False, title="Results by paths", xLabel="Number of instructions", yLabel="Number of programs"))
+    plots.append(stackedBars(dataByPaths, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by paths", xLabel="Number of instructions", yLabel="Percentage"))
+    plots.append(plotValue(data, "paths", unknownInstrMode, title="Paths", xLabel="Programs", yLabel="Number of paths", log=False))
+    toPDF(reportName+"paths.pdf", plots)
 
 def locAnalysis(data, unknownInstrMode, reportName):
     intervals = generateIntervals(0,9000,1000)
@@ -1358,10 +1464,12 @@ def locAnalysis(data, unknownInstrMode, reportName):
     # printSummaryByIntervals(data,intervals)
     # plt3 = stackedBars(dataByLOC, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=False, title="Results by LOC", xLabel="Number of LOC", yLabel="Number of programs")
     # plt4 = stackedBars(dataByLOC, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by LOC", xLabel="Number of LOC", yLabel="Percentage")
-    plt1 = compactStackedBars(dataByLOC, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=True, title="Results by LOC", xLabel="Number of LOC", yLabel="Number of programs")
-    plt3 = compactStackedBars(dataByLOC, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=True, title="Results by LOC", xLabel="Number of LOC", yLabel="Number of programs", onlySafe = True)
-    plt2 = compactStackedBars(dataByLOC, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by LOC", xLabel="Number of LOC", yLabel="Percentage")
-    toPDF(reportName+"LOC.pdf", [plt1,plt2, plt3]) #, plt3,plt4])
+    
+    plots = []
+    plots.append(compactStackedBars(dataByLOC, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=True, title="Results by LOC", xLabel="Number of LOC", yLabel="Number of programs"))
+    plots.append(compactStackedBars(dataByLOC, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=True, title="Results by LOC", xLabel="Number of LOC", yLabel="Number of programs", onlySafe = True))
+    plots.append(compactStackedBars(dataByLOC, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by LOC", xLabel="Number of LOC", yLabel="Percentage"))
+    toPDF(reportName+"LOC.pdf", plots)
 
 def traceAnalysis(data, unknownInstrMode, reportName):
     intervals = generateIntervals(0,9000,1000)
@@ -1369,16 +1477,16 @@ def traceAnalysis(data, unknownInstrMode, reportName):
     # printSummaryByIntervals(data,intervals)
     # plt3 = stackedBars(dataByLOC, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=False, title="Results by LOC", xLabel="Number of LOC", yLabel="Number of programs")
     # plt4 = stackedBars(dataByLOC, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="Results by LOC", xLabel="Number of LOC", yLabel="Percentage")
-    plt1 = compactStackedBars(dataByTrace, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=True, title="", xLabel="Traces length", yLabel="Number of programs", onlyAnalyzed = True)
-    plt2 = compactStackedBars(dataByTrace, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="", xLabel="Traces length", yLabel="Percentage")
-    plt3 = plotValue(data, "trace", unknownInstrMode, title="Traces", xLabel="Programs", yLabel="Trace Length", log=False)
-    toPDF(reportName+"trace.pdf", [plt1,plt2, plt3])
+    plots = []
+    plots.append(compactStackedBars(dataByTrace, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=False, log=True, title="", xLabel="Traces length", yLabel="Number of programs", onlyAnalyzed = True))
+    plots.append(compactStackedBars(dataByTrace, intervals, unknownInstrMode, ignoreParsingErrors=True, percentage=True, log=False,  title="", xLabel="Traces length", yLabel="Percentage"))
+    plots.append(plotValue(data, "trace", unknownInstrMode, title="Traces", xLabel="Programs", yLabel="Trace Length", log=False))
+    toPDF(reportName+"trace.pdf", plots)
 
-def sniAnalysis(data, mode, prefix):
+def sniAnalysis(data, paths, mode, prefix):
     threshold = 5000
     dataByResult = groupByClass(data, "result", mode)
     printSummaryResults(dataByResult)
-    paths = collectPaths(data)
     print("Total paths %d"%len(paths))
     #### TODO - We must gather path information also for those functions that time-out
     #### TODO - We need partial path information for the symbolic execution 
@@ -1387,25 +1495,37 @@ def sniAnalysis(data, mode, prefix):
 
     clusteredData = groupPathsByIntervals(paths, intervals, "trace_length")
     printSummary(clusteredData, intervals, "trace_length")
-    plt1 = scatterClusteredCategorical(clusteredData, intervals, mode="sni_time", unknownInstrMode=mode,  title = "", xLabel = "", yLabel = "",  colorsMode="status", log = True)
-    plt2 = scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", colorsMode="status", log=True)
-    plt3 = scatterPlotPathsValue(paths, "trace_length", unknownInstrMode=mode, title="", xLabel="", yLabel="", colorsMode="status", log=True)
-    plt4 = scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", xValues="trace_length", colorsMode="status", threshold=threshold, log=True)
-    plt5 = pathStackedBars(clusteredData,  intervals, unknownInstrMode=mode, percentage = True, log=False, title="", xLabel="", yLabel="", colorsMode = "status", onlyAnalyzed = False, onlyTimeout = True)
+    plots = []
+    # plots.append(scatterClusteredCategorical(clusteredData, intervals, mode="sni_time", unknownInstrMode=mode,  title = "", xLabel = "", yLabel = "",  colorsMode="status", log = True))
+    # plots.append(scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", colorsMode="status", log=True))
+    # plots.append(scatterPlotPathsValue(paths, "trace_length", unknownInstrMode=mode, title="", xLabel="", yLabel="", colorsMode="status", log=True))
+    plots.append(scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, title="", xLabel="Trace length", yLabel="Running time [ms (logscale)]", xValues="trace_length", colorsMode="status", threshold=threshold, log=True,markersize =  6))
+    plots.append(pathStackedBars(clusteredData,  intervals, unknownInstrMode=mode, percentage = True, log=False, title="", xLabel="", yLabel="", colorsMode = "status", onlyAnalyzed = False, onlyTimeout = True))
     
-    toPDF(prefix+"_"+mode+"_sni.pdf", [plt1, plt2, plt3, plt4, plt5])
+    toPDF(prefix+"_"+mode+"_sni.pdf", plots)
 
-def symbExecAnalysis(data,mode, prefix):
-    paths = extractSymbExecDataAndCollectPaths(data)
+def symbExecAnalysis(data, paths, mode, prefix):
+    pathsIncr = extractSymbExecData(paths, "incremental")
+    pathsExtd = extractSymbExecData(paths, "expand")
+
+
+    # paths = extractSymbExecDataAndCollectPaths(data)
     # paths = extractSymbExecDataAndCollectPathsIncremental(data)
     print("Total paths %d"%len(paths))
-    intervals = generateIntervals(0,20000,200)
+    intervals = generateIntervals(0,40000,500)
 
-    clusteredData = groupPathsByIntervals(paths, intervals, "symbolic_length")
-    plt1 = scatterPlotPathsValue(paths, "symbolic_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", xValues="symbolic_length", colorsMode="symbolic_status", threshold=20000, log=True, avoidReps = False)
-    plt2 = scatterPlotPathsValue(paths, "symbolic_length", unknownInstrMode=mode, title="", xLabel="", yLabel="", colorsMode="symbolic_status", log=False)
-    plt3 = pathStackedBars(clusteredData,  intervals, unknownInstrMode=mode, percentage = True, log=False, title="", xLabel="", yLabel="", colorsMode = "symbolic_status", onlyAnalyzed = False, onlyTimeout = True)
-    toPDF(prefix+"_"+mode+"_symb.pdf", [plt1, plt2, plt3])
+    clusteredData = groupPathsByIntervals(pathsExtd, intervals, "symbolic_length")
+
+    plots = []
+    plots.append(scatterPlotPathsValue(pathsExtd, "symbolic_time", unknownInstrMode=mode, title="", xLabel="SMT formula's length [number of conjuncts]", yLabel="Running time [ms (logscale)]", xValues="symbolic_length", colorsMode="symbolic_status", threshold=40000, log=True, avoidReps = False,markersize=6))
+    plots.append(scatterPlotPathsValue(pathsIncr, "time_trace", unknownInstrMode=mode, title="", xLabel="Number of conjuncts", yLabel="Running time [ms (logscale)]", xValues="symbolic_length", colorsMode="noColor", threshold=40000, log=True, avoidReps = False,markersize=6))
+    plots.append(scatterPlotPathsValue(pathsIncr, "time_trace", unknownInstrMode=mode, title="", xLabel="Trace length", yLabel="Running time [ms (logscale)]", xValues="trace_length", colorsMode="noColor", threshold=5000, log=True, avoidReps = False,markersize=6))
+    plots.append(scatterPlotPathsValue(pathsIncr, "symbolic_time", unknownInstrMode=mode, title="", xLabel="Number of conjuncts", yLabel="Running time [ms (logscale)]", xValues="symbolic_length", colorsMode="noColor", threshold=40000, log=True, avoidReps = False,markersize=6))
+    plots.append(scatterPlotPathsValue(pathsIncr, "symbolic_time", unknownInstrMode=mode, title="", xLabel="Trace length", yLabel="Running time [ms (logscale)]", xValues="trace_length", colorsMode="noColor", threshold=5000, log=True, avoidReps = False,markersize=6))
+    plots.append(pathStackedBars(clusteredData,  intervals, unknownInstrMode=mode, percentage = True, log=False, title="", xLabel="", yLabel="", colorsMode = "symbolic_status", onlyAnalyzed = False, onlyTimeout = False))
+    # plots.append(scatterPlotPathsValue(paths, "symbolic_length", unknownInstrMode=mode, title="", xLabel="", yLabel="", colorsMode="symbolic_status", log=False))
+    # plots.append(pathStackedBars(clusteredData,  intervals, unknownInstrMode=mode, percentage = True, log=False, title="", xLabel="", yLabel="", colorsMode = "symbolic_status", onlyAnalyzed = False, onlyTimeout = True))
+    toPDF(prefix+"_"+mode+"_symb.pdf", plots)
 
 #############
 ############# MAIN
@@ -1413,18 +1533,20 @@ def symbExecAnalysis(data,mode, prefix):
 
 def main(argv):
     try:
-        opts, args = getopt.getopt(argv,'h', ["source=","sizes=", "unsupported-as-skip=", "unsupported-as-stop=", "mode=", "analysis=", "prefix="])
+        opts, args = getopt.getopt(argv,'h', ["source=","sizes=", "unsupported-as-skip=", "unsupported-as-stop=", "unsupported-as-skip-paths=", "unsupported-as-stop-paths=", "mode=", "analysis=", "prefix="])
     except getopt.GetoptError:
-        print "Wrong usage. See below."
-        print "Usage: dataAnalysis [options]"
-        print "Options:"
-        print "     --source <file>                 Source file"
-        print "     --sizes <file>                  JSON file with the function sizes"
-        print "     --unsupported-as-skip <file>    Logs generated using unsupported-as-skip"
-        print "     --unsupported-as-stop <file>    Logs generated using unsupported-as-stop"
-        print "     --mode  (skip|stop|merge)       Choose which data to plot"
-        print "     --analysis                      Choose analysis type"
-        print "     --prefix                        Prefix for output files (default is date)"
+        print("Wrong usage. See below.")
+        print("Usage: dataAnalysis [options]")
+        print("Options:")
+        print("     --source <file>                     Source file")
+        print("     --sizes <file>                      JSON file with the function sizes")
+        print("     --unsupported-as-skip <folder>      Logs generated using unsupported-as-skip")
+        print("     --unsupported-as-stop <folder>      Logs generated using unsupported-as-stop")
+        print("     --unsupported-as-skip-path <folder> Logs generated using unsupported-as-skip (paths)")
+        print("     --unsupported-as-stop-path <folder> Logs generated using unsupported-as-stop (paths)")
+        print("     --mode  (skip|stop|merge)           Choose which data to plot")
+        print("     --analysis                          Choose analysis type")
+        print("     --prefix                            Prefix for output files (default is date)")
         sys.exit(2)
 
     ### Initialized from cmd line
@@ -1432,24 +1554,31 @@ def main(argv):
     pathSize = None
     pathStop = None
     pathSkip = None
+    pathStopPaths = None
+    pathSkipPaths = None
     merge = False
     analysis = None
     dataSkip = None
     dataStop = None
+    dataSkipPaths = None
+    dataStopPaths = None
     pathSize = None
     sizes = None
     prefix = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     for opt, arg in opts:
         if opt == '-h':
-            print "Usage: dataAnalysis [options]"
-            print "Options:"
-            print "     --source <file>                 Source file"
-            print "     --sizes <file>                  JSON file with the function sizes"
-            print "     --unsupported-as-skip <file>    Logs generated using unsupported-as-skip"
-            print "     --unsupported-as-stop <file>    Logs generated using unsupported-as-stop"
-            print "     --mode  (skip|stop|merge)       Choose which data to plot"
-            print "     --analysis                      Choose analysis type"
-            print "     --prefix                        Prefix for output files (default is date)"
+            print("Wrong usage. See below.")
+            print("Usage: dataAnalysis [options]")
+            print("Options:")
+            print("     --source <file>                     Source file")
+            print("     --sizes <file>                      JSON file with the function sizes")
+            print("     --unsupported-as-skip <folder>      Logs generated using unsupported-as-skip")
+            print("     --unsupported-as-stop <folder>      Logs generated using unsupported-as-stop")
+            print("     --unsupported-as-skip-path <folder> Logs generated using unsupported-as-skip (paths)")
+            print("     --unsupported-as-stop-path <folder> Logs generated using unsupported-as-stop (paths)")
+            print("     --mode  (skip|stop|merge)           Choose which data to plot")
+            print("     --analysis                          Choose analysis type")
+            print("     --prefix                            Prefix for output files (default is date)")
             sys.exit()
         elif opt == "--source":
             pathSrc = arg
@@ -1459,6 +1588,10 @@ def main(argv):
             pathSkip = arg
         elif opt == "--unsupported-as-stop":
             pathStop = arg
+        elif opt == "--unsupported-as-skip-paths":
+            pathSkipPaths = arg
+        elif opt == "--unsupported-as-stop-paths":
+            pathStopPaths = arg
         elif opt == "--mode":
             mode = arg
         elif opt == "--analysis":
@@ -1466,20 +1599,29 @@ def main(argv):
         elif opt == "--prefix":
             prefix = arg
         else:
-            print "Unsupported option" + opt
-            assert False
+            print("Unsupported option" + opt)
+            sys.exit(2)
 
 
 
     ### load data
     if pathStop is not None:
         dataStop = loadData(pathStop)
+        if pathStopPaths is not None:
+            dataStopPaths = loadPaths(pathStopPaths)
+        else:
+            dataStopPaths =   collectPaths(dataStop)
     if pathSkip is not None:
         dataSkip = loadData(pathSkip) 
+        if pathSkipPaths is not None:
+            dataSkipPaths = loadPaths(pathSkipPaths)
+        else:
+            dataSkipPaths =   collectPaths(dataSkip)
     if pathSize is not None:
         sizes = loadSizes(pathSize)
     elif pathSrc is not None:
         sizes = sizesFromSource(pathSrc)
+    
     
 
     if analysis == "all":
@@ -1487,28 +1629,28 @@ def main(argv):
             if dataSkip is not None:
                 data = dataSkip
             else:
-                print "Pass a file with the --unsupported-as-skip option"
-                assert False
+                print("Pass a file with the --unsupported-as-skip option")
+                sys.exit(2)
         elif mode == "stop":
             if dataStop is not None:
                 data = dataStop
             else:
-                print "Pass a file with the --unsupported-as-stop option"
-                assert False
+                print("Pass a file with the --unsupported-as-stop option")
+                sys.exit(2)
         elif mode == "merge":
             if dataSkip is not None:
                 if dataStop is not None:
                     data = merge1(dataSkip, dataStop)
                 else:
-                    print "Pass a file with the --unsupported-as-stop option"
-                    assert False
+                    print("Pass a file with the --unsupported-as-stop option")
+                    sys.exit(2)
             else:
-                print "Pass a file with the --unsupported-as-skip option"
-                assert False
+                print("Pass a file with the --unsupported-as-skip option")
+                sys.exit(2)
         else:
-            print "Unsupported mode"
-            assert False
-        print "Number of files: %d"%len(data)
+            print("Unsupported mode")
+            sys.exit(2)
+        print("Number of files: %d"%len(data))
         resultsAnalysis(data, unknownInstrMode=mode, reportName=prefix+"_"+mode+"_")
         pathAnalysis(data, unknownInstrMode=mode, reportName=prefix+"_"+mode+"_")
         instructionsAnalysis(data, unknownInstrMode=mode, reportName=prefix+"_"+mode+"_")
@@ -1518,57 +1660,67 @@ def main(argv):
         if mode == "skip":
             if dataSkip is not None:
                 data = dataSkip
+                pathData = dataSkipPaths
             else:
-                print "Pass a file with the --unsupported-as-skip option"
-                assert False
+                print("Pass a file with the --unsupported-as-skip option")
+                sys.exit(2)
         elif mode == "stop":
             if dataStop is not None:
                 data = dataStop
+                pathData = dataStopPaths
             else:
-                print "Pass a file with the --unsupported-as-stop option"
-                assert False
-        elif mode == "merge":
-            if dataSkip is not None:
-                if dataStop is not None:
-                    data = merge1(dataSkip, dataStop)
-                else:
-                    print "Pass a file with the --unsupported-as-stop option"
-                    assert False
-            else:
-                print "Pass a file with the --unsupported-as-skip option"
-                assert False
-        else:
-            print "Unsupported mode"
-            assert False
-
-        sniAnalysis(data, mode, prefix)
-    elif analysis == "symb":
-        if mode == "skip":
-            if dataSkip is not None:
-                data = dataSkip
-            else:
-                print "Pass a file with the --unsupported-as-skip option"
-                assert False
-        elif mode == "stop":
-            if dataStop is not None:
-                data = dataStop
-            else:
-                print "Pass a file with the --unsupported-as-stop option"
-                assert False
+                print("Pass a file with the --unsupported-as-stop option")
+                sys.exit(2)
         elif mode == "merge":
             if dataSkip is not None:
                 if dataStop is not None:
                     data = merge1(dataSkip, dataStop)
                 else:
                     print("Pass a file with the --unsupported-as-stop option")
-                    assert False
+                    sys.exit(2)
             else:
                 print("Pass a file with the --unsupported-as-skip option")
-                assert False
+                sys.exit(2)
         else:
             print("Unsupported mode")
-            assert False
-        symbExecAnalysis(data,mode, prefix)
+            sys.exit(2)
+        if len(data) == 0 or len(pathData) == 0:
+            print("There are no data to process")
+            sys.exit()
+        sniAnalysis(data,pathData, mode, prefix)
+    elif analysis == "symb":
+        if mode == "skip":
+            if dataSkip is not None:
+                data = dataSkip
+                pathData = dataSkipPaths
+            else:
+                print("Pass a file with the --unsupported-as-skip option")
+                sys.exit(2)
+        elif mode == "stop":
+            if dataStop is not None:
+                data = dataStop
+                pathData = dataStopPaths
+            else:
+                print("Pass a file with the --unsupported-as-stop option")
+                sys.exit(2)
+        elif mode == "merge":
+            if dataSkip is not None:
+                if dataStop is not None:
+                    data = merge1(dataSkip, dataStop)
+                else:
+                    print("Pass a file with the --unsupported-as-stop option")
+                    sys.exit(2)
+            else:
+                print("Pass a file with the --unsupported-as-skip option")
+                sys.exit(2)
+        else:
+            print("Unsupported mode")
+            sys.exit(2)
+
+        if len(data) == 0 or len(pathData) == 0:
+            print("There are no data to process")
+            sys.exit()
+        symbExecAnalysis(data, pathData ,mode, prefix)
     elif analysis == "fnct_size":
         if dataSkip is not None:
             if dataStop is not None:
@@ -1576,21 +1728,24 @@ def main(argv):
                     ### PLOT BY FUNCTION SIZE
                     data = merge1(dataSkip, dataStop)
                     data = mergeSizes(data,sizes)
+                    if len(data) == 0:
+                        print("There are no data to process")
+                        sys.exit()
                     locAnalysis(data, unknownInstrMode="merge", reportName=prefix+"_merge_")
                     traceAnalysis(dataSkip, unknownInstrMode="skip", reportName=prefix+"_merge_")
                     traceAnalysis(dataStop, unknownInstrMode="stop", reportName=prefix+"_merge_")
                 else:
-                    print "Pass either a file containing function sizes with the --sizes option or a source file with the --source option"
-                    assert False
+                    print("Pass either a file containing function sizes with the --sizes option or a source file with the --source option")
+                    sys.exit(2)
             else:
-                print "Pass a file with the --unsupported-as-stop option"
-                assert False
+                print("Pass a file with the --unsupported-as-stop option")
+                sys.exit(2)
         else:
-            print "Pass a file with the --unsupported-as-skip option"
-            assert False
+            print("Pass a file with the --unsupported-as-skip option")
+            sys.exit(2)
     else:
-        print "Unsupported analysis"
-        assert False
+        print("Unsupported analysis")
+        sys.exit(2)
 
 if __name__ == "__main__":
    main(sys.argv[1:])

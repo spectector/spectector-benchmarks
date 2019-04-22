@@ -42,7 +42,7 @@ def read(file):
                 target = callee(line)
                 if not target == None:
                     deps[currentFnc].add(callee(line))
-    print "Total lines: %d"%total
+    print("Total lines: %d"%total)
     return (lengths,deps)
 
 def recursiveLengths(lengths, deps):
