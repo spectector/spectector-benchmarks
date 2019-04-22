@@ -104,9 +104,9 @@ store all the generated LLVM bytecode files on the folder specified.
 
 ### Obtaining linked files
 
-Then, run the `solve_dependecies.pl` script over the folder where the
-LLVM bytecode files are, that will create the assembly files without
-the missing dependencies on the project.
+Then, run the `solve_dependecies.pl` script (located on `locality`)
+over the folder where the LLVM bytecode files are, that will create
+the assembly files without the missing dependencies on the project.
 
 **For running `solve_dependecies.pl` the next programs must be
 installed_ `sed`, `llvm-nm`, `llvm-as` and `llc`**
