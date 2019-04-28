@@ -1694,10 +1694,10 @@ def printPaperSummary(functions,paths,unknownInstrMode, stepThreshold, pathThres
     print("DATA-UNK functions: %d"%len(dataUnkFncts))
 
     ### CTRL STATUS
-    ctrlPaths = [path for path in  paths if getTraceResult(path,unknownInstrMode) in {"ctrl"}]
-    ctrlUnkPaths = [path for path in  paths if getTraceResult(path,unknownInstrMode) in {"ctrlUnk"}]
-    ctrlFncts = [fnct for fnct in functions.keys() if getResult( functions[fnct], unknownInstrMode) in {"ctrl"}]
-    ctrlUnkFncts = [fnct for fnct in functions.keys() if getResult( functions[fnct], unknownInstrMode) in {"ctrlUnk"}]
+    ctrlPaths = [path for path in  paths if getTraceResult(path,unknownInstrMode) in {"control"}]
+    ctrlUnkPaths = [path for path in  paths if getTraceResult(path,unknownInstrMode) in {"controlUnk"}]
+    ctrlFncts = [fnct for fnct in functions.keys() if getResult( functions[fnct], unknownInstrMode) in {"control"}]
+    ctrlUnkFncts = [fnct for fnct in functions.keys() if getResult( functions[fnct], unknownInstrMode) in {"controlUnk"}]
     print("CTRL paths: %d"%len(ctrlPaths))
     print("CTRL-UNK paths: %d"%len(ctrlUnkPaths))
     print("CTRL functions: %d"%len(ctrlFncts))
@@ -1966,9 +1966,8 @@ def paperAnalysis(data, paths, mode, prefix):
     print("Total paths %d"%len(paths))
 
     intervals = generateIntervals(0,5000,200)
-
     clusteredData = groupPathsByIntervals(paths, intervals, "trace_length")
-    printSummary(clusteredData, intervals, "trace_length")
+    # printSummary(clusteredData, intervals, "trace_length")
 
     plots = []
     plots.append(scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, 
