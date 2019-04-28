@@ -18,6 +18,9 @@ from lineCount import sizesFromSource
 from matplotlib.backends.backend_pdf import PdfPages
 import copy
 import matplotlib
+
+from scipy.optimize import curve_fit
+from scipy.stats import linregress
 from math import sqrt
 SPINE_COLOR = 'gray'
 
@@ -141,8 +144,10 @@ def loadPaths(path):
         with open(filename) as f:
             content = f.read()
             content = sanitizePathData(content)
-            # print(content)
-            data.extend(json.loads(content))
+            jsonContent = json.loads(content)
+            for path in jsonContent:
+                path["name"] = filename
+            data.extend(jsonContent)
 
     print("Loaded %d paths"%len(data))
     return data
@@ -159,8 +164,14 @@ def collectPaths(data):
         if "paths" in functionData.keys():
             for path in functionData["paths"]:
                 if path != 'length': ## needed because we have a length entry in the json
+                    #### OLD
+                    # pathData = functionData["paths"][path]
+                    # paths.append(copy.deepcopy(pathData))
+                    #### END OLD
                     pathData = functionData["paths"][path]
-                    paths.append(copy.deepcopy(pathData))
+                    pathData = copy.deepcopy(pathData)
+                    pathData["name"] = function
+                    paths.append(pathData)
     return paths
 
 
@@ -294,8 +305,10 @@ def getResult (entry, unknownInstrMode):
         if not unknown_ins(entry):
             return "safe"
         else:
+            # print(" UNK1: "+entry["file"])
             return "safeUnk"
     elif status == "safe_bound":
+        # print(" UNK2: "+entry["file"])
         return "safeUnk"
     elif status == "data":
         if  unknownInstrMode == "stop":
@@ -369,6 +382,8 @@ def getTraceResult (entry, unknownInstrMode):
             assert False
     elif status == "unknown_noninter":
         return "timeout_sni"
+    elif status == "global_timeout":
+        return "global_timeout"
     else:
         print("Unsupported status "+status)
         assert False # unsupported value
@@ -939,17 +954,28 @@ def pathLengthTimes(dataByLength, intervals, unknownInstrMode, filterStatus, tit
     # return fig
 
 
-def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLabel="", xValues = "incremental", threshold=10000, colorsMode= "status" , markersize=None, log=False, avoidReps = False, rasterized=True):
+def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLabel="", xValues = "incremental", threshold=10000, colorsMode= "status", markersize=None, log=False, avoidReps = False, rasterized=True, plotRegression = True, splitSymExAndNonSymExData = True):
     y = []
     x = []
     colors=[]
     skip = 0
     plotted = set({})
+    globalTimeouts = 0
     i = 0
+    xSymb = []
+    ySymb = []
+    xNoSymb = []
+    yNoSymb = []
     for path in data:
+
+        result = getTraceResult(path,unknownInstrMode)
+        if result == "global_timeout":
+            globalTimeouts += 1
+            continue
+
         if mode == "sni_time":
-            if "time_solve" not in path.keys():
-                # print("Ignore data point (no time_solve)")
+            if "time_solve" not in path.keys() and not ("time_data"  in path.keys() and "time_control" in path.keys() ):
+                print("Ignore data point (no sni_time)")
                 continue
         if mode == "symbolic_time":
             if "symbolic_time" not in path.keys():
@@ -967,17 +993,21 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
             if "symbolic_length" not in path.keys():
                 # print("Ignore data point (no symbolic_length)")
                 continue
+        
         if xValues != "incremental":
             if xValues not in path.keys():
                 # print("Ignore data point (no xValue "+xValues+")")
                 continue
-        if colorsMode != "noColor" and colorsMode not in path.keys():
+        if (colorsMode != "noColor" and colorsMode != "symbConcise") and colorsMode not in path.keys():
             # print("Ignore data point (no colorsMode "+colorsMode+")")
             continue
 
 
         if mode == "sni_time":
-            val = path["time_solve"]
+            if "time_solve" in path.keys():
+                val = path["time_solve"]
+            else:
+                val = path["time_data"] + path["time_control"]
         elif mode == "symbolic_time":
             val = path["symbolic_time"]
         elif mode == "symbolic_length":
@@ -986,6 +1016,10 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
             val = path["trace_length"]
         elif mode == "time_trace":
             val = path["time_trace"]
+        elif mode == "time_data":
+            val = path["time_data"]
+        elif mode == "time_control":
+            val = path["time_control"]
         else:
             print ("Unsupported mode "+mode)
             assert False
@@ -993,6 +1027,7 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
         if xValues != "incremental" and path[xValues] > threshold:
             skip += 1
             continue
+
 
         xVal = len(x) if xValues == "incremental" else path[xValues]
         yVal = val+1 if log else val
@@ -1006,32 +1041,50 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
         else:        
             x.append(xVal)
             y.append(yVal)   
+
+        if splitSymExAndNonSymExData:
+            if result != "timeout_sni":
+                if xVal > 1 and yVal > 1:
+                    if len(path["concolic_stats"]) > 0:
+                        xSymb.append(xVal)
+                        ySymb.append(yVal)
+                    else:
+                        xNoSymb.append(xVal)
+                        yNoSymb.append(yVal)
         
         plotted.add((xVal,yVal))
 
         if colorsMode == "status":
-            if getTraceResult(path,unknownInstrMode) in {"safe", "safeUnk"}:
+            if result in {"safe", "safeUnk"}:
                 colors.append(green)
-            elif getTraceResult(path,unknownInstrMode) in {"data", "control", "dataUnk", "controlUnk"}:
+            elif result in {"data","dataUnk"}: 
                 colors.append(brightRed)
-            elif getTraceResult(path,unknownInstrMode) == "timeout_sni":
+            elif result in {"control", "controlUnk"}:
+                colors.append(darkRed)
+            elif result == "timeout_sni":
                 i+=1
                 colors.append(blue)
             else:
-                print("Unsupported status "+getTraceResult(path,unknownInstrMode))
+                print("Unsupported status "+result)
                 assert False
         elif colorsMode == "symbolic_status":
-            if path[colorsMode] == "sat":
+            symbResult = path[colorsMode]
+            if symbResult == "sat":
                 colors.append(green)
-            elif path[colorsMode] == "unsat":
+            elif symbResult == "unsat":
                 colors.append(brightRed)
-            elif path[colorsMode] == "unknown":
+            elif symbResult == "unknown":
                 colors.append(blue)
                 i+=1
             else:
-                print("Unsupported status "+path[colorsMode])
+                print("Unsupported status "+symbResult)
                 assert False
         elif colorsMode == "noColor":
+            colors.append(blue)
+        elif colorsMode == "symbConcise":
+            if len(path["concolic_stats"]) == 0:
+                colors.append(yellow)
+            else:
                 colors.append(blue)
         else:
             print("Unsupported color mode")
@@ -1041,6 +1094,7 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
     
     print("Plotted %d data"%len(plotted))
     print("Plotted timeouts %d"%i)
+    print("Ignored %d paths due to global timeouts"%globalTimeouts)
     fig = plt.figure()
     ax = plt.gca()
 
@@ -1059,8 +1113,298 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
     # plt.grid()
     plt.xlabel(xLabel)
     plt.ylabel(yLabel)
+
     
     print("Ignored %d paths over the threshold %d"%(skip,threshold))
+
+    if plotRegression:
+        print("=== Adding regression ===")
+        print("Data with symbolic information: %d"%len(xSymb))
+        print("Data without symbolic information: %d"%len(xNoSymb))
+
+        xSymb = np.array(xSymb,  np.float)
+        xNoSymb = np.array(xNoSymb,  np.float)
+        ySymb = np.array(ySymb,  np.float)
+        yNoSymb = np.array(yNoSymb,  np.float)
+
+        #### Plot linear regression for data with symbExec
+
+        ## Let's fit an exponential function.  
+        ## This looks like a line on a log-log plot.
+        # def myFunc(x, a,b, c):
+        #     return a * np.power(x,1)  
+        # def myFunc( x, a, b):
+        #     return a * np.log10(x) + b
+        if mode == "time_trace":
+            def myFunc(x, a, b, c, d):
+                return a*x**3 + b*x**2 +c*x + d
+            popt, pcov = curve_fit(myFunc, xSymb, ySymb)
+            newX = np.logspace(-2, 6,  base=10)
+            ax.plot(newX, myFunc(newX, *popt), color="blue")
+            print("[Only SymbExec data] Fitting the curve y = %.4f * x^3 + %.4f * x ^2 + %.4f * x  + %.4f "%(popt[0], popt[1], popt[2], popt[3]) )
+
+            popt, pcov = curve_fit(myFunc, xNoSymb, yNoSymb)
+            newX = np.logspace(-2, 6,  base=10)
+            ax.plot(newX, myFunc(newX, *popt), color="magenta")
+            print("[Only NoSymbExec data] Fitting the curve y = %.4f * x^3 + %.4f * x ^2 + %.4f * x  + %.4f "%(popt[0], popt[1], popt[2], popt[3]) )
+        else:
+            def myFunc(x, a, b, c, d):
+                return a*x**3 + b*x**2 +c*x + d
+            popt, pcov = curve_fit(myFunc, x, y)
+            newX = np.logspace(-2, 6,  base=10)
+            ax.plot(newX, myFunc(newX, *popt), color="blue")
+            print("[Only SymbExec data] Fitting the curve y = %.4f * x^3 + %.4f * x ^2 + %.4f * x  + %.4f "%(popt[0], popt[1], popt[2], popt[3]) )
+
+    return fig
+
+
+
+
+def doubleScatterPlotPathsValue(data, unknownInstrMode, title="", xLabel="", yLabel="", xValues = "incremental", yValues= "incremental", xThreshold=10000, yThreshold=10000, colorsMode= "status" , markersize=None, xLog=False, yLog=False, avoidReps = False, rasterized=True, plotRegression = True, splitSymExAndNonSymExData = True):
+    y = []
+    x = []
+    colors=[]
+    skip = 0
+    plotted = set({})
+    xSymb = []
+    ySymb = []
+    xNoSymb = []
+    yNoSymb = []
+    globalTimeouts = 0
+    i = 0
+    for path in data:
+
+
+        result = getTraceResult(path,unknownInstrMode)
+        if result == "global_timeout":
+            globalTimeouts += 1
+            continue
+
+        
+        if xValues != "incremental":
+            if xValues == "sni_time":
+                if "time_solve" not in path.keys() and not ("time_data"  in path.keys() and "time_control" in path.keys() ):
+                    continue    
+        elif xValues not in path.keys():
+                # print("Ignore data point (no xValue "+xValues+")")
+                continue
+        if yValues != "incremental":
+            if xValues == "sni_time":
+                 if "time_solve" not in path.keys() and not ("time_data"  in path.keys() and "time_control" in path.keys() ):
+                    continue
+            elif yValues not in path.keys():
+                # print("Ignore data point (no xValue "+xValues+")")
+                continue
+        if colorsMode != "noColor" and colorsMode not in path.keys():
+            # print("Ignore data point (no colorsMode "+colorsMode+")")
+            continue
+
+
+
+        if xValues == "sni_time":
+            if "time_solve" in path.keys():
+                xVal = path["time_solve"]
+            else:
+                xVal = path["time_data"] + path["time_control"]
+        elif xValues == "symbolic_time":
+            xVal = path["symbolic_time"]
+        elif xValues == "symbolic_length":
+            xVal = path["symbolic_length"]
+        elif xValues == "trace_length":
+            xVal = path["trace_length"]
+        elif xValues == "time_trace":
+            xVal = path["time_trace"]
+        elif xValues == "time_data":
+            xVal = path["time_data"]
+        elif xValues == "time_control":
+            xVal = path["time_control"]
+        else:
+            print ("Unsupported xValue "+xValues)
+            assert False
+
+        if yValues == "sni_time":
+            if "time_solve" in path.keys():
+                yVal = path["time_solve"]
+            else:
+                yVal = path["time_data"] + path["time_control"]
+        elif yValues == "symbolic_time":
+            yVal = path["symbolic_time"]
+        elif yValues == "symbolic_length":
+            yVal = path["symbolic_length"]
+        elif yValues == "trace_length":
+            yVal = path["trace_length"]
+        elif yValues == "time_trace":
+            yVal = path["time_trace"]
+        elif yValues == "time_data":
+            yVal = path["time_data"]
+        elif yValues == "time_control":
+            yVal = path["time_control"]
+        else:
+            print ("Unsupported yValue "+yValues)
+            assert False
+
+        # print ("(%d,%d)"%(xVal,yVal))
+
+        if xValues != "incremental" and xVal > xThreshold:
+            skip += 1
+            continue
+        
+        if yValues != "incremental" and yVal > yThreshold:
+            skip += 1
+            continue
+
+
+        # if result == "timeout_sni": 
+        #     if xVal >= 120000:
+        #         print("High")
+        #         print("Time data: %d"%path["time_data"])
+        #         print("Time control: %d"%path["time_control"])
+        #     elif xVal >= 60000 and xVal <= 90000:
+        #         print("Low")
+        #         print("Time data: %d"%path["time_data"])
+        #         print("Time control: %d"%path["time_control"])
+
+
+        xVal = len(x) if xValues == "incremental" else xVal
+        yVal = len(y) if yValues == "incremental" else yVal
+
+
+        if avoidReps:
+            if (xVal,yVal) in plotted:
+                continue
+            else:
+                x.append(xVal)
+                y.append(yVal)  
+        else:        
+            x.append(xVal)
+            y.append(yVal)   
+        
+        if splitSymExAndNonSymExData:
+            if result != "timeout_sni":
+                if xVal > 1 and yVal > 1:
+                    if len(path["concolic_stats"]) > 0:
+                        xSymb.append(xVal)
+                        ySymb.append(yVal)
+                    else:
+                        xNoSymb.append(xVal)
+                        yNoSymb.append(yVal)
+
+
+        plotted.add((xVal,yVal))
+
+        if colorsMode == "status":
+            if result in {"safe", "safeUnk"}:
+                colors.append(green)
+            elif result in {"data","dataUnk"}: 
+                colors.append(brightRed)
+            elif result in {"control", "controlUnk"}:
+                colors.append(darkRed)
+            elif result == "timeout_sni":
+                i+=1
+                colors.append(blue)
+            else:
+                print("Unsupported status "+result)
+                assert False
+        elif colorsMode == "symbolic_status":
+            symbResult = path[colorsMode]
+            if symbResult == "sat":
+                colors.append(green)
+            elif symbResult == "unsat":
+                colors.append(brightRed)
+            elif symbResult == "unknown":
+                colors.append(blue)
+                i+=1
+            else:
+                print("Unsupported status "+symbResult)
+                assert False
+        elif colorsMode == "noColor":
+                colors.append(blue)
+        else:
+            print("Unsupported color mode")
+            assert False
+
+
+    
+    print("Plotted %d data"%len(plotted))
+    print("Plotted timeouts %d"%i)
+    print("Ignored %d paths over the threshold (%d,%d)"%(skip,xThreshold, yThreshold))
+    print("Ignored %d paths due to global timeouts"%globalTimeouts)
+    fig = plt.figure()
+    ax = plt.gca()
+
+    x = np.array(x, np.float)
+    y = np.array(y, np.float)
+
+    if markersize is not None:
+        ax.scatter(x ,y , c=colors, alpha=0.3, edgecolors='none', s = markersize, rasterized=rasterized)
+    else:
+        ax.scatter(x ,y , c=colors, alpha=0.3, edgecolors='none', rasterized=rasterized)
+
+
+
+    if xLog:
+        ax.set_xscale('log')
+    if yLog:
+        ax.set_yscale('log')
+    plt.title(title)    
+    plt.ylim([0, max(x.max(),y.max())])
+    plt.xlim([0, max(x.max(),y.max())])
+    # plt.grid()
+    plt.xlabel(xLabel)
+    plt.ylabel(yLabel)
+
+    if plotRegression:
+        print("=== Adding linear regression ===")
+        print("Data with symbolic information: %d"%len(xSymb))
+        print("Data without symbolic information: %d"%len(xNoSymb))
+
+        xSymb = np.array(xSymb,  np.float)
+        xNoSymb = np.array(xNoSymb,  np.float)
+        ySymb = np.array(ySymb,  np.float)
+        yNoSymb = np.array(yNoSymb,  np.float)
+
+        #### Plot linear regression for data with symbExec
+
+        ## Let's fit an exponential function.  
+        ## This looks like a line on a log-log plot.
+        # def myFunc(x, a,b, c):
+        #     return a * np.power(x,1)  
+        def myFunc( x, a):
+            return a * x 
+        popt, pcov = curve_fit(myFunc, np.log10(xSymb), np.log10(ySymb))
+        newX = np.logspace(-2, 6, num=9, base=10)
+        plt.plot(newX, myFunc(newX, *popt), color="blue")
+        print("[Only SymbExec data] Fitting the curve y = %.4f * x"%(popt[0]) )
+
+        # def myFunc1(x, a,b):
+        #     return a * np.power(x,b)   
+        # popt, pcov = curve_fit(myFunc1, xSymb, ySymb)
+        # newX = np.logspace(-2, 6, num=9, base=10)
+        # plt.plot(newX, myFunc1(newX, *popt),marker='o', color="magenta")
+        # print("[Only SymbExec data] Fitting the curve y = %.4f * x^%4f"%(popt[0],popt[1]) )
+
+
+        
+
+        # popt, pcov = curve_fit(myFunc, xNoSymb, yNoSymb)
+        # plt.plot(newX, myFunc(newX, *popt), color="magenta")
+        # print("[Only NoSymbExec data] Fitting the curve y = %.4f * x^%.4f"%(popt[0],popt[1]) )
+
+        # newX =  np.logspace(-2, 6, num=9, base=10)
+        # slope, intercept, r_value, p_value, std_err = linregress(np.log10(xSymb), np.log10(ySymb))
+        # print("[Only SymbExec data] Fitting the curve y = %.6f * x+%.6f"%(slope,intercept) )
+        # print("[Only symbExec data] r^2_value: %f p_value: %f std_err: %.4f "%( r_value**2, p_value, std_err))
+        # ax.plot(newX, newX*slope+intercept,  marker='o', color="blue")
+        # slope, intercept, r2_value, p_value, std_err = linregress(np.log10(xNoSymb), np.log10(yNoSymb))
+        # print("[Only NoSymbExec data] slope: %.4f intercept: %.4f r_value: %f p_value: %f std_err: %.4f "%(slope, intercept, r_value, p_value, std_err))
+        # ax.plot(newX, newX*slope+intercept, color="yellow")
+
+        # newX = np.logspace(-2, 6, base=10)
+        # a, b = np.polyfit(np.log10(xSymb), np.log10(ySymb), deg=1)
+        # # fitting line
+        # newY = a * newX + b
+        # print("[Only SymbExec data] Fitting the curve y = %.4f * x+%.4f"%(a,b) )
+        # ax.plot(newX, newY, color="red")
 
     return fig
 
@@ -1117,7 +1461,7 @@ def scatterClusteredCategorical(data, intervals, mode, unknownInstrMode, title =
     
     return fig
 
-def pathStackedBars(pathsByIntervals,  intervals, unknownInstrMode, ignoreParsingErrors = True, percentage = True, log=False, title="", xLabel="", yLabel="", onlyAnalyzed = False, onlyTimeout = False, onlySafe = False, colorsMode = "status"):
+def pathStackedBars(pathsByIntervals,  intervals, unknownInstrMode, ignoreParsingErrors = True, percentage = True, log=False, title="", xLabel="", yLabel="", onlyAnalyzed = False, onlyTimeout = False, onlySafe = False, onlyConcError = False, colorsMode = "status"):
     # def autolabel(rects):
     #     # Attach some text labels.
     #     for rect in rects:
@@ -1159,10 +1503,16 @@ def pathStackedBars(pathsByIntervals,  intervals, unknownInstrMode, ignoreParsin
 
             total = float(greenVal + redVal + blueVal)
 
+
             if percentage:
-                greenVals.append(100*greenVal/total)
-                redVals.append(100*redVal/total)
-                blueVals.append(100*blueVal/total)
+                if total != 0:
+                    greenVals.append(100*greenVal/total)
+                    redVals.append(100*redVal/total)
+                    blueVals.append(100*blueVal/total)
+                else:
+                    greenVals.append(0)
+                    redVals.append(0)
+                    blueVals.append(0)
             else:
                 greenVals.append(greenVal)
                 redVals.append(redVal)
@@ -1279,6 +1629,79 @@ def printSummaryByIntervals(data,intervals, unknownInstrMode):
             fail = (segfault + parsing + timeout)
             total = success + fail
             print("[%d,%d]: ANALYZED %d (SAFE = %d, UNSAFE = %d) TIMEOUT %d TOTAL %d"%(min,max, success, (safe+safeUnk), (data + control + dataUnk + controlUnk), fail, total  ))
+
+
+
+
+def printPaperSummary(functions,paths,unknownInstrMode, stepThreshold, pathThreshold):
+
+    ### TOTAL NUMBERS
+    print("Total number of functions: %d"%len(functions.keys()))
+    print("Total number of paths: %d"%len(paths))
+
+    ### IMPACT OF PATH LIMIT
+    fnctsOverThreshold = [fnct for fnct in functions.keys() if "paths" in functions[fnct].keys() and functions[fnct]["paths"]["length"] == pathThreshold]
+    # fnctsOverThreshold = []
+    # for fnct in functions.keys():
+    #     f = functions[fnct]
+    #     if "paths" in f.keys():
+    #         p = f["paths"]
+    #         if "length" in p.keys():
+    #             if p["length"] == "25":
+    #                 fnctsOverThreshold.append(f)
+    #         else:
+    #             print(f)
+    #             assert False
+    print("Number of functions with %d paths: %d"%(pathThreshold,len(fnctsOverThreshold)))
+
+    ### IMPACT OF STEP LIMIT
+    pathsOverThreshold = [path for path in paths if path["steps"] == stepThreshold]
+    print("Number of paths with %d steps: %d"%(stepThreshold,len(pathsOverThreshold)))
+    fnctsOverStepThreshold = set([path["name"] for path in pathsOverThreshold])
+    print("Number of functions containing paths with more than %d steps: %d"%(stepThreshold,len(fnctsOverStepThreshold)))
+
+
+    ### UNSUPPORTED INSTRUCTIONS
+    pathsWithUnsupportedInstrs = [path for path in  paths if path["unsupported_ins"] > 0 or len(path["unknown_labels"]) > 0 or len(path["indirect_jumps"]) > 0]
+    fnctsWithUnsupportedInstrs = set([path["name"] for path in pathsWithUnsupportedInstrs])
+    print("Functions with unsupported instructions: %d"%len(fnctsWithUnsupportedInstrs))
+    print("Paths with unsupported instructions: %d"%len(pathsWithUnsupportedInstrs))
+
+    ### FULL ANALYSIS
+
+    fullyAnalyzedFncts = [fnct for fnct in functions.keys() if getResult(functions[fnct],unknownInstrMode) not in {"segfault", "timeout_sni", "timeout"}]
+    print("Fully analyzed functions: %d"%len(fullyAnalyzedFncts))
+    print("Timed-out functions: %d"%(len(functions.keys())-len(fullyAnalyzedFncts)))
+
+    ### SAFE STATUS
+    safePaths = [path for path in  paths if getTraceResult(path,unknownInstrMode) in {"safe"}]
+    safeUnkPaths = [path for path in  paths if getTraceResult(path,unknownInstrMode) in {"safeUnk"}]
+    safeFncts = [fnct for fnct in functions.keys() if getResult( functions[fnct], unknownInstrMode) in {"safe"}]
+    safeUnkFncts = [fnct for fnct in functions.keys() if getResult( functions[fnct], unknownInstrMode) in {"safeUnk"}]
+    print("SAFE paths: %d"%len(safePaths))
+    print("SAFE-UNK paths: %d"%len(safeUnkPaths))
+    print("SAFE functions: %d"%len(safeFncts))
+    print("SAFE-UNK functions: %d"%len(safeUnkFncts))
+
+    ### DATA STATUS
+    dataPaths = [path for path in  paths if getTraceResult(path,unknownInstrMode) in {"data"}]
+    dataUnkPaths = [path for path in  paths if getTraceResult(path,unknownInstrMode) in {"dataUnk"}]
+    dataFncts = [fnct for fnct in functions.keys() if getResult( functions[fnct], unknownInstrMode) in {"data"}]
+    dataUnkFncts = [fnct for fnct in functions.keys() if getResult( functions[fnct], unknownInstrMode) in {"dataUnk"}]
+    print("DATA paths: %d"%len(dataPaths))
+    print("DATA-UNK paths: %d"%len(dataUnkPaths))
+    print("DATA functions: %d"%len(dataFncts))
+    print("DATA-UNK functions: %d"%len(dataUnkFncts))
+
+    ### CTRL STATUS
+    ctrlPaths = [path for path in  paths if getTraceResult(path,unknownInstrMode) in {"ctrl"}]
+    ctrlUnkPaths = [path for path in  paths if getTraceResult(path,unknownInstrMode) in {"ctrlUnk"}]
+    ctrlFncts = [fnct for fnct in functions.keys() if getResult( functions[fnct], unknownInstrMode) in {"ctrl"}]
+    ctrlUnkFncts = [fnct for fnct in functions.keys() if getResult( functions[fnct], unknownInstrMode) in {"ctrlUnk"}]
+    print("CTRL paths: %d"%len(ctrlPaths))
+    print("CTRL-UNK paths: %d"%len(ctrlUnkPaths))
+    print("CTRL functions: %d"%len(ctrlFncts))
+    print("CTRL-UNK functions: %d"%len(ctrlUnkFncts))
 
 def getSymbolicStatus(stats, pathLength):
     return "sat" if (pathLength == min([key["len"] for key in stats])) else "unsat"
@@ -1488,6 +1911,7 @@ def sniAnalysis(data, paths, mode, prefix):
     dataByResult = groupByClass(data, "result", mode)
     printSummaryResults(dataByResult)
     print("Total paths %d"%len(paths))
+
     #### TODO - We must gather path information also for those functions that time-out
     #### TODO - We need partial path information for the symbolic execution 
 
@@ -1495,6 +1919,7 @@ def sniAnalysis(data, paths, mode, prefix):
 
     clusteredData = groupPathsByIntervals(paths, intervals, "trace_length")
     printSummary(clusteredData, intervals, "trace_length")
+
     plots = []
     # plots.append(scatterClusteredCategorical(clusteredData, intervals, mode="sni_time", unknownInstrMode=mode,  title = "", xLabel = "", yLabel = "",  colorsMode="status", log = True))
     # plots.append(scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, title="", xLabel="", yLabel="", colorsMode="status", log=True))
@@ -1502,6 +1927,9 @@ def sniAnalysis(data, paths, mode, prefix):
     plots.append(scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, title="", xLabel="Trace length", yLabel="Running time [ms (logscale)]", xValues="trace_length", colorsMode="status", threshold=threshold, log=True,markersize =  6))
     plots.append(pathStackedBars(clusteredData,  intervals, unknownInstrMode=mode, percentage = True, log=False, title="", xLabel="", yLabel="", colorsMode = "status", onlyAnalyzed = False, onlyTimeout = True))
     
+    plots.append(doubleScatterPlotPathsValue(paths,  unknownInstrMode=mode, title="", xLabel="SNI Time", yLabel="PathTime [ms (logscale)]", xValues="sni_time", yValues = "time_trace", colorsMode="status", xThreshold=threshold*100000, yThreshold=threshold*100000, xLog=True, yLog=True, markersize =  6))
+    plots.append(doubleScatterPlotPathsValue(paths,  unknownInstrMode=mode, title="", xLabel="SNI Time", yLabel="PathTime [ms (logscale)]", xValues="sni_time", yValues = "time_trace", colorsMode="status", xThreshold=threshold*100000, yThreshold=threshold*100000, xLog=False, yLog=False, markersize =  6))
+
     toPDF(prefix+"_"+mode+"_sni.pdf", plots)
 
 def symbExecAnalysis(data, paths, mode, prefix):
@@ -1526,6 +1954,42 @@ def symbExecAnalysis(data, paths, mode, prefix):
     # plots.append(scatterPlotPathsValue(paths, "symbolic_length", unknownInstrMode=mode, title="", xLabel="", yLabel="", colorsMode="symbolic_status", log=False))
     # plots.append(pathStackedBars(clusteredData,  intervals, unknownInstrMode=mode, percentage = True, log=False, title="", xLabel="", yLabel="", colorsMode = "symbolic_status", onlyAnalyzed = False, onlyTimeout = True))
     toPDF(prefix+"_"+mode+"_symb.pdf", plots)
+
+def paperAnalysis(data, paths, mode, prefix):
+    threshold = 5000
+    dataByResult = groupByClass(data, "result", mode)
+    printSummaryResults(dataByResult)
+
+
+    printPaperSummary(data,paths,mode, 10000, 25)
+
+    print("Total paths %d"%len(paths))
+
+    intervals = generateIntervals(0,5000,200)
+
+    clusteredData = groupPathsByIntervals(paths, intervals, "trace_length")
+    printSummary(clusteredData, intervals, "trace_length")
+
+    plots = []
+    plots.append(scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, 
+        title="", #" SNI Check", 
+        xLabel="Trace length", yLabel="Running time [ms (logscale)]", xValues="trace_length", colorsMode="status", threshold=threshold, log=True,markersize =  6))
+    plots.append(pathStackedBars(clusteredData,  intervals, unknownInstrMode=mode, percentage = True, log=False, 
+        title="", #"SNI Check", 
+        xLabel="Trace length", yLabel="Percentage of time out", colorsMode = "status", onlyAnalyzed = False, onlyTimeout = True))
+    plots.append(scatterPlotPathsValue(paths, "time_data", unknownInstrMode=mode, title= "", #"="MemCheck",
+        xLabel="Trace length", yLabel="Running time [ms (logscale)]", xValues="trace_length", colorsMode="status", threshold=threshold, log=True,markersize =  6))
+    plots.append(scatterPlotPathsValue(paths, "time_control", unknownInstrMode=mode, title= "", #"="CtrlCheck",
+        xLabel="Trace length", yLabel="Running time [ms (logscale)]", xValues="trace_length", colorsMode="status", threshold=threshold, log=True,markersize =  6))
+    plots.append(scatterPlotPathsValue(paths, "time_trace", unknownInstrMode=mode, title= "", #"="Discover Symbolic path", 
+        xLabel="Trace length", yLabel="Running time [ms (logscale)]", xValues="trace_length", colorsMode="symbConcise", threshold=threshold, log=True, avoidReps = False,markersize=6))    
+    plots.append(doubleScatterPlotPathsValue(paths,  unknownInstrMode=mode, title= "", #"="SNI vs Symbolic", 
+        xLabel="SNI Time  [ms (logscale)]", yLabel="PathTime [ms (logscale)]", xValues="sni_time", yValues = "time_trace", colorsMode="status", xThreshold=threshold*100000, yThreshold=threshold*100000, xLog=True, yLog=True, markersize =  6))
+    # plots.append(doubleScatterPlotPathsValue(paths,  unknownInstrMode=mode, title="SNI vs Symbolic", xLabel="SNI Time  [ms (logscale)]", yLabel="PathTime ", xValues="sni_time", yValues = "time_trace", colorsMode="status", xThreshold=threshold*100000, yThreshold=threshold*100000, xLog=True, yLog=False, markersize =  6))
+    # plots.append(doubleScatterPlotPathsValue(paths,  unknownInstrMode=mode, title="SNI vs Symbolic", xLabel="SNI Time", yLabel="PathTime [ms (logscale)]", xValues="sni_time", yValues = "time_trace", colorsMode="status", xThreshold=threshold*100000, yThreshold=threshold*100000, xLog=False, yLog=True, markersize =  6))
+    # plots.append(doubleScatterPlotPathsValue(paths,  unknownInstrMode=mode, title="SNI vs Symbolic", xLabel="SNI Time", yLabel="PathTime", xValues="sni_time", yValues = "time_trace", colorsMode="status", xThreshold=threshold*100000, yThreshold=threshold*100000, xLog=False, yLog=False, markersize =  6))
+
+    toPDF(prefix+"_"+mode+"_paper.pdf", plots)
 
 #############
 ############# MAIN
@@ -1688,6 +2152,38 @@ def main(argv):
             print("There are no data to process")
             sys.exit()
         sniAnalysis(data,pathData, mode, prefix)
+    elif analysis == "paper":
+        if mode == "skip":
+            if dataSkip is not None:
+                data = dataSkip
+                pathData = dataSkipPaths
+            else:
+                print("Pass a file with the --unsupported-as-skip option")
+                sys.exit(2)
+        elif mode == "stop":
+            if dataStop is not None:
+                data = dataStop
+                pathData = dataStopPaths
+            else:
+                print("Pass a file with the --unsupported-as-stop option")
+                sys.exit(2)
+        elif mode == "merge":
+            if dataSkip is not None:
+                if dataStop is not None:
+                    data = merge1(dataSkip, dataStop)
+                else:
+                    print("Pass a file with the --unsupported-as-stop option")
+                    sys.exit(2)
+            else:
+                print("Pass a file with the --unsupported-as-skip option")
+                sys.exit(2)
+        else:
+            print("Unsupported mode")
+            sys.exit(2)
+        if len(data) == 0 or len(pathData) == 0:
+            print("There are no data to process")
+            sys.exit()
+        paperAnalysis(data,pathData, mode, prefix)
     elif analysis == "symb":
         if mode == "skip":
             if dataSkip is not None:
