@@ -130,7 +130,10 @@ def loadData(path):
         with open(filename) as f:
             content = f.read()
             content = sanitizeData(content)
-            data[filename.replace(path+"/","").replace(".json","")] = json.loads(content)
+            try:
+                data[filename.replace(path+"/","").replace(".json","")] = json.loads(content)
+            except:
+                print("File %s cannot be decoded!"%(filename.replace(path+"/","").replace(".json","")))
     
     print("Loaded %d files"%len(data))
     return data
@@ -310,7 +313,7 @@ def getResult (entry, unknownInstrMode):
     elif status == "safe_bound":
         # print(" UNK2: "+entry["file"])
         return "safeUnk"
-    elif status == "data":
+    elif status == "data"  or status == "data_bound":
         if  unknownInstrMode == "stop":
             return "data"
         elif unknownInstrMode == "skip":
@@ -1138,22 +1141,27 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
         if mode == "time_trace":
             def myFunc(x, a, b, c, d):
                 return a*x**3 + b*x**2 +c*x + d
+                # return a*x**2 + b*x +c
             popt, pcov = curve_fit(myFunc, xSymb, ySymb)
-            newX = np.logspace(-2, 6,  base=10)
+            # newX = np.logspace(-2, 100,  base=10)
+            newX = np.linspace(1,5000)
             ax.plot(newX, myFunc(newX, *popt), color="blue")
             print("[Only SymbExec data] Fitting the curve y = %.4f * x^3 + %.4f * x ^2 + %.4f * x  + %.4f "%(popt[0], popt[1], popt[2], popt[3]) )
+            # print("[Only SymbExec data] Fitting the curve y = %.4f * x^2 + %.4f * x  + %.4f  "%(popt[0], popt[1], popt[2]) )
 
             popt, pcov = curve_fit(myFunc, xNoSymb, yNoSymb)
-            newX = np.logspace(-2, 6,  base=10)
+            # newX = np.logspace(-2, 6,  base=10)
             ax.plot(newX, myFunc(newX, *popt), color="magenta")
             print("[Only NoSymbExec data] Fitting the curve y = %.4f * x^3 + %.4f * x ^2 + %.4f * x  + %.4f "%(popt[0], popt[1], popt[2], popt[3]) )
+            # print("[Only NoSymbExec data] Fitting the curve y = %.4f * x^2 + %.4f * x +  %.4f "%(popt[0], popt[1], popt[2]) )
         else:
             def myFunc(x, a, b, c, d):
                 return a*x**3 + b*x**2 +c*x + d
             popt, pcov = curve_fit(myFunc, x, y)
-            newX = np.logspace(-2, 6,  base=10)
+            # newX = np.logspace(-2, 6,  base=10)
+            newX = np.linspace(1,5000)
             ax.plot(newX, myFunc(newX, *popt), color="blue")
-            print("[Only SymbExec data] Fitting the curve y = %.4f * x^3 + %.4f * x ^2 + %.4f * x  + %.4f "%(popt[0], popt[1], popt[2], popt[3]) )
+            print("Fitting the curve y = %.4f * x^3 + %.4f * x ^2 + %.4f * x  + %.4f "%(popt[0], popt[1], popt[2], popt[3]) )
 
     return fig
 
@@ -1703,6 +1711,20 @@ def printPaperSummary(functions,paths,unknownInstrMode, stepThreshold, pathThres
     print("CTRL functions: %d"%len(ctrlFncts))
     print("CTRL-UNK functions: %d"%len(ctrlUnkFncts))
 
+    ### DATA-OR-CTRL 
+    # dataorctrlPaths = set(dataPaths).union(set(ctrlPaths))
+    # dataorctrlUnkPaths = set(dataUnkPaths).union(set(ctrlUnkPaths))
+    # dataorctrlFncts = set(dataFncts).union(set(ctrlFncts))
+    # dataorctrlUnkFncts = set(dataUnkFncts).union(set(ctrlUnkFncts))
+    # print("DATA-OR-CTRL paths: %d"%len(dataorctrlPaths))
+    # print("DATA-OR-CTRL-UNK paths: %d"%len(dataorctrlUnkPaths))
+    # print("DATA-OR-CTRL functions: %d"%len(dataorctrlFncts))
+    # print("DATA-OR-CTRL-UNK functions: %d"%len(dataorctrlUnkFncts))
+
+
+    ### 
+    print("Safe and Unsafe Paths with unsupported instruction: %d"%( len(safeUnkPaths) + len(dataUnkPaths) + len(ctrlUnkPaths)  ))
+
 def getSymbolicStatus(stats, pathLength):
     return "sat" if (pathLength == min([key["len"] for key in stats])) else "unsat"
 
@@ -1960,28 +1982,33 @@ def paperAnalysis(data, paths, mode, prefix):
     dataByResult = groupByClass(data, "result", mode)
     printSummaryResults(dataByResult)
 
-
+    print("<><><><> SUMMARY")
     printPaperSummary(data,paths,mode, 10000, 25)
-
-    print("Total paths %d"%len(paths))
+    print("<><><><> PLOTS")
 
     intervals = generateIntervals(0,5000,200)
     clusteredData = groupPathsByIntervals(paths, intervals, "trace_length")
     # printSummary(clusteredData, intervals, "trace_length")
 
     plots = []
+    print("<><><><> SNI TIME")
     plots.append(scatterPlotPathsValue(paths, "sni_time", unknownInstrMode=mode, 
         title="", #" SNI Check", 
         xLabel="Trace length", yLabel="Running time [ms (logscale)]", xValues="trace_length", colorsMode="status", threshold=threshold, log=True,markersize =  6))
+    print("<><><><> SNI TOUT")
     plots.append(pathStackedBars(clusteredData,  intervals, unknownInstrMode=mode, percentage = True, log=False, 
         title="", #"SNI Check", 
         xLabel="Trace length", yLabel="Percentage of time out", colorsMode = "status", onlyAnalyzed = False, onlyTimeout = True))
+    print("<><><><> DATA TIME")
     plots.append(scatterPlotPathsValue(paths, "time_data", unknownInstrMode=mode, title= "", #"="MemCheck",
         xLabel="Trace length", yLabel="Running time [ms (logscale)]", xValues="trace_length", colorsMode="status", threshold=threshold, log=True,markersize =  6))
+    print("<><><><> CTRL TIME")
     plots.append(scatterPlotPathsValue(paths, "time_control", unknownInstrMode=mode, title= "", #"="CtrlCheck",
         xLabel="Trace length", yLabel="Running time [ms (logscale)]", xValues="trace_length", colorsMode="status", threshold=threshold, log=True,markersize =  6))
+    print("<><><><> SYMB TIME")
     plots.append(scatterPlotPathsValue(paths, "time_trace", unknownInstrMode=mode, title= "", #"="Discover Symbolic path", 
         xLabel="Trace length", yLabel="Running time [ms (logscale)]", xValues="trace_length", colorsMode="symbConcise", threshold=threshold, log=True, avoidReps = False,markersize=6))    
+    print("<><><><> SNI-VS-SYMB")
     plots.append(doubleScatterPlotPathsValue(paths,  unknownInstrMode=mode, title= "", #"="SNI vs Symbolic", 
         xLabel="SNI Time  [ms (logscale)]", yLabel="PathTime [ms (logscale)]", xValues="sni_time", yValues = "time_trace", colorsMode="status", xThreshold=threshold*100000, yThreshold=threshold*100000, xLog=True, yLog=True, markersize =  6))
     # plots.append(doubleScatterPlotPathsValue(paths,  unknownInstrMode=mode, title="SNI vs Symbolic", xLabel="SNI Time  [ms (logscale)]", yLabel="PathTime ", xValues="sni_time", yValues = "time_trace", colorsMode="status", xThreshold=threshold*100000, yThreshold=threshold*100000, xLog=True, yLog=False, markersize =  6))
