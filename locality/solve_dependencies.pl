@@ -24,13 +24,18 @@
 
 :- data show_error/0.
 
-% main(Args) :- % TODO: Parse args (Input & Output)
-% 	parse_args(Args,Opts),
-% 	( member(indir(Indir), Opts), member(outdir(Outdir), Opts) -> true
-% 	; show_help
-% 	),
-% 	directory_files(Indir, Files), fill_dependency(Indir, Files),
-% 	link(Indir, Files, Outdir), write_string("Files linked\n").
+main(Args) :- % TODO: Get an only file (general.s) with a specific arg
+	parse_args(Args,Opts),
+	( member(indir(Indir), Opts), member(outdir(Outdir), Opts) -> true
+	; show_help
+	),
+	directory_files(Indir, Files),
+	( member(general_file(OutFile), Opts) ->
+	  link_all(~filter_and_append(Indir, Files), Outdir, OutFile)
+	; fill_dependency(Indir, Files),
+	  link(Indir, Files, Outdir)
+	  ),
+	  write_string("Files linked and assembled correctly\n").
 
 :- export(fill_dependency/2).
 fill_dependency(Indir, Files) :-
@@ -42,11 +47,12 @@ fill_dependency(Indir, Files) :-
 
 parse_args(['-i',Indir|Args]) := [indir(Indir)|~parse_args(Args)] :-  !. % TODO: test folder existence
 parse_args(['-o',OutDir|Args]) := [outdir(OutDir)|~parse_args(Args)] :-  !.
+parse_args(['-l',File|Args]) := [general_file(File)|~parse_args(Args)] :-  !.
 parse_args(['--show-error'|Args]) := ~parse_args(Args) :-  !, set_fact(show_error).
-parse_args([A|Args]) := ~parse_args(Args) :- !, write(['Ignored argument: ', A]).
+parse_args([A|Args]) := ~parse_args(Args) :- !, write(['Ignored argument: ', A]), nl.
 parse_args([],[]) :- !.
 
-show_help :- write_string("Unrecognized argumets\nUsage:\n\tsolve_dependencies -i INPUT_DIR -o OUT_DIR\n"), halt(1).
+show_help :- write_string("Unrecognized argumets\nUsage:\n\tsolve_dependencies -i INPUT_DIR -o OUT_DIR [-l FILE.ll]\n"), halt(1).
 
 fill(_Dir, []).
 fill(Dir, [File|LS]) :-
@@ -111,10 +117,12 @@ collect_and_solve(OutDir, SourceDir, File) :-
 	retractall_fact(files_to_link(_)), %For avoiding circular dependencies
 	collect(SourceDir, ~findall(X,files_deps(File,X))),
 	% File is added at the begining because is the file we want the results
-	( process_call(path('llvm-link'), [~path_concat(SourceDir, File)|~append(~findall(Y, files_to_link(Y)), ['--only-needed', '-o', ~path_concat(OutDir, File)])], [status(_)]) ->
+	( path_concat(OutDir, File, OutFile),
+	  process_call(path('llvm-link'), [~path_concat(SourceDir, File)|~append(~findall(Y, files_to_link(Y)), ['--only-needed', '-o', OutFile])], [status(_)]),
+	  process_call(path('llc'), [OutFile], [status(_)]) ->
 	  true
 	; true % If link fails % For possible errors
-	).
+	). % TODO: Generate .s file
 
 collect(_SourceDir, []).
 collect(SourceDir, [ToLink|Ls]) :-
@@ -127,3 +135,13 @@ collect(SourceDir, [ToLink|Ls]) :-
 
 error_output([]) :- nl(user_error).
 error_output([X|XS]) :- write(user_error, X), error_output(XS).
+
+link_all(Files, OutDir, File) :-
+	path_concat(OutDir, File, OutFile),
+	process_call(path('llvm-link'), ~append(Files,['-o', OutFile]), []),
+	process_call(path('llc'), [OutFile], []).
+
+filter_and_append(_Dir, [], []).
+filter_and_append(Dir, [File|L]) := [~path_concat(Dir, File)|~filter_and_append(Dir, L)] :-
+	path_splitext(File, _Basename, '.ll'), !.
+filter_and_append(Dir, [_|L]) := ~filter_and_append(Dir, L).
