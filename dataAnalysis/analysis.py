@@ -325,7 +325,7 @@ def getResult (entry, unknownInstrMode):
             return getResult (entry, entry["mode"])
         else:
             assert False
-    elif status == "control":
+    elif status == "control" or status == "control_bound":
         if  unknownInstrMode == "stop":
             return "control"
         elif unknownInstrMode == "skip":
@@ -957,7 +957,7 @@ def pathLengthTimes(dataByLength, intervals, unknownInstrMode, filterStatus, tit
     # return fig
 
 
-def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLabel="", xValues = "incremental", threshold=10000, colorsMode= "status", markersize=None, log=False, avoidReps = False, rasterized=True, plotRegression = True, splitSymExAndNonSymExData = True):
+def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLabel="", xValues = "incremental", threshold=10000, colorsMode= "status", markersize=None, log=False, avoidReps = False, rasterized=True, plotRegression = False, splitSymExAndNonSymExData = True):
     y = []
     x = []
     colors=[]
@@ -1033,7 +1033,8 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
 
 
         xVal = len(x) if xValues == "incremental" else path[xValues]
-        yVal = val+1 if log else val
+        # yVal = val+1 if log else val
+        yVal = val
 
         if avoidReps:
             if (xVal,yVal) in plotted:
@@ -1047,7 +1048,7 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
 
         if splitSymExAndNonSymExData:
             if result != "timeout_sni":
-                if xVal > 1 and yVal > 1:
+                # if xVal > 1 and yVal > 1:
                     if len(path["concolic_stats"]) > 0:
                         xSymb.append(xVal)
                         ySymb.append(yVal)
@@ -1113,6 +1114,8 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
     plt.title(title)    
     plt.ylim([0, y.max()])
     plt.xlim([0, x.max()])
+    print("X : min %.4f max %.4f"%(x.min(), x.max()))
+    print("Y : min %.4f max %.4f"%(y.min(), y.max()))
     # plt.grid()
     plt.xlabel(xLabel)
     plt.ylabel(yLabel)
@@ -1168,7 +1171,7 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
 
 
 
-def doubleScatterPlotPathsValue(data, unknownInstrMode, title="", xLabel="", yLabel="", xValues = "incremental", yValues= "incremental", xThreshold=10000, yThreshold=10000, colorsMode= "status" , markersize=None, xLog=False, yLog=False, avoidReps = False, rasterized=True, plotRegression = True, splitSymExAndNonSymExData = True):
+def doubleScatterPlotPathsValue(data, unknownInstrMode, title="", xLabel="", yLabel="", xValues = "incremental", yValues= "incremental", xThreshold=10000, yThreshold=10000, colorsMode= "status" , markersize=None, xLog=False, yLog=False, avoidReps = False, rasterized=True, plotRegression = False, splitSymExAndNonSymExData = True):
     y = []
     x = []
     colors=[]
@@ -1289,7 +1292,7 @@ def doubleScatterPlotPathsValue(data, unknownInstrMode, title="", xLabel="", yLa
         
         if splitSymExAndNonSymExData:
             if result != "timeout_sni":
-                if xVal > 1 and yVal > 1:
+                # if xVal > 1 and yVal > 1:
                     if len(path["concolic_stats"]) > 0:
                         xSymb.append(xVal)
                         ySymb.append(yVal)
@@ -1357,6 +1360,10 @@ def doubleScatterPlotPathsValue(data, unknownInstrMode, title="", xLabel="", yLa
     plt.title(title)    
     plt.ylim([0, max(x.max(),y.max())])
     plt.xlim([0, max(x.max(),y.max())])
+    print("X : min %.4f max %.4f"%(x.min(), x.max()))
+    print("Y : min %.4f max %.4f"%(y.min(), y.max()))
+
+
     # plt.grid()
     plt.xlabel(xLabel)
     plt.ylabel(yLabel)
