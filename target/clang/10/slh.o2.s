@@ -14,8 +14,10 @@ victim_function_v10:                    # @victim_function_v10
 	jbe	.LBB0_1
 # %bb.2:
 	cmovbeq	%rcx, %rax
+	leaq	array1(%rip), %rdx
 	orq	%rax, %rdi
-	cmpb	%sil, array1(%rdi)
+	orq	%rax, %rdx
+	cmpb	%sil, (%rdi,%rdx)
 	jne	.LBB0_3
 # %bb.4:
 	cmovneq	%rcx, %rax
@@ -62,3 +64,4 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

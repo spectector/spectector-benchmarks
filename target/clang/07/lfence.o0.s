@@ -12,29 +12,33 @@ victim_function_v07:                    # @victim_function_v07
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
 	movq	%rdi, -8(%rbp)
-	movq	-8(%rbp), %rax
-	cmpq	victim_function_v07.last_x, %rax
+	movq	-8(%rbp), %rdi
+	cmpq	victim_function_v07.last_x(%rip), %rdi
 	jne	.LBB0_2
 # %bb.1:
 	lfence
 	movq	-8(%rbp), %rax
-	movzbl	array1(,%rax), %eax
-	shll	$9, %eax
-	cltq
-	movzbl	array2(,%rax), %eax
-	movzbl	temp, %ecx
-	andl	%eax, %ecx
-	movb	%cl, temp
+	leaq	array1(%rip), %rcx
+	movzbl	(%rcx,%rax), %edx
+	shll	$9, %edx
+	movslq	%edx, %rax
+	leaq	array2(%rip), %rcx
+	movzbl	(%rcx,%rax), %edx
+	movzbl	temp(%rip), %esi
+	andl	%edx, %esi
+	movb	%sil, %dil
+	movb	%dil, temp(%rip)
 .LBB0_2:
 	lfence
 	movq	-8(%rbp), %rax
-	movl	array1_size, %ecx
-	cmpq	%rcx, %rax
+	movl	array1_size(%rip), %ecx
+	movl	%ecx, %edx
+	cmpq	%rdx, %rax
 	jae	.LBB0_4
 # %bb.3:
 	lfence
 	movq	-8(%rbp), %rax
-	movq	%rax, victim_function_v07.last_x
+	movq	%rax, victim_function_v07.last_x(%rip)
 .LBB0_4:
 	lfence
 	popq	%rbp
@@ -74,3 +78,10 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig
+	.addrsig_sym victim_function_v07
+	.addrsig_sym array1_size
+	.addrsig_sym array1
+	.addrsig_sym temp
+	.addrsig_sym victim_function_v07.last_x
+	.addrsig_sym array2

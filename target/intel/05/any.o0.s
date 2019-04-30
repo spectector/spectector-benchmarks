@@ -9,25 +9,25 @@
 # mark_begin;
 
 	.globl victim_function_v05
-# --- victim_function_v05(int)
+# --- victim_function_v05(size_t)
 victim_function_v05:
-# parameter 1: %edi
+# parameter 1: %rdi
 ..B1.1:                         # Preds ..B1.0
                                 # Execution count [0.00e+00]
 	.cfi_startproc
 ..___tag_value_victim_function_v05.1:
 ..L2:
-                                                          #10.33
-        pushq     %rbp                                          #10.33
+                                                          #10.36
+        pushq     %rbp                                          #10.36
 	.cfi_def_cfa_offset 16
-        movq      %rsp, %rbp                                    #10.33
+        movq      %rsp, %rbp                                    #10.36
 	.cfi_def_cfa 6, 16
 	.cfi_offset 6, -16
-        subq      $16, %rsp                                     #10.33
-        movl      %edi, -8(%rbp)                                #10.33
-        movl      -8(%rbp), %eax                                #12.7
+        subq      $16, %rsp                                     #10.36
+        movq      %rdi, -8(%rbp)                                #10.36
+        movq      -8(%rbp), %rax                                #12.7
         movl      array1_size(%rip), %edx                       #12.11
-        cmpl      %edx, %eax                                    #12.11
+        cmpq      %rdx, %rax                                    #12.11
         jae       ..B1.5        # Prob 50%                      #12.11
                                 # LOE rbx rbp rsp r12 r13 r14 r15 rip
 ..B1.2:                         # Preds ..B1.1

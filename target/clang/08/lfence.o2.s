@@ -11,9 +11,11 @@ victim_function_v08:                    # @victim_function_v08
 	cmpq	%rdi, %rax
 	leaq	1(%rdi), %rax
 	cmovaq	%rax, %rcx
-	movzbl	array1(%rcx), %eax
+	leaq	array1(%rip), %rax
+	movzbl	(%rcx,%rax), %eax
 	shlq	$9, %rax
-	movb	array2(%rax), %al
+	leaq	array2(%rip), %rcx
+	movb	(%rax,%rcx), %al
 	andb	%al, temp(%rip)
 	retq
 .Lfunc_end0:
@@ -47,3 +49,4 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

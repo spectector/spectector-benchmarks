@@ -11,49 +11,73 @@ victim_function_v05:                    # @victim_function_v05
 	.cfi_offset %rbp, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
-	movq	$-1, %rcx
-	movq	%rsp, %rax
-	sarq	$63, %rax
-	movq	%rdi, -16(%rbp)
-	movq	-16(%rbp), %rdx
-	movl	array1_size, %esi
-	cmpq	%rsi, %rdx
-	jae	.LBB0_1
-	jmp	.LBB0_2
-.LBB0_1:
-	cmovbq	%rcx, %rax
-	jmp	.LBB0_7
-.LBB0_2:
-	cmovaeq	%rcx, %rax
-	movq	-16(%rbp), %rdx
-	subq	$1, %rdx
-	movl	%edx, -4(%rbp)
-.LBB0_3:                                # =>This Inner Loop Header: Depth=1
-	cmpl	$0, -4(%rbp)
-	jl	.LBB0_6
-# %bb.4:                                #   in Loop: Header=BB0_3 Depth=1
-	cmovlq	%rcx, %rax
-	movslq	-4(%rbp), %rdx
-	movzbl	array1(,%rdx), %edx
-	movl	%eax, %esi
-	orl	%edx, %esi
-	shll	$9, %esi
-	movslq	%esi, %rdx
-	movzbl	array2(,%rdx), %edx
-	movl	%eax, %esi
-	orl	%edx, %esi
-	movzbl	temp, %edx
-	andl	%esi, %edx
-	movb	%dl, temp
-# %bb.5:                                #   in Loop: Header=BB0_3 Depth=1
-	movl	-4(%rbp), %edx
-	addl	$-1, %edx
-	movl	%edx, -4(%rbp)
-	jmp	.LBB0_3
-.LBB0_6:
-	cmovgeq	%rcx, %rax
-	jmp	.LBB0_7
+	movq	$-1, %rax
+	movq	%rsp, %rcx
+	sarq	$63, %rcx
+	movq	%rdi, -8(%rbp)
+	movq	-8(%rbp), %rdi
+	movl	array1_size(%rip), %edx
+	movl	%edx, %esi
+	cmpq	%rsi, %rdi
+	movq	%rax, -24(%rbp)         # 8-byte Spill
+	movq	%rcx, -32(%rbp)         # 8-byte Spill
+	jae	.LBB0_7
+	jmp	.LBB0_1
 .LBB0_7:
+	movq	-32(%rbp), %rax         # 8-byte Reload
+	movq	-24(%rbp), %rcx         # 8-byte Reload
+	cmovbq	%rcx, %rax
+	movq	%rax, -40(%rbp)         # 8-byte Spill
+	jmp	.LBB0_6
+.LBB0_1:
+	movq	-32(%rbp), %rax         # 8-byte Reload
+	movq	-24(%rbp), %rcx         # 8-byte Reload
+	cmovaeq	%rcx, %rax
+	movq	-8(%rbp), %rdx
+	subq	$1, %rdx
+	movl	%edx, %esi
+	movl	%esi, -12(%rbp)
+	movq	%rax, -48(%rbp)         # 8-byte Spill
+.LBB0_2:                                # =>This Inner Loop Header: Depth=1
+	movq	-48(%rbp), %rax         # 8-byte Reload
+	cmpl	$0, -12(%rbp)
+	movq	%rax, -56(%rbp)         # 8-byte Spill
+	jl	.LBB0_5
+# %bb.3:                                #   in Loop: Header=BB0_2 Depth=1
+	movq	-56(%rbp), %rax         # 8-byte Reload
+	movq	-24(%rbp), %rcx         # 8-byte Reload
+	cmovlq	%rcx, %rax
+	movslq	-12(%rbp), %rdx
+	leaq	array1(%rip), %rsi
+	movzbl	(%rsi,%rdx), %edi
+	movl	%eax, %r8d
+	orl	%edi, %r8d
+	shll	$9, %r8d
+	movslq	%r8d, %rdx
+	leaq	array2(%rip), %rsi
+	movzbl	(%rsi,%rdx), %edi
+	movl	%eax, %r8d
+	orl	%edi, %r8d
+	movzbl	temp(%rip), %edi
+	andl	%r8d, %edi
+	movb	%dil, %r9b
+	movb	%r9b, temp(%rip)
+	movq	%rax, -64(%rbp)         # 8-byte Spill
+# %bb.4:                                #   in Loop: Header=BB0_2 Depth=1
+	movl	-12(%rbp), %eax
+	addl	$-1, %eax
+	movl	%eax, -12(%rbp)
+	movq	-64(%rbp), %rcx         # 8-byte Reload
+	movq	%rcx, -48(%rbp)         # 8-byte Spill
+	jmp	.LBB0_2
+.LBB0_5:
+	movq	-56(%rbp), %rax         # 8-byte Reload
+	movq	-24(%rbp), %rcx         # 8-byte Reload
+	cmovgeq	%rcx, %rax
+	movq	%rax, -40(%rbp)         # 8-byte Spill
+	jmp	.LBB0_6
+.LBB0_6:
+	movq	-40(%rbp), %rax         # 8-byte Reload
 	shlq	$47, %rax
 	orq	%rax, %rsp
 	popq	%rbp
@@ -90,3 +114,9 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig
+	.addrsig_sym victim_function_v05
+	.addrsig_sym array1_size
+	.addrsig_sym array1
+	.addrsig_sym temp
+	.addrsig_sym array2

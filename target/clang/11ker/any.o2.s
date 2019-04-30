@@ -10,9 +10,11 @@ victim_function_v11:                    # @victim_function_v11
 	cmpq	%rdi, %rax
 	jbe	.LBB0_2
 # %bb.1:
-	movzbl	array1(%rdi), %eax
+	leaq	array1(%rip), %rax
+	movzbl	(%rdi,%rax), %eax
 	shlq	$9, %rax
-	movb	array2(%rax), %al
+	leaq	array2(%rip), %rcx
+	movb	(%rax,%rcx), %al
 	subb	%al, temp(%rip)
 .LBB0_2:
 	retq
@@ -28,7 +30,7 @@ mymemcmp:                               # @mymemcmp
 # %bb.0:
 	testq	%rdx, %rdx
 	je	.LBB1_4
-# %bb.1:                                # %.preheader
+# %bb.1:
 	xorl	%r8d, %r8d
 	.p2align	4, 0x90
 .LBB1_2:                                # =>This Inner Loop Header: Depth=1
@@ -75,3 +77,4 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

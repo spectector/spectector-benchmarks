@@ -11,23 +11,27 @@ victim_function_v10:                    # @victim_function_v10
 	.cfi_offset %rbp, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
-	movq	%rdi, -16(%rbp)
-	movb	%sil, -1(%rbp)
-	movq	-16(%rbp), %rax
-	movl	array1_size, %ecx
-	cmpq	%rcx, %rax
+	movb	%sil, %al
+	movq	%rdi, -8(%rbp)
+	movb	%al, -9(%rbp)
+	movq	-8(%rbp), %rdi
+	movl	array1_size(%rip), %esi
+	movl	%esi, %ecx
+	cmpq	%rcx, %rdi
 	jae	.LBB0_4
 # %bb.1:
-	movq	-16(%rbp), %rax
-	movzbl	array1(,%rax), %eax
-	movzbl	-1(%rbp), %ecx
-	cmpl	%ecx, %eax
+	movq	-8(%rbp), %rax
+	leaq	array1(%rip), %rcx
+	movzbl	(%rcx,%rax), %edx
+	movzbl	-9(%rbp), %esi
+	cmpl	%esi, %edx
 	jne	.LBB0_3
 # %bb.2:
-	movzbl	array2, %eax
-	movzbl	temp, %ecx
+	movzbl	array2(%rip), %eax
+	movzbl	temp(%rip), %ecx
 	andl	%eax, %ecx
-	movb	%cl, temp
+	movb	%cl, %dl
+	movb	%dl, temp(%rip)
 .LBB0_3:
 	jmp	.LBB0_4
 .LBB0_4:
@@ -65,3 +69,9 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig
+	.addrsig_sym victim_function_v10
+	.addrsig_sym array1_size
+	.addrsig_sym array1
+	.addrsig_sym temp
+	.addrsig_sym array2

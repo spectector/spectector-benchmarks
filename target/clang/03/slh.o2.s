@@ -11,7 +11,8 @@ leakByteNoinlineFunction:               # @leakByteNoinlineFunction
 	sarq	$63, %rax
 	movl	%edi, %ecx
 	shlq	$9, %rcx
-	movb	array2(%rcx), %cl
+	leaq	array2(%rip), %rdx
+	movb	(%rcx,%rdx), %cl
 	orb	%al, %cl
 	andb	%cl, temp(%rip)
 	shlq	$47, %rax
@@ -35,7 +36,8 @@ victim_function_v03:                    # @victim_function_v03
 	jbe	.LBB1_1
 # %bb.2:
 	cmovbeq	%rcx, %rax
-	movzbl	array1(%rdi), %edi
+	leaq	array1(%rip), %rcx
+	movzbl	(%rdi,%rcx), %edi
 	orl	%eax, %edi
 	shlq	$47, %rax
 	orq	%rax, %rsp
@@ -76,3 +78,4 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

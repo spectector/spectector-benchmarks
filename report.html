@@ -1,0 +1,17 @@
+<meta charset="utf-8"/>
+<html>
+  <head>
+    <h1>Results</h1>
+    <p>To show another JSON stats file, append its absolute path to the url, i.e. <em>consult.html?results2/stats.json</em></p>
+    <button type="button" onclick="show_general()">Show general table</button>
+    <button type="button" onclick="show_descriptive()">Show descriptive table</button>
+  </head>
+  <body>
+    <h2 id="stats"></h2>
+    <a id="buttons"></a>
+    <a id="conc_stats"></a>
+    <a id="data"></a>
+    <script src="process_stats.js"></script>
+    <script>loadjs(window.location.search.substring(1), "results/stats.json", init);</script>
+  </body>
+</html>

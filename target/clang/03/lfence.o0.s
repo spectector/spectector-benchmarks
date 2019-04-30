@@ -11,14 +11,17 @@ leakByteNoinlineFunction:               # @leakByteNoinlineFunction
 	.cfi_offset %rbp, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
-	movb	%dil, -1(%rbp)
-	movzbl	-1(%rbp), %eax
-	shll	$9, %eax
-	cltq
-	movzbl	array2(,%rax), %eax
-	movzbl	temp, %ecx
-	andl	%eax, %ecx
-	movb	%cl, temp
+	movb	%dil, %al
+	movb	%al, -1(%rbp)
+	movzbl	-1(%rbp), %edi
+	shll	$9, %edi
+	movslq	%edi, %rcx
+	leaq	array2(%rip), %rdx
+	movzbl	(%rdx,%rcx), %edi
+	movzbl	temp(%rip), %esi
+	andl	%edi, %esi
+	movb	%sil, %al
+	movb	%al, temp(%rip)
 	popq	%rbp
 	.cfi_def_cfa %rsp, 8
 	retq
@@ -39,14 +42,16 @@ victim_function_v03:                    # @victim_function_v03
 	.cfi_def_cfa_register %rbp
 	subq	$16, %rsp
 	movq	%rdi, -8(%rbp)
-	movq	-8(%rbp), %rax
-	movl	array1_size, %ecx
-	cmpq	%rcx, %rax
+	movq	-8(%rbp), %rdi
+	movl	array1_size(%rip), %eax
+	movl	%eax, %ecx
+	cmpq	%rcx, %rdi
 	jae	.LBB1_2
 # %bb.1:
 	lfence
 	movq	-8(%rbp), %rax
-	movzbl	array1(,%rax), %edi
+	leaq	array1(%rip), %rcx
+	movzbl	(%rcx,%rax), %edi
 	callq	leakByteNoinlineFunction
 .LBB1_2:
 	lfence
@@ -85,3 +90,10 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig
+	.addrsig_sym leakByteNoinlineFunction
+	.addrsig_sym victim_function_v03
+	.addrsig_sym array1_size
+	.addrsig_sym array1
+	.addrsig_sym temp
+	.addrsig_sym array2

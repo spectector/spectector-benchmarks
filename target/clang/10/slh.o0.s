@@ -11,41 +11,62 @@ victim_function_v10:                    # @victim_function_v10
 	.cfi_offset %rbp, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
-	movq	$-1, %rcx
-	movq	%rsp, %rax
-	sarq	$63, %rax
-	movq	%rdi, -16(%rbp)
-	movb	%sil, -1(%rbp)
-	movq	-16(%rbp), %rdx
-	movl	array1_size, %esi
-	cmpq	%rsi, %rdx
-	jae	.LBB0_1
-	jmp	.LBB0_2
-.LBB0_1:
-	cmovbq	%rcx, %rax
-	jmp	.LBB0_6
-.LBB0_2:
-	cmovaeq	%rcx, %rax
-	movq	-16(%rbp), %rdx
-	movzbl	array1(,%rdx), %edx
-	movl	%eax, %esi
-	orl	%edx, %esi
-	movzbl	-1(%rbp), %edx
-	cmpl	%edx, %esi
-	jne	.LBB0_3
-	jmp	.LBB0_4
-.LBB0_3:
-	cmoveq	%rcx, %rax
-	jmp	.LBB0_5
-.LBB0_4:
-	cmovneq	%rcx, %rax
-	movzbl	array2, %ecx
-	movzbl	temp, %edx
-	andl	%ecx, %edx
-	movb	%dl, temp
+	movq	$-1, %rax
+	movq	%rsp, %rcx
+	sarq	$63, %rcx
+	movb	%sil, %dl
+	movq	%rdi, -8(%rbp)
+	movb	%dl, -9(%rbp)
+	movq	-8(%rbp), %rdi
+	movl	array1_size(%rip), %esi
+	movl	%esi, %r8d
+	cmpq	%r8, %rdi
+	movq	%rax, -24(%rbp)         # 8-byte Spill
+	movq	%rcx, -32(%rbp)         # 8-byte Spill
+	jae	.LBB0_5
+	jmp	.LBB0_1
 .LBB0_5:
-	jmp	.LBB0_6
+	movq	-32(%rbp), %rax         # 8-byte Reload
+	movq	-24(%rbp), %rcx         # 8-byte Reload
+	cmovbq	%rcx, %rax
+	movq	%rax, -40(%rbp)         # 8-byte Spill
+	jmp	.LBB0_4
+.LBB0_1:
+	movq	-32(%rbp), %rax         # 8-byte Reload
+	movq	-24(%rbp), %rcx         # 8-byte Reload
+	cmovaeq	%rcx, %rax
+	movq	-8(%rbp), %rdx
+	leaq	array1(%rip), %rsi
+	movzbl	(%rsi,%rdx), %edi
+	movl	%eax, %r8d
+	orl	%edi, %r8d
+	movzbl	-9(%rbp), %edi
+	cmpl	%edi, %r8d
+	movq	%rax, -48(%rbp)         # 8-byte Spill
+	jne	.LBB0_6
+	jmp	.LBB0_2
 .LBB0_6:
+	movq	-48(%rbp), %rax         # 8-byte Reload
+	movq	-24(%rbp), %rcx         # 8-byte Reload
+	cmoveq	%rcx, %rax
+	movq	%rax, -56(%rbp)         # 8-byte Spill
+	jmp	.LBB0_3
+.LBB0_2:
+	movq	-48(%rbp), %rax         # 8-byte Reload
+	movq	-24(%rbp), %rcx         # 8-byte Reload
+	cmovneq	%rcx, %rax
+	movzbl	array2(%rip), %edx
+	movzbl	temp(%rip), %esi
+	andl	%edx, %esi
+	movb	%sil, %dil
+	movb	%dil, temp(%rip)
+	movq	%rax, -56(%rbp)         # 8-byte Spill
+.LBB0_3:
+	movq	-56(%rbp), %rax         # 8-byte Reload
+	movq	%rax, -40(%rbp)         # 8-byte Spill
+	jmp	.LBB0_4
+.LBB0_4:
+	movq	-40(%rbp), %rax         # 8-byte Reload
 	shlq	$47, %rax
 	orq	%rax, %rsp
 	popq	%rbp
@@ -82,3 +103,9 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig
+	.addrsig_sym victim_function_v10
+	.addrsig_sym array1_size
+	.addrsig_sym array1
+	.addrsig_sym temp
+	.addrsig_sym array2

@@ -17,33 +17,33 @@ is_x_safe:
 	.cfi_startproc
 ..___tag_value_is_x_safe.1:
 ..L2:
-                                                          #10.25
-        pushq     %rbp                                          #10.25
+                                                          #16.38
+        pushq     %rbp                                          #16.38
 	.cfi_def_cfa_offset 16
-        movq      %rsp, %rbp                                    #10.25
+        movq      %rsp, %rbp                                    #16.38
 	.cfi_def_cfa 6, 16
 	.cfi_offset 6, -16
-        subq      $16, %rsp                                     #10.25
-        movq      %rdi, -16(%rbp)                               #10.25
-        movq      -16(%rbp), %rax                               #10.32
-        movl      array1_size(%rip), %edx                       #10.36
-        cmpq      %rdx, %rax                                    #10.36
-        jb        ..B1.3        # Prob 50%                      #10.36
+        subq      $16, %rsp                                     #16.38
+        movq      %rdi, -16(%rbp)                               #16.38
+        movq      -16(%rbp), %rax                               #16.44
+        movl      array1_size(%rip), %edx                       #16.48
+        cmpq      %rdx, %rax                                    #16.48
+        jb        ..B1.3        # Prob 50%                      #16.48
                                 # LOE rbx rbp rsp r12 r13 r14 r15 rip
 ..B1.2:                         # Preds ..B1.1
                                 # Execution count [0.00e+00]
-        movl      $0, %eax                                      #10.66
-        leave                                                   #10.66
+        movl      $0, %eax                                      #16.78
+        leave                                                   #16.78
 	.cfi_restore 6
-        ret                                                     #10.66
+        ret                                                     #16.78
 	.cfi_offset 6, -16
                                 # LOE
 ..B1.3:                         # Preds ..B1.1
                                 # Execution count [0.00e+00]
-        movl      $1, %eax                                      #10.56
-        leave                                                   #10.56
+        movl      $1, %eax                                      #16.68
+        leave                                                   #16.68
 	.cfi_restore 6
-        ret                                                     #10.56
+        ret                                                     #16.68
                                 # LOE
 	.cfi_endproc
 # mark_end;
@@ -67,53 +67,53 @@ victim_function_v13:
 	.cfi_startproc
 ..___tag_value_victim_function_v13.10:
 ..L11:
-                                                         #12.36
-        pushq     %rbp                                          #12.36
+                                                         #17.36
+        pushq     %rbp                                          #17.36
 	.cfi_def_cfa_offset 16
-        movq      %rsp, %rbp                                    #12.36
+        movq      %rsp, %rbp                                    #17.36
 	.cfi_def_cfa 6, 16
 	.cfi_offset 6, -16
-        subq      $16, %rsp                                     #12.36
-        movq      %rdi, -8(%rbp)                                #12.36
-        movq      -8(%rbp), %rax                                #14.10
-        movq      %rax, %rdi                                    #14.10
+        subq      $16, %rsp                                     #17.36
+        movq      %rdi, -8(%rbp)                                #17.36
+        movq      -8(%rbp), %rax                                #18.10
+        movq      %rax, %rdi                                    #18.10
 ..___tag_value_victim_function_v13.15:
 #       is_x_safe(size_t)
-        call      is_x_safe                                     #14.10
+        call      is_x_safe                                     #18.10
 ..___tag_value_victim_function_v13.16:
                                 # LOE rbx rbp rsp r12 r13 r14 r15 rip eax
 ..B2.7:                         # Preds ..B2.1
                                 # Execution count [0.00e+00]
-        movl      %eax, -16(%rbp)                               #14.10
+        movl      %eax, -16(%rbp)                               #18.10
                                 # LOE rbx rbp rsp r12 r13 r14 r15 rip
 ..B2.2:                         # Preds ..B2.7
                                 # Execution count [0.00e+00]
-        movl      -16(%rbp), %eax                               #14.10
-        testl     %eax, %eax                                    #14.10
-        je        ..B2.4        # Prob 50%                      #14.10
+        movl      -16(%rbp), %eax                               #18.10
+        testl     %eax, %eax                                    #18.10
+        je        ..B2.4        # Prob 50%                      #18.10
                                 # LOE rbx rbp rsp r12 r13 r14 r15 rip
 ..B2.3:                         # Preds ..B2.2
                                 # Execution count [0.00e+00]
-        movzbl    temp(%rip), %eax                              #15.11
-        movzbl    %al, %eax                                     #15.11
-        movl      $array1, %edx                                 #15.26
-        addq      -8(%rbp), %rdx                                #15.26
-        movzbl    (%rdx), %edx                                  #15.26
-        movzbl    %dl, %edx                                     #15.26
-        imull     $512, %edx, %edx                              #15.38
-        movslq    %edx, %rdx                                    #15.19
-        movl      $array2, %ecx                                 #15.19
-        addq      %rdx, %rcx                                    #15.19
-        movzbl    (%rcx), %edx                                  #15.19
-        movzbl    %dl, %edx                                     #15.19
-        andl      %edx, %eax                                    #15.11
-        movb      %al, temp(%rip)                               #15.11
+        movzbl    temp(%rip), %eax                              #19.11
+        movzbl    %al, %eax                                     #19.11
+        movl      $array1, %edx                                 #19.26
+        addq      -8(%rbp), %rdx                                #19.26
+        movzbl    (%rdx), %edx                                  #19.26
+        movzbl    %dl, %edx                                     #19.26
+        imull     $512, %edx, %edx                              #19.38
+        movslq    %edx, %rdx                                    #19.19
+        movl      $array2, %ecx                                 #19.19
+        addq      %rdx, %rcx                                    #19.19
+        movzbl    (%rcx), %edx                                  #19.19
+        movzbl    %dl, %edx                                     #19.19
+        andl      %edx, %eax                                    #19.11
+        movb      %al, temp(%rip)                               #19.11
                                 # LOE rbx rbp rsp r12 r13 r14 r15 rip
 ..B2.4:                         # Preds ..B2.3 ..B2.2
                                 # Execution count [0.00e+00]
-        leave                                                   #16.1
+        leave                                                   #20.1
 	.cfi_restore 6
-        ret                                                     #16.1
+        ret                                                     #20.1
                                 # LOE
 	.cfi_endproc
 # mark_end;

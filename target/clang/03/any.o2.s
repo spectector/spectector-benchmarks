@@ -8,7 +8,8 @@ leakByteNoinlineFunction:               # @leakByteNoinlineFunction
 # %bb.0:
 	movl	%edi, %eax
 	shlq	$9, %rax
-	movb	array2(%rax), %al
+	leaq	array2(%rip), %rcx
+	movb	(%rax,%rcx), %al
 	andb	%al, temp(%rip)
 	retq
 .Lfunc_end0:
@@ -25,7 +26,8 @@ victim_function_v03:                    # @victim_function_v03
 	cmpq	%rdi, %rax
 	jbe	.LBB1_1
 # %bb.2:
-	movzbl	array1(%rdi), %edi
+	leaq	array1(%rip), %rax
+	movzbl	(%rdi,%rax), %edi
 	jmp	leakByteNoinlineFunction # TAILCALL
 .LBB1_1:
 	retq
@@ -60,3 +62,4 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

@@ -15,24 +15,26 @@ victim_function_v05:                    # @victim_function_v05
 	js	.LBB0_11
 # %bb.2:
 	movb	temp(%rip), %al
-	movslq	%r8d, %rsi
+	movslq	%r8d, %rcx
 	testb	$3, %dil
 	je	.LBB0_3
-# %bb.4:                                # %.preheader1
+# %bb.4:
 	andl	$3, %edi
-	xorl	%ecx, %ecx
+	xorl	%esi, %esi
+	leaq	array1(%rip), %r9
+	leaq	array2(%rip), %r10
 	.p2align	4, 0x90
 .LBB0_5:                                # =>This Inner Loop Header: Depth=1
-	movzbl	array1(%rsi), %edx
+	movzbl	(%rcx,%r9), %edx
 	shlq	$9, %rdx
-	andb	array2(%rdx), %al
-	addq	$-1, %rsi
-	addq	$1, %rcx
-	cmpl	%ecx, %edi
+	andb	(%rdx,%r10), %al
+	addq	$-1, %rcx
+	addq	$1, %rsi
+	cmpl	%esi, %edi
 	jne	.LBB0_5
-# %bb.6:                                # %.loopexit2
+# %bb.6:
 	movl	%r8d, %edx
-	subl	%ecx, %edx
+	subl	%esi, %edx
 	cmpl	$3, %r8d
 	jae	.LBB0_8
 	jmp	.LBB0_10
@@ -40,23 +42,25 @@ victim_function_v05:                    # @victim_function_v05
 	movl	%r8d, %edx
 	cmpl	$3, %r8d
 	jb	.LBB0_10
-.LBB0_8:                                # %.preheader
-	leaq	array1(%rsi), %rcx
+.LBB0_8:
+	leaq	array1(%rip), %rsi
+	addq	%rcx, %rsi
+	leaq	array2(%rip), %rcx
 	.p2align	4, 0x90
 .LBB0_9:                                # =>This Inner Loop Header: Depth=1
-	movzbl	(%rcx), %esi
-	shlq	$9, %rsi
-	andb	array2(%rsi), %al
-	movzbl	-1(%rcx), %esi
-	shlq	$9, %rsi
-	andb	array2(%rsi), %al
-	movzbl	-2(%rcx), %esi
-	shlq	$9, %rsi
-	andb	array2(%rsi), %al
-	movzbl	-3(%rcx), %esi
-	shlq	$9, %rsi
-	addq	$-4, %rcx
-	andb	array2(%rsi), %al
+	movzbl	(%rsi), %edi
+	shlq	$9, %rdi
+	andb	(%rdi,%rcx), %al
+	movzbl	-1(%rsi), %edi
+	shlq	$9, %rdi
+	andb	(%rdi,%rcx), %al
+	movzbl	-2(%rsi), %edi
+	shlq	$9, %rdi
+	andb	(%rdi,%rcx), %al
+	movzbl	-3(%rsi), %edi
+	shlq	$9, %rdi
+	addq	$-4, %rsi
+	andb	(%rdi,%rcx), %al
 	addl	$-4, %edx
 	jns	.LBB0_9
 .LBB0_10:
@@ -94,3 +98,4 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

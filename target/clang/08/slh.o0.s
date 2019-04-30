@@ -11,37 +11,54 @@ victim_function_v08:                    # @victim_function_v08
 	.cfi_offset %rbp, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
-	movq	$-1, %rcx
-	movq	%rsp, %rax
-	sarq	$63, %rax
+	movq	$-1, %rax
+	movq	%rsp, %rcx
+	sarq	$63, %rcx
 	movq	%rdi, -8(%rbp)
-	movq	-8(%rbp), %rdx
-	movl	array1_size, %esi
-	cmpq	%rsi, %rdx
+	movq	-8(%rbp), %rdi
+	movl	array1_size(%rip), %edx
+	movl	%edx, %esi
+	cmpq	%rsi, %rdi
+	movq	%rax, -16(%rbp)         # 8-byte Spill
+	movq	%rcx, -24(%rbp)         # 8-byte Spill
 	jae	.LBB0_2
 # %bb.1:
+	movq	-24(%rbp), %rax         # 8-byte Reload
+	movq	-16(%rbp), %rcx         # 8-byte Reload
 	cmovaeq	%rcx, %rax
-	movq	-8(%rbp), %rcx
-	addq	$1, %rcx
+	movq	-8(%rbp), %rdx
+	addq	$1, %rdx
+	movq	%rax, -32(%rbp)         # 8-byte Spill
+	movq	%rdx, -40(%rbp)         # 8-byte Spill
 	jmp	.LBB0_3
 .LBB0_2:
+	movq	-24(%rbp), %rax         # 8-byte Reload
+	movq	-16(%rbp), %rcx         # 8-byte Reload
 	cmovbq	%rcx, %rax
-	xorl	%ecx, %ecx
+	xorl	%edx, %edx
+	movl	%edx, %esi
+	movq	%rax, -32(%rbp)         # 8-byte Spill
+	movq	%rsi, -40(%rbp)         # 8-byte Spill
 	jmp	.LBB0_3
 .LBB0_3:
-	movzbl	array1(,%rcx), %ecx
-	movl	%eax, %edx
-	orl	%ecx, %edx
-	shll	$9, %edx
-	movslq	%edx, %rcx
-	movzbl	array2(,%rcx), %ecx
-	movl	%eax, %edx
-	orl	%ecx, %edx
-	movzbl	temp, %ecx
-	andl	%edx, %ecx
-	movb	%cl, temp
-	shlq	$47, %rax
-	orq	%rax, %rsp
+	movq	-40(%rbp), %rax         # 8-byte Reload
+	movq	-32(%rbp), %rcx         # 8-byte Reload
+	leaq	array1(%rip), %rdx
+	movzbl	(%rdx,%rax), %esi
+	movl	%ecx, %edi
+	orl	%esi, %edi
+	shll	$9, %edi
+	movslq	%edi, %rax
+	leaq	array2(%rip), %rdx
+	movzbl	(%rdx,%rax), %esi
+	movl	%ecx, %edi
+	orl	%esi, %edi
+	movzbl	temp(%rip), %esi
+	andl	%edi, %esi
+	movb	%sil, %r8b
+	movb	%r8b, temp(%rip)
+	shlq	$47, %rcx
+	orq	%rcx, %rsp
 	popq	%rbp
 	.cfi_def_cfa %rsp, 8
 	retq
@@ -76,3 +93,9 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig
+	.addrsig_sym victim_function_v08
+	.addrsig_sym array1_size
+	.addrsig_sym array1
+	.addrsig_sym temp
+	.addrsig_sym array2

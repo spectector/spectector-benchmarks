@@ -11,7 +11,8 @@ leakByteLocalFunction:                  # @leakByteLocalFunction
 	sarq	$63, %rax
 	movl	%edi, %ecx
 	shlq	$9, %rcx
-	movb	array2(%rcx), %cl
+	leaq	array2(%rip), %rdx
+	movb	(%rcx,%rdx), %cl
 	orb	%al, %cl
 	andb	%cl, temp(%rip)
 	shlq	$47, %rax
@@ -35,10 +36,12 @@ victim_function_v02:                    # @victim_function_v02
 	jbe	.LBB1_1
 # %bb.2:
 	cmovbeq	%rcx, %rax
-	movzbl	array1(%rdi), %ecx
+	leaq	array1(%rip), %rcx
+	movzbl	(%rdi,%rcx), %ecx
 	shlq	$9, %rcx
 	orq	%rax, %rcx
-	movb	array2(%rcx), %cl
+	leaq	array2(%rip), %rdx
+	movb	(%rcx,%rdx), %cl
 	orb	%al, %cl
 	andb	%cl, temp(%rip)
 	jmp	.LBB1_3
@@ -79,3 +82,4 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig

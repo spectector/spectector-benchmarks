@@ -14,10 +14,12 @@ victim_function_v11:                    # @victim_function_v11
 	jbe	.LBB0_1
 # %bb.2:
 	cmovbeq	%rcx, %rax
-	movzbl	array1(%rdi), %ecx
+	leaq	array1(%rip), %rcx
+	movzbl	(%rdi,%rcx), %ecx
 	shlq	$9, %rcx
 	orq	%rax, %rcx
-	movb	array2(%rcx), %cl
+	leaq	array2(%rip), %rdx
+	movb	(%rcx,%rdx), %cl
 	orb	%al, %cl
 	subb	%cl, temp(%rip)
 	jmp	.LBB0_3
@@ -42,7 +44,7 @@ mymemcmp:                               # @mymemcmp
 	sarq	$63, %r9
 	testq	%rdx, %rdx
 	je	.LBB1_6
-# %bb.1:                                # %.preheader
+# %bb.1:
 	cmoveq	%r8, %r9
 	xorl	%r10d, %r10d
 	jmp	.LBB1_2
@@ -102,3 +104,4 @@ temp:
 
 	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
 	.section	".note.GNU-stack","",@progbits
+	.addrsig
