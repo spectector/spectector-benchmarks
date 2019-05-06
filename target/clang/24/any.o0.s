@@ -53,8 +53,7 @@ another:                                # @another
 	cmpl	$0, -4(%rbp)
 	je	.LBB1_2
 # %bb.1:
-	movl	$42, %eax
-	movl	%eax, %edi
+	movl	$42, %edi
 	callq	victim_function_v24
 .LBB1_2:
 	addq	$16, %rsp
@@ -90,11 +89,10 @@ temp:
 	.type	array2,@object          # @array2
 	.comm	array2,131072,16
 
-	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
+	.ident	"clang version 8.0.0 (tags/RELEASE_800/final)"
 	.section	".note.GNU-stack","",@progbits
 	.addrsig
 	.addrsig_sym victim_function_v24
-	.addrsig_sym another
 	.addrsig_sym array1_size
 	.addrsig_sym array1
 	.addrsig_sym temp

@@ -33,7 +33,7 @@ victim_function_v07:
 	.cfi_def_cfa_register 6
 	movq	%rdi, -8(%rbp)
 	movq	$-1, %rdx
-	movq	last_x.2688(%rip), %rax
+	movq	last_x.2692(%rip), %rax
 	cmpq	%rax, -8(%rbp)
 	setne	%al
 	movzbl	%al, %eax
@@ -62,7 +62,7 @@ victim_function_v07:
 	testq	%rax, %rax
 	je	.L6
 	movq	-8(%rbp), %rax
-	movq	%rax, last_x.2688(%rip)
+	movq	%rax, last_x.2692(%rip)
 .L6:
 	nop
 	popq	%rbp
@@ -71,7 +71,7 @@ victim_function_v07:
 	.cfi_endproc
 .LFE6:
 	.size	victim_function_v07, .-victim_function_v07
-	.local	last_x.2688
-	.comm	last_x.2688,8,8
+	.local	last_x.2692
+	.comm	last_x.2692,8,8
 	.ident	"GCC: (GNU) 9.0.0 20181220 (experimental)"
 	.section	.note.GNU-stack,"",@progbits

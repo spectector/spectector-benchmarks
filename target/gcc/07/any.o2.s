@@ -6,7 +6,7 @@
 victim_function_v07:
 .LFB11:
 	.cfi_startproc
-	cmpq	%rdi, last_x.2715(%rip)
+	cmpq	%rdi, last_x.2719(%rip)
 	jne	.L2
 	movzbl	array1(%rdi), %eax
 	sall	$9, %eax
@@ -17,14 +17,14 @@ victim_function_v07:
 	movl	array1_size(%rip), %eax
 	cmpq	%rdi, %rax
 	jbe	.L1
-	movq	%rdi, last_x.2715(%rip)
+	movq	%rdi, last_x.2719(%rip)
 .L1:
 	ret
 	.cfi_endproc
 .LFE11:
 	.size	victim_function_v07, .-victim_function_v07
-	.local	last_x.2715
-	.comm	last_x.2715,8,8
+	.local	last_x.2719
+	.comm	last_x.2719,8,8
 	.globl	temp
 	.bss
 	.type	temp, @object

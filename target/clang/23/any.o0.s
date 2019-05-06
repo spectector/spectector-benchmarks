@@ -48,8 +48,7 @@ attacker_function:                      # @attacker_function
 	.cfi_offset %rbp, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
-	movl	$42, %eax
-	movl	%eax, %edi
+	movl	$42, %edi
 	callq	victim_function_v23
 	popq	%rbp
 	.cfi_def_cfa %rsp, 8
@@ -83,11 +82,10 @@ temp:
 	.type	array2,@object          # @array2
 	.comm	array2,131072,16
 
-	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
+	.ident	"clang version 8.0.0 (tags/RELEASE_800/final)"
 	.section	".note.GNU-stack","",@progbits
 	.addrsig
 	.addrsig_sym victim_function_v23
-	.addrsig_sym attacker_function
 	.addrsig_sym array1_size
 	.addrsig_sym array1
 	.addrsig_sym temp

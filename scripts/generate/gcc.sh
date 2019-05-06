@@ -1,7 +1,7 @@
 #! /bin/bash
 # Designed for gcc version 9.0.0
 
-sources=../sources/test/unix/*.c
+sources=../sources/pk/*.c
 way=asm
 
 usage () {

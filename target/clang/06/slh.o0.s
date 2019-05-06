@@ -93,11 +93,9 @@ array_size_mask:
 	.type	array2,@object          # @array2
 	.comm	array2,131072,16
 
-	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
+	.ident	"clang version 8.0.0 (tags/RELEASE_800/final)"
 	.section	".note.GNU-stack","",@progbits
 	.addrsig
-	.addrsig_sym victim_function_v06
-	.addrsig_sym array1_size
 	.addrsig_sym array1
 	.addrsig_sym temp
 	.addrsig_sym array_size_mask

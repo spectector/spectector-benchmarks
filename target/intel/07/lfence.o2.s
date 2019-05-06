@@ -18,7 +18,7 @@ victim_function_v07:
 ..___tag_value_victim_function_v07.1:
 ..L2:
                                                           #10.36
-        cmpq      last_x.218.0.1(%rip), %rdi                    #12.15
+        cmpq      last_x.219.0.1(%rip), %rdi                    #12.15
         jne       ..B1.3        # Prob 50%                      #12.15
                                 # LOE rbx rbp rdi r12 r13 r14 r15
 ..B1.2:                         # Preds ..B1.1
@@ -38,7 +38,7 @@ victim_function_v07:
                                 # LOE rbx rbp rdi r12 r13 r14 r15
 ..B1.4:                         # Preds ..B1.3
                                 # Execution count [5.00e-01]
-        movq      %rdi, last_x.218.0.1(%rip)                    #15.11
+        movq      %rdi, last_x.219.0.1(%rip)                    #15.11
                                 # LOE rbx rbp r12 r13 r14 r15
 ..B1.5:                         # Preds ..B1.3 ..B1.4
                                 # Execution count [1.00e+00]
@@ -53,9 +53,9 @@ victim_function_v07:
 	.bss
 	.align 8
 	.align 8
-last_x.218.0.1:
-	.type	last_x.218.0.1,@object
-	.size	last_x.218.0.1,8
+last_x.219.0.1:
+	.type	last_x.219.0.1,@object
+	.size	last_x.219.0.1,8
 	.space 8	# pad
 	.data
 # -- End  victim_function_v07

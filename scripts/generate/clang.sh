@@ -1,7 +1,7 @@
 #! /bin/bash
 # Designed for clang version 7.0.0
 
-sources=../sources/test/unix/*.c
+sources=../sources/pk/*.c
 way=asm
 
 usage () {
@@ -29,7 +29,7 @@ done
 
 printf "clang compiling $sources\n"
 
-lfence="-mllvm -x86-speculative-load-hardening -mllvm -x86-speculative-load-hardening-lfence"
+lfence="-mllvm -x86-speculative-load-hardening -mllvm -x86-slh-lfence"
 slh="-mllvm -x86-speculative-load-hardening"
 any=""
 

@@ -24,7 +24,7 @@ function msvc() { # src opts dst
     get "$3"
 }
 
-for code in ../sources/microsoft/*.c; do
+for code in ../sources/pk/*.c; do
     filename=$(basename -- "$code")
     num="${filename%.*}"
     mkdir -p ../target/microsoft/$num

@@ -13,15 +13,15 @@ fifteen variants of the SPECTRE v1 proof-of-concept developed by Paul Kocher
 (available
 [here](https://www.paulkocher.com/doc/MicrosoftCompilerSpectreMitigation.html)).
 
-The folder `sources` contains the source files in the C language taken
+The folder `sources/pl` contains the source files in the C language taken
 from
 [here](https://www.paulkocher.com/doc/MicrosoftCompilerSpectreMitigation.html).
 To account for minor syntactic differences between the C dialects
 supported by the targets compilers, we adapted the Paul Kocher's
-examples for each compiler.  The folders `sources/clang`,
-`sources/intel`, and `sources/microsoft` contain respectively the
-programs used with the Clang compiler, the Intel icc compiler, and the
-Microsoft Visual C++ compiler.
+examples for each compiler.  
+
+[Marco: change the folder (and scripts) from `sources/pk` to
+`sources/compiler-countermeasures`]
 
 The folder `target` contains the assembly programs that have been obtained by
 compiling the fifteen variants of the SPECTRE v1 proof-of-concept developed by
@@ -31,17 +31,17 @@ using the Clang, Intel icc, and Microsoft Visual C++ compilers with different
 levels of optimization and protection against SPECTRE attacks. Specifically, the
 folders `target/clang`, `target/intel`, and `target/microsoft` contain
 respectively the assembly programs obtained using the Clang, Intel icc, and
-Microsoft Visual C++ compilers. The folder `target/microsoft` contains two
+Microsoft Visual C++ compilers.  The folder `target/microsoft` contains the
 folders `cl 19.15` and `cl 19.29` containing respectively the assembly programs
 generated using the Microsoft Visual C++ compiler versions v19.15.26732.1 and
-v19.20.27317.96. refer the interested reader to Section VIII.A of the
+v19.20.27317.96. We refer the interested reader to Section VIII.A of the
 [paper](https://spectector.github.io/papers/spectector.pdf) for a detailed
 description of how the assembly programs have been obtained.
 
 ### Compile the files with the Clang compiler
 
 We obtained the source programs in the `target/clang` folder by
-compiling the files in `sources/clang` with the Clang compiler v7.0.0.
+compiling the files in `sources/pk` with the Clang compiler v7.0.0.
 
 We refer the reader to the script `clang.sh` in the folder
 `scripts/generate` for more information. Note that running the script
@@ -51,7 +51,7 @@ requires a working version of the `clang` and `llc` binaries in your
 ### Compile the files with the Intel icc compiler
 
 We obtained the source programs in the `target/intel` folder by
-compiling the files in `sources/intel` with the Intel icc compiler
+compiling the files in `sources/pk` with the Intel icc compiler
 v19.0.0.117.
 
 We refer the reader to the script `intel.sh` in the folder
@@ -63,7 +63,7 @@ requires a working version of the Intel icc compiler installed at
 
 We obtained the source programs in the `target/microsoft/cl 19.15` (respectively
 `target/microsoft/cl 19.20`) folder by compiling the files in
-`sources/microsoft` with the Microsoft Visual C++ compiler v19.15.26732.1
+`sources/pk` with the Microsoft Visual C++ compiler v19.15.26732.1
 (respectively v19.20.27317.96).
 
 We refer the reader to the script `microsoft.bat` in the folder
@@ -87,23 +87,41 @@ information.
 
 ## Case study: Xen Project Hypervisor (Section IX)
 
-The benchmark used in the second case study of the paper (Section XI) is the Xen Project Hypervisor.
-The hypervisor's code can be retrieved from its official repository (available [here](https://xenbits.xen.org/git-http/xen.git)).
+The benchmark used in the second case study of the paper (Section XI) is the Xen
+Project Hypervisor, whose code is available
+[here](https://xenbits.xen.org/git-http/xen.git).
 
 ### Retrieving the Xen Project Hypervisor source code
-Download xen hypervisor from it's official repository:
- Run the `configure` file
-located on the root folder.  Modify the Makefile located on `xen` by:
-Adding `clang=y` Changing the line `+%.o %.i %.s: %.c FORCE` by `+%.o
-%.i %.s %.ll: %.c FORCE`
+
+The `sources/xen` folder mirrors the official Xen Project repository
+https://xenbits.xen.org/git-http/xen.git at the commit `4.10.0-shim-comet-3`. 
+
+
+To obtain the source files, one can simply clone the repository by executing
+`git checkout 4.10.0-shim-comet-3`. [Marco: Where should we execute this? ]
+
+Before compiling the hypervisor, it is necessary to (1) execute the `configure` file located 
+in the [XEN?] root folder, and (2) modify its Makefile located in [Marco: XEN/??] as follows:
+    - Add `clang=y` [Marco: Where?]
+    - Replace the line `+%.o %.i %.s: %.c FORCE` (line 253) with `+%.o %.i %.s
+    %.ll: %.c FORCE`
+
+
+[MARCO: where is the `configure` file? I don't see it into our repo]
+[MARCO: Why do we need to run `configure`?]
 
 ### Obtaining no linked files
 
-Then, obtain all the LLVM bytecode files and all the no linked
-assembly files by running the `obtain_project_files.sh` script
-(located on `scripts`) passing as arguments the project folder and the
-output folder (i.e. `~/xen/xen` and `target/xen_no_linked`), it will
-store all the generated LLVM bytecode files on the folder specified.
+To obtain the LLVM bytecode and assembly files, execute the
+`obtain_project_files.sh` script (located in the folder `scripts`). When
+invoking the script, pass as arguments the folder of the Xen hypervisor (i.e.,
+`sources/xen/xen`) and the target folder (i.e., `target/xen_no_linked`).
+
+The script compiles each source file in the hypervisor and it generates the
+corresponding LLVM bytecode and assembly files.
+
+
+
 
 ### Obtaining linked files
 
@@ -111,8 +129,15 @@ Then, run the `solve_dependecies.pl` script (located on `locality`)
 over the folder where the LLVM bytecode files are, that will create
 the assembly files without the missing dependencies on the project.
 
+Also, it can be ontained a single assembly file by running
+`solve_dependecies.pl` with the `-l` flag.
+
 **For running `solve_dependecies.pl` the next programs must be
 installed: `sed`, `llvm-nm`, `llvm-as` and `llc`**
+
+[Marco: Is this step generating a single .s file?]
+
+[Marco: Can we merge this step and the one above?]
 
 ### Analyzing generated files
 

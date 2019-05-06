@@ -7,7 +7,7 @@ victim_function_v07:
 .LFB11:
 	.cfi_startproc
 	xorl	%eax, %eax
-	cmpq	%rdi, last_x.2715(%rip)
+	cmpq	%rdi, last_x.2719(%rip)
 	setne	%al
 	subq	$1, %rax
 	je	.L3
@@ -23,14 +23,14 @@ victim_function_v07:
 	sbbq	%rax, %rax
 	testq	%rax, %rax
 	je	.L1
-	movq	%rdi, last_x.2715(%rip)
+	movq	%rdi, last_x.2719(%rip)
 .L1:
 	ret
 	.cfi_endproc
 .LFE11:
 	.size	victim_function_v07, .-victim_function_v07
-	.local	last_x.2715
-	.comm	last_x.2715,8,8
+	.local	last_x.2719
+	.comm	last_x.2719,8,8
 	.globl	temp
 	.bss
 	.type	temp, @object
