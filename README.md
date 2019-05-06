@@ -17,11 +17,8 @@ from
 [here](https://www.paulkocher.com/doc/MicrosoftCompilerSpectreMitigation.html).
 To account for minor syntactic differences between the C dialects
 supported by the targets compilers, we adapted the Paul Kocher's
-examples for each compiler.  The folder
-`sources/compiler-countermeasures` contains the subfolders `microsoft`
-and `unix` that contain respectively the programs used with the Clang
-compiler, the Intel icc compiler, and the Microsoft Visual C++
-compiler.
+examples for each compiler.  The folder `sources/pk` contains the
+programs used.
 
 The folder `target` contains the assembly programs that have been
 obtained by compiling the fifteen variants of the SPECTRE v1

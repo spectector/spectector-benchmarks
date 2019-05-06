@@ -1,7 +1,7 @@
 #! /bin/bash
 # Designed for icc version 19.0.0.117
 
-sources=../sources/compiler-countermeasures/unix/*.c
+sources=../sources/pk/*.c
 way=asm
 
 usage () {

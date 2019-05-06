@@ -17,22 +17,22 @@ victim_function_v11:
 	.cfi_startproc
 ..___tag_value_victim_function_v11.1:
 ..L2:
-                                                          #14.36
-        movl      array1_size(%rip), %eax                       #15.11
-        cmpq      %rax, %rdi                                    #15.11
-        jae       ..B1.3        # Prob 78%                      #15.11
+                                                          #39.36
+        movl      array1_size(%rip), %eax                       #40.11
+        cmpq      %rax, %rdi                                    #40.11
+        jae       ..B1.3        # Prob 78%                      #40.11
                                 # LOE rbx rbp rdi r12 r13 r14 r15
 ..B1.2:                         # Preds ..B1.1
                                 # Execution count [2.20e-01]
-        movzbl    array1(%rdi), %eax                            #16.38
-        shlq      $9, %rax                                      #16.50
-        lfence                                                  #16.38
-        movb      array2(%rax), %dl                             #16.28
-        subb      %dl, temp(%rip)                               #16.12
+        movzbl    array1(%rdi), %eax                            #41.38
+        shlq      $9, %rax                                      #41.50
+        lfence                                                  #41.38
+        movb      array2(%rax), %dl                             #41.28
+        subb      %dl, temp(%rip)                               #41.12
                                 # LOE rbx rbp r12 r13 r14 r15
 ..B1.3:                         # Preds ..B1.1 ..B1.2
                                 # Execution count [1.00e+00]
-        ret                                                     #17.1
+        ret                                                     #42.1
         .align    16,0x90
                                 # LOE
 	.cfi_endproc
@@ -59,32 +59,32 @@ mymemcmp:
 	.cfi_startproc
 ..___tag_value_mymemcmp.4:
 ..L5:
-                                                          #20.1
-        xorl      %eax, %eax                                    #22.10
-        testq     %rdx, %rdx                                    #24.31
-        jbe       ..B2.6        # Prob 10%                      #24.31
+                                                          #45.1
+        xorl      %eax, %eax                                    #47.10
+        testq     %rdx, %rdx                                    #49.31
+        jbe       ..B2.6        # Prob 10%                      #49.31
                                 # LOE rdx rbx rbp rsi rdi r12 r13 r14 r15 eax
 ..B2.2:                         # Preds ..B2.4 ..B2.1
                                 # Execution count [9.00e-01]
-        lfence                                                  #20.1
+        lfence                                                  #45.1
                                 # LOE rdx rbx rbp rsi rdi r12 r13 r14 r15
 ..B2.3:                         # Preds ..B2.2
                                 # Execution count [2.62e+00]
-        movzbl    (%rdi), %eax                                  #25.15
-        movzbl    (%rsi), %ecx                                  #25.22
-        subl      %ecx, %eax                                    #25.15
-        jne       ..B2.6        # Prob 20%                      #25.30
+        movzbl    (%rdi), %eax                                  #50.15
+        movzbl    (%rsi), %ecx                                  #50.22
+        subl      %ecx, %eax                                    #50.15
+        jne       ..B2.6        # Prob 20%                      #50.30
                                 # LOE rdx rbx rbp rsi rdi r12 r13 r14 r15 eax
 ..B2.4:                         # Preds ..B2.3
                                 # Execution count [2.09e+00]
-        incq      %rdi                                          #24.40
-        incq      %rsi                                          #24.47
-        decq      %rdx                                          #24.52
-        jne       ..B2.2        # Prob 82%                      #24.31
+        incq      %rdi                                          #49.40
+        incq      %rsi                                          #49.47
+        decq      %rdx                                          #49.52
+        jne       ..B2.2        # Prob 82%                      #49.31
                                 # LOE rdx rbx rbp rsi rdi r12 r13 r14 r15 eax
 ..B2.6:                         # Preds ..B2.1 ..B2.3 ..B2.4
                                 # Execution count [1.00e+00]
-        ret                                                     #27.9
+        ret                                                     #52.9
         .align    16,0x90
                                 # LOE
 	.cfi_endproc

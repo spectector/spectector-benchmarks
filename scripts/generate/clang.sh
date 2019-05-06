@@ -1,7 +1,7 @@
 #! /bin/bash
 # Designed for clang version 7.0.0
 
-sources=../sources/compiler-countermeasures/unix/*.c
+sources=../sources/pk/*.c
 way=asm
 
 usage () {
