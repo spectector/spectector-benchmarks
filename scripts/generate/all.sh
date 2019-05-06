@@ -1,4 +1,4 @@
-scripts=(./generate_clang.sh ./generate_intel.sh ./generate_gcc.sh)
+scripts=(./generate/clang.sh ./generate/intel.sh ./generate/gcc.sh)
 
 usage () {
     printf "Usage: generate_all [-s sources]\n"
