@@ -1,4 +1,4 @@
-# Reproducing the results from the paper "Spectector: Principled Detection of Speculative Information Flows"
+# <a name="benchmarks"></a> Reproducing the results from the paper "Spectector: Principled Detection of Speculative Information Flows"
 
 This repository contains the benchmarks from the paper "Spectector:
 Principled Detection of Speculative Information Flows" (available
@@ -6,10 +6,11 @@ Principled Detection of Speculative Information Flows" (available
 describe how to reproduce the experimental results from the
 Spectector's paper.
 
-## <a name="benchmarks"></a> Benchmarks
+## Case Study: Compiler countermeasures (Section VIII)
 
-The benchmarks used in the paper are the fifteen variants of the
-SPECTRE v1 proof-of-concept developed by Paul Kocher (available
+The benchmarks used in the first case study of the paper (Section VIII) are the
+fifteen variants of the SPECTRE v1 proof-of-concept developed by Paul Kocher
+(available
 [here](https://www.paulkocher.com/doc/MicrosoftCompilerSpectreMitigation.html)).
 
 The folder `sources` contains the source files in the C language taken
@@ -22,18 +23,20 @@ examples for each compiler.  The folders `sources/clang`,
 programs used with the Clang compiler, the Intel icc compiler, and the
 Microsoft Visual C++ compiler.
 
-The folder `target` contains the assembly programs that have been
-obtained by compiling the fifteen variants of the SPECTRE v1
-proof-of-concept developed by Paul Kocher (available
+The folder `target` contains the assembly programs that have been obtained by
+compiling the fifteen variants of the SPECTRE v1 proof-of-concept developed by
+Paul Kocher (available
 [here](https://www.paulkocher.com/doc/MicrosoftCompilerSpectreMitigation.html))
-using the Clang, Intel icc, and Microsoft Visual C++ compilers with
-different levels of optimization and protection against SPECTRE
-attacks. Specifically, the folders `target/clang`, `target/intel`, and
-`target/microsoft` contain respectively the assembly programs obtained
-using the Clang, Intel icc, and Microsoft Visual C++ compilers. We
-refer the interested reader to Section VII.A of the
-[paper](https://spectector.github.io/papers/spectector.pdf) for a
-detailed description of how the assembly programs have been obtained.
+using the Clang, Intel icc, and Microsoft Visual C++ compilers with different
+levels of optimization and protection against SPECTRE attacks. Specifically, the
+folders `target/clang`, `target/intel`, and `target/microsoft` contain
+respectively the assembly programs obtained using the Clang, Intel icc, and
+Microsoft Visual C++ compilers. The folder `target/microsoft` contains two
+folders `cl 19.15` and `cl 19.29` containing respectively the assembly programs
+generated using the Microsoft Visual C++ compiler versions v19.15.26732.1 and
+v19.20.27317.96. refer the interested reader to Section VIII.A of the
+[paper](https://spectector.github.io/papers/spectector.pdf) for a detailed
+description of how the assembly programs have been obtained.
 
 ### Compile the files with the Clang compiler
 
@@ -58,15 +61,16 @@ requires a working version of the Intel icc compiler installed at
 
 ### Compile the files with the Microsoft Visual C++ compiler
 
-We obtained the source programs in the `target/microsoft` folder by
-compiling the files in `sources/microsoft` with the Microsoft Visual
-C++ compiler v19.15.26732.1 and VS 19.20.27508.
+We obtained the source programs in the `target/microsoft/cl 19.15` (respectively
+`target/microsoft/cl 19.20`) folder by compiling the files in
+`sources/microsoft` with the Microsoft Visual C++ compiler v19.15.26732.1
+(respectively v19.20.27317.96).
 
 We refer the reader to the script `microsoft.bat` in the folder
 `scripts/generate` for more information. We tested the script with
 Windows 10 Pro using the Windows Linux Subsystem with kernel 4.4.0
 
-## Generate the results from Figure 7
+### Generate the results from Figure 7
 
 Once Spectector is correctly installed, one may reproduce the results
 from Figure 7 by running the script `check_security.sh`.  The script
@@ -81,10 +85,14 @@ information.
  command, which can be obtained, for instance, by executing `brew
  install coreutils`.
 
-## Analyzing xen hypervisor
+## Case study: Xen Project Hypervisor (Section IX)
 
+The benchmark used in the second case study of the paper (Section XI) is the Xen Project Hypervisor.
+The hypervisor's code can be retrieved from its official repository (available [here](https://xenbits.xen.org/git-http/xen.git)).
+
+### Retrieving the Xen Project Hypervisor source code
 Download xen hypervisor from it's official repository:
-https://xenbits.xen.org/git-http/xen.git Run the `configure` file
+ Run the `configure` file
 located on the root folder.  Modify the Makefile located on `xen` by:
 Adding `clang=y` Changing the line `+%.o %.i %.s: %.c FORCE` by `+%.o
 %.i %.s %.ll: %.c FORCE`
