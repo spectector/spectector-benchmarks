@@ -83,31 +83,6 @@ while getopts ":m:p:t:d:o:s:f:q:r:i:z:j:" option; do
     esac
 done
 
-# Parsing of compilers
-mits=""
-lmi=""
-lop=""
-for compiler in ${gen[@]}; do
-    case $compiler in
-	clang ) mits+="LLV\t\t\t\t\t\t"
-	    	lmi+="UNP\t\tFEN\t\tSLH\t\t"
-	    	lop+="-O0\t-O2\t-O0\t-O2\t-O0\t-O2\t" ;;
-	intel ) mits+="ICC\t\t\t\t"
-	    	lmi+="UNP\t\tFEN\t\t"
-	    	lop+="-O0\t-O2\t-O0\t-O2\t" ;;
-	microsoft-19 ) mits+="MIC\t\t\t\t"
-	    	       lmi+="UNP\t\tFEN\t\t"
-	    	       lop+="-O0\t-O2\t-O0\t-O2\t" ;;
-	microsoft ) mits+="MIC\t\t\t\t"
-	    	    lmi+="UNP\t\tFEN\t\t"
-	    	    lop+="-O0\t-O2\t-O0\t-O2\t" ;;
-	gcc ) mits+="GCC\t\t\t\t"
-	      lmi+="UNP\t\tSLH\t\t"
-	      lop+="-O0\t-O2\t-O0\t-O2\t" ;;
-	* ) usage ;;
-    esac
-done
-
 trap clean_up SIGINT SIGTERM EXIT
 
 cd "$_base"
