@@ -11,7 +11,7 @@ victim_function_v11:                    # @victim_function_v11
 	.cfi_offset %rbp, -16
 	movq	%rsp, %rbp
 	.cfi_def_cfa_register %rbp
-	subq	$48, %rsp
+	subq	$32, %rsp
 	movq	$-1, %rax
 	movq	%rsp, %rcx
 	sarq	$63, %rcx
@@ -34,34 +34,36 @@ victim_function_v11:                    # @victim_function_v11
 	movq	-24(%rbp), %rax         # 8-byte Reload
 	movq	-16(%rbp), %rcx         # 8-byte Reload
 	cmovaeq	%rcx, %rax
+	movq	-8(%rbp), %rdx
+	leaq	array1(%rip), %rsi
+	movzbl	(%rsi,%rdx), %edi
+	movl	%eax, %r8d
+	orl	%edi, %r8d
+	shll	$9, %r8d
+	movslq	%r8d, %rdx
+	leaq	array2(%rip), %rsi
+	addq	%rdx, %rsi
+	leaq	temp(%rip), %rdi
 	movl	$1, %edx
-                                        # kill: def $rdx killed $edx
-	movq	-8(%rbp), %rsi
-	leaq	array1(%rip), %rdi
-	movzbl	(%rdi,%rsi), %r8d
-	movl	%eax, %r9d
-	orl	%r8d, %r9d
-	shll	$9, %r9d
-	movslq	%r9d, %rsi
-	leaq	array2(%rip), %rdi
-	addq	%rsi, %rdi
-	leaq	temp(%rip), %rsi
-	movq	%rdi, -40(%rbp)         # 8-byte Spill
-	movq	%rsi, %rdi
-	movq	-40(%rbp), %rsi         # 8-byte Reload
 	shlq	$47, %rax
 	orq	%rax, %rsp
 	callq	mymemcmp
-	movq	%rsp, %rcx
-	sarq	$63, %rcx
-	movb	%al, %r10b
-	movb	%r10b, temp(%rip)
-	movq	%rcx, -32(%rbp)         # 8-byte Spill
+.Lslh_ret_addr0:
+	movq	-8(%rsp), %rcx
+	movq	%rsp, %rdx
+	sarq	$63, %rdx
+	leaq	.Lslh_ret_addr0(%rip), %rsi
+	cmpq	%rsi, %rcx
+	movq	-16(%rbp), %rcx         # 8-byte Reload
+	cmovneq	%rcx, %rdx
+	movb	%al, %r9b
+	movb	%r9b, temp(%rip)
+	movq	%rdx, -32(%rbp)         # 8-byte Spill
 .LBB0_2:
 	movq	-32(%rbp), %rax         # 8-byte Reload
 	shlq	$47, %rax
 	orq	%rax, %rsp
-	addq	$48, %rsp
+	addq	$32, %rsp
 	popq	%rbp
 	.cfi_def_cfa %rsp, 8
 	retq
@@ -217,10 +219,9 @@ temp:
 	.type	array2,@object          # @array2
 	.comm	array2,131072,16
 
-	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
+	.ident	"clang version 8.0.0 (tags/RELEASE_800/final)"
 	.section	".note.GNU-stack","",@progbits
 	.addrsig
-	.addrsig_sym victim_function_v11
 	.addrsig_sym mymemcmp
 	.addrsig_sym array1_size
 	.addrsig_sym array1

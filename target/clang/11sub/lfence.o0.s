@@ -20,16 +20,16 @@ victim_function_v11:                    # @victim_function_v11
 	jae	.LBB0_2
 # %bb.1:
 	lfence
-	movl	$1, %eax
-	movl	%eax, %edx
-	movq	-8(%rbp), %rcx
-	leaq	array1(%rip), %rsi
-	movzbl	(%rsi,%rcx), %eax
-	shll	$9, %eax
-	movslq	%eax, %rcx
-	leaq	array2(%rip), %rsi
-	addq	%rcx, %rsi
+	movq	-8(%rbp), %rax
+	leaq	array1(%rip), %rcx
+	movzbl	(%rcx,%rax), %edx
+	shll	$9, %edx
+	movslq	%edx, %rax
+	leaq	array2(%rip), %rcx
+	addq	%rax, %rcx
 	leaq	temp(%rip), %rdi
+	movq	%rcx, %rsi
+	movl	$1, %edx
 	callq	mymemcmp
 	movb	%al, %r8b
 	movb	%r8b, temp(%rip)
@@ -145,10 +145,9 @@ temp:
 	.type	array2,@object          # @array2
 	.comm	array2,131072,16
 
-	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
+	.ident	"clang version 8.0.0 (tags/RELEASE_800/final)"
 	.section	".note.GNU-stack","",@progbits
 	.addrsig
-	.addrsig_sym victim_function_v11
 	.addrsig_sym mymemcmp
 	.addrsig_sym array1_size
 	.addrsig_sym array1

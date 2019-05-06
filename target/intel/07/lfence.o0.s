@@ -26,7 +26,7 @@ victim_function_v07:
         subq      $16, %rsp                                     #10.36
         movq      %rdi, -16(%rbp)                               #10.36
         movq      -16(%rbp), %rax                               #12.10
-        movq      last_x.203(%rip), %rdx                        #12.15
+        movq      last_x.204(%rip), %rdx                        #12.15
         cmpq      %rdx, %rax                                    #12.15
         jne       ..B1.8        # Prob 50%                      #12.15
                                 # LOE rbx rbp rsp r12 r13 r14 r15 rip
@@ -58,7 +58,7 @@ victim_function_v07:
 ..B1.4:                         # Preds ..B1.3
                                 # Execution count [0.00e+00]
         movq      -16(%rbp), %rax                               #15.20
-        movq      %rax, last_x.203(%rip)                        #15.11
+        movq      %rax, last_x.204(%rip)                        #15.11
                                 # LOE rbx rbp rsp r12 r13 r14 r15 rip
 ..B1.5:                         # Preds ..B1.4 ..B1.9
                                 # Execution count [0.00e+00]
@@ -83,9 +83,9 @@ victim_function_v07:
 	.bss
 	.align 8
 	.align 8
-last_x.203:
-	.type	last_x.203,@object
-	.size	last_x.203,8
+last_x.204:
+	.type	last_x.204,@object
+	.size	last_x.204,8
 	.space 8	# pad
 	.data
 # -- End  victim_function_v07

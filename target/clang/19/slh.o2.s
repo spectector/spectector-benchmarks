@@ -70,8 +70,8 @@ main:                                   # @main
 .LBB1_3:
 	cmovaeq	%rax, %rcx
 .LBB1_5:
-	xorl	%eax, %eax
 	shlq	$47, %rcx
+	xorl	%eax, %eax
 	orq	%rcx, %rsp
 	retq
 .Lfunc_end1:
@@ -103,6 +103,6 @@ temp:
 	.type	array2,@object          # @array2
 	.comm	array2,131072,16
 
-	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
+	.ident	"clang version 8.0.0 (tags/RELEASE_800/final)"
 	.section	".note.GNU-stack","",@progbits
 	.addrsig

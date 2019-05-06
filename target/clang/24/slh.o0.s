@@ -91,14 +91,19 @@ another:                                # @another
 	movq	-24(%rbp), %rax         # 8-byte Reload
 	movq	-16(%rbp), %rcx         # 8-byte Reload
 	cmoveq	%rcx, %rax
-	movl	$42, %edx
-	movl	%edx, %edi
+	movl	$42, %edi
 	shlq	$47, %rax
 	orq	%rax, %rsp
 	callq	victim_function_v24
-	movq	%rsp, %rax
-	sarq	$63, %rax
-	movq	%rax, -32(%rbp)         # 8-byte Spill
+.Lslh_ret_addr0:
+	movq	-8(%rsp), %rax
+	movq	%rsp, %rcx
+	sarq	$63, %rcx
+	leaq	.Lslh_ret_addr0(%rip), %rdi
+	cmpq	%rdi, %rax
+	movq	-16(%rbp), %rax         # 8-byte Reload
+	cmovneq	%rax, %rcx
+	movq	%rcx, -32(%rbp)         # 8-byte Spill
 .LBB1_2:
 	movq	-32(%rbp), %rax         # 8-byte Reload
 	shlq	$47, %rax
@@ -136,11 +141,10 @@ temp:
 	.type	array2,@object          # @array2
 	.comm	array2,131072,16
 
-	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
+	.ident	"clang version 8.0.0 (tags/RELEASE_800/final)"
 	.section	".note.GNU-stack","",@progbits
 	.addrsig
 	.addrsig_sym victim_function_v24
-	.addrsig_sym another
 	.addrsig_sym array1_size
 	.addrsig_sym array1
 	.addrsig_sym temp

@@ -50,7 +50,7 @@ mymemcmp:                               # @mymemcmp
 	lfence
 	addq	$1, %rdi
 	addq	$1, %rsi
-	addq	$1, %rax
+	incq	%rax
 	jne	.LBB1_4
 .LBB1_6:
 	lfence
@@ -91,6 +91,6 @@ temp:
 	.type	array2,@object          # @array2
 	.comm	array2,131072,16
 
-	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
+	.ident	"clang version 8.0.0 (tags/RELEASE_800/final)"
 	.section	".note.GNU-stack","",@progbits
 	.addrsig

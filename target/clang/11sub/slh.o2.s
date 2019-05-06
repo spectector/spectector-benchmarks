@@ -67,7 +67,7 @@ mymemcmp:                               # @mymemcmp
 	cmovneq	%r8, %r9
 	addq	$1, %rdi
 	addq	$1, %rsi
-	addq	$1, %rax
+	incq	%rax
 	jne	.LBB1_10
 .LBB1_7:
 	cmovneq	%r8, %r9
@@ -116,6 +116,6 @@ temp:
 	.type	array2,@object          # @array2
 	.comm	array2,131072,16
 
-	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
+	.ident	"clang version 8.0.0 (tags/RELEASE_800/final)"
 	.section	".note.GNU-stack","",@progbits
 	.addrsig

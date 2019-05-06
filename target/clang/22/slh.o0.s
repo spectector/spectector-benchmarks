@@ -76,18 +76,33 @@ victim_function_v22:                    # @victim_function_v22
 	orq	%rcx, %rsp
 	movq	%rax, -16(%rbp)         # 8-byte Spill
 	callq	mem_leak
-	movq	%rsp, %rcx
-	sarq	$63, %rcx
-	movzbl	%al, %edx
-	movl	%edx, %edi
-	shlq	$47, %rcx
-	orq	%rcx, %rsp
+.Lslh_ret_addr0:
+	movq	-8(%rsp), %rcx
+	movq	%rsp, %rdi
+	sarq	$63, %rdi
+	leaq	.Lslh_ret_addr0(%rip), %rdx
+	cmpq	%rdx, %rcx
+	movq	-16(%rbp), %rcx         # 8-byte Reload
+	cmovneq	%rcx, %rdi
+	movzbl	%al, %esi
+	movl	%esi, %edx
+	movq	%rdi, -24(%rbp)         # 8-byte Spill
+	movq	%rdx, %rdi
+	movq	-24(%rbp), %rdx         # 8-byte Reload
+	shlq	$47, %rdx
+	orq	%rdx, %rsp
 	callq	mem_leak
-	movq	%rsp, %rcx
-	sarq	$63, %rcx
-	shlq	$47, %rcx
-	orq	%rcx, %rsp
-	movb	%al, -17(%rbp)          # 1-byte Spill
+.Lslh_ret_addr1:
+	movq	-8(%rsp), %rcx
+	movq	%rsp, %rdx
+	sarq	$63, %rdx
+	leaq	.Lslh_ret_addr1(%rip), %rdi
+	cmpq	%rdi, %rcx
+	movq	-16(%rbp), %rcx         # 8-byte Reload
+	cmovneq	%rcx, %rdx
+	shlq	$47, %rdx
+	orq	%rdx, %rsp
+	movb	%al, -25(%rbp)          # 1-byte Spill
 	addq	$32, %rsp
 	popq	%rbp
 	.cfi_def_cfa %rsp, 8
@@ -119,11 +134,9 @@ temp:
 	.size	temp, 1
 
 
-	.ident	"clang version 7.0.1 (tags/RELEASE_701/final)"
+	.ident	"clang version 8.0.0 (tags/RELEASE_800/final)"
 	.section	".note.GNU-stack","",@progbits
 	.addrsig
 	.addrsig_sym mem_leak
-	.addrsig_sym victim_function_v22
 	.addrsig_sym array1_size
 	.addrsig_sym array1
-	.addrsig_sym temp
