@@ -14,9 +14,8 @@ function usage () {
   -d SUITE     test, benchmarks, new, all
   -o DIR       Output directory
   -f FLAG      Pass all the flags to spectector
-  -r FILE      The file must contain all the files and its
-     	       corresponding function to analyze(relative
-	        to that directory)
+  -r ANALYZE   A folder o file with all the assembly files
+               wanted to analyze
   -i           Analyze all the functions of the files
   -z JOBS      Number of parallel jobs launched
   -j 	       File where the jobs are going to be written
@@ -53,7 +52,6 @@ timeout=30
 IFS=' '
 results=results
 opts=(.o0 .o2)
-n_parallel=4
 
 # Suites
 source suites
@@ -132,19 +130,19 @@ else
     runtimeout=timeout
 fi
 
-
 if ! [ -z $raw ]; then
     if [ -d $get_entry ]; then
-	if ! [ -d $raw ]; then
-	    printf "%s is not a directory\n" "$raw"
-	    exit 1
-	fi
-	printf "Analyzing all the functions of the files of %s\n" "$raw"
-	type=$(basename $raw)
+	printf "Analyzing all the functions defined in %s\n" "$raw"
+	dir=$(dirname $raw)
+	type=$(basename $dir)
 	echo "" > $jobs_file
-	for target in $raw/*.s; do
-	    name=$(basename $target)
-	    assfile=$get_entry/$name
+	for assfile in $get_entry/*.s; do
+	    name=$(basename $assfile)
+	    if ! [ -f $raw ]; then
+		target=$raw
+	    else
+		target=$raw/$name
+	    fi
 	    while read -r func; do
 		outf="$outdir/$type.$name.$func.out"
 		outjson="$outdir/$type.$name.$func.json"
@@ -154,7 +152,7 @@ if ! [ -z $raw ]; then
 		echo "printf \"%s\t%s\n\" \"$target\" \"$func\"; $spectector $target $flags -e $single_func -a none > $outf 2> $outerr; if [ $? -ne 0 ]; then printf \"{\\\"name\\\":\\\"%s\\\",\\\"status\\\":\\\"parsing\\\",\\\"file\\\":\\\"%s\\\",\\\"entry\\\":\\\"%s\\\"},\" \"$target\" \"$outjson\" \"$func\" > \"$outjson\"; exit; fi; $runtimeout $timeout $spectector $target $flags --stats \"$outjson\" -e $single_func > $outf 2> $outerr; ret=\$?; if [ \$ret -eq 124 ]; then printf \"{\\\"name\\\":\\\"%s\\\",\\\"status\\\":\\\"timeout\\\",\\\"file\\\":\\\"%s\\\",\\\"entry\\\":\\\"%s\\\"},\" \"$target\" \"$outjson\" \"$func\" > \"$outjson\"; elif [ \$ret -eq 139 ]; then printf \"{\\\"name\\\":\\\"%s\\\",\\\"status\\\":\\\"segfault\\\",\\\"file\\\":\\\"%s\\\",\\\"entry\\\":\\\"%s\\\"},\" \"$target\" \"$outjson\" \"$func\" > \"$outjson\"; elif [ \$ret -ne 0 ]; then printf \"{\\\"name\\\":\\\"%s\\\",\\\"status\\\":\\\"unknown_error\\\",\\\"file\\\":\\\"%s\\\",\\\"entry\\\":\\\"%s\\\"},\" \"$target\" \"$outjson\" \"$func\" > \"$outjson\"; fi" >> $jobs_file
 	    done < <(./scripts/get_function_names.sh $assfile)
 	done
-	parallel -j$n_parallel :::: $jobs_file
+	if [ -z $n_parallel ]; then parallel :::: $jobs_file; else parallel -j$n_parallel :::: $jobs_file; fi
 	summarize_results
 	exit 0
     elif [ -f $raw ]; then

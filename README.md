@@ -8,40 +8,39 @@ Spectector's paper.
 
 ## Case Study: Compiler countermeasures (Section VIII)
 
-The benchmarks used in the first case study of the paper (Section VIII) are the
-fifteen variants of the SPECTRE v1 proof-of-concept developed by Paul Kocher
-(available
+The benchmarks used in the first case study of the paper (Section
+VIII) are the fifteen variants of the SPECTRE v1 proof-of-concept
+developed by Paul Kocher (available
 [here](https://www.paulkocher.com/doc/MicrosoftCompilerSpectreMitigation.html)).
 
-The folder `sources/pl` contains the source files in the C language taken
-from
+The folder `sources/compiler-countermeasures` contains the source
+files in the C language taken from
 [here](https://www.paulkocher.com/doc/MicrosoftCompilerSpectreMitigation.html).
 To account for minor syntactic differences between the C dialects
 supported by the targets compilers, we adapted the Paul Kocher's
-examples for each compiler.  
+examples for each compiler.
 
-[Marco: change the folder (and scripts) from `sources/pk` to
-`sources/compiler-countermeasures`]
-
-The folder `target` contains the assembly programs that have been obtained by
-compiling the fifteen variants of the SPECTRE v1 proof-of-concept developed by
-Paul Kocher (available
+The folder `target` contains the assembly programs that have been
+obtained by compiling the fifteen variants of the SPECTRE v1
+proof-of-concept developed by Paul Kocher (available
 [here](https://www.paulkocher.com/doc/MicrosoftCompilerSpectreMitigation.html))
-using the Clang, Intel icc, and Microsoft Visual C++ compilers with different
-levels of optimization and protection against SPECTRE attacks. Specifically, the
-folders `target/clang`, `target/intel`, and `target/microsoft` contain
-respectively the assembly programs obtained using the Clang, Intel icc, and
-Microsoft Visual C++ compilers.  The folder `target/microsoft` contains the
-folders `cl 19.15` and `cl 19.29` containing respectively the assembly programs
-generated using the Microsoft Visual C++ compiler versions v19.15.26732.1 and
-v19.20.27317.96. We refer the interested reader to Section VIII.A of the
-[paper](https://spectector.github.io/papers/spectector.pdf) for a detailed
-description of how the assembly programs have been obtained.
+using the Clang, Intel icc, and Microsoft Visual C++ compilers with
+different levels of optimization and protection against SPECTRE
+attacks. Specifically, the folders `target/clang`, `target/intel`, and
+`target/microsoft` contain respectively the assembly programs obtained
+using the Clang, Intel icc, and Microsoft Visual C++ compilers.  The
+folder `target/microsoft` contains the folders `cl 19.15` and `cl
+19.29` containing respectively the assembly programs generated using
+the Microsoft Visual C++ compiler versions v19.15.26732.1 and
+v19.20.27317.96. We refer the interested reader to Section VIII.A of
+the [paper](https://spectector.github.io/papers/spectector.pdf) for a
+detailed description of how the assembly programs have been obtained.
 
 ### Compile the files with the Clang compiler
 
 We obtained the source programs in the `target/clang` folder by
-compiling the files in `sources/pk` with the Clang compiler v7.0.0.
+compiling the files in `sources/compiler-countermeasures` with the
+Clang compiler v7.0.0.
 
 We refer the reader to the script `clang.sh` in the folder
 `scripts/generate` for more information. Note that running the script
@@ -51,8 +50,8 @@ requires a working version of the `clang` and `llc` binaries in your
 ### Compile the files with the Intel icc compiler
 
 We obtained the source programs in the `target/intel` folder by
-compiling the files in `sources/pk` with the Intel icc compiler
-v19.0.0.117.
+compiling the files in `sources/compiler-countermeasures` with the
+Intel icc compiler v19.0.0.117.
 
 We refer the reader to the script `intel.sh` in the folder
 `scripts/generate` for more information. Note that running the script
@@ -61,10 +60,10 @@ requires a working version of the Intel icc compiler installed at
 
 ### Compile the files with the Microsoft Visual C++ compiler
 
-We obtained the source programs in the `target/microsoft/cl 19.15` (respectively
-`target/microsoft/cl 19.20`) folder by compiling the files in
-`sources/pk` with the Microsoft Visual C++ compiler v19.15.26732.1
-(respectively v19.20.27317.96).
+We obtained the source programs in the `target/microsoft/cl 19.15`
+(respectively `target/microsoft/cl 19.20`) folder by compiling the
+files in `sources/compiler-countermeasures` with the Microsoft Visual
+C++ compiler v19.15.26732.1 (respectively v19.20.27317.96).
 
 We refer the reader to the script `microsoft.bat` in the folder
 `scripts/generate` for more information. We tested the script with
@@ -87,57 +86,62 @@ information.
 
 ## Case study: Xen Project Hypervisor (Section IX)
 
-The benchmark used in the second case study of the paper (Section XI) is the Xen
-Project Hypervisor, whose code is available
+The benchmark used in the second case study of the paper (Section XI)
+is the Xen Project Hypervisor, whose code is available
 [here](https://xenbits.xen.org/git-http/xen.git).
 
 ### Retrieving the Xen Project Hypervisor source code
 
 The `sources/xen` folder mirrors the official Xen Project repository
-https://xenbits.xen.org/git-http/xen.git at the commit `4.10.0-shim-comet-3`. 
+https://xenbits.xen.org/git-http/xen.git at the commit
+`4.10.0-shim-comet-3`.
 
 
-To obtain the source files, one can simply clone the repository by executing
-`git checkout 4.10.0-shim-comet-3`. [Marco: Where should we execute this? ]
+To obtain the source files, you can simply run the following command
+`git submodule update --init`.
 
-Before compiling the hypervisor, it is necessary to (1) execute the `configure` file located 
-in the [XEN?] root folder, and (2) modify its Makefile located in [Marco: XEN/??] as follows:
-    - Add `clang=y` [Marco: Where?]
-    - Replace the line `+%.o %.i %.s: %.c FORCE` (line 253) with `+%.o %.i %.s
-    %.ll: %.c FORCE`
+Before compiling the hypervisor, it is necessary to (1) execute the
+`configure` file located in the xen project root folder to get the
+Makefile correctly, and (2) modify its Makefile located in the folder
+`xen` inside the xen project root folder as follows:
+    - Add `clang=y` at the first line
+    - Replace the line `+%.o %.i %.s: %.c FORCE` (line 253) with `+%.o
+    %.i %.s %.ll: %.c FORCE`
 
+### Compiling the project
 
-[MARCO: where is the `configure` file? I don't see it into our repo]
-[MARCO: Why do we need to run `configure`?]
-
-### Obtaining no linked files
+#### Obtaining no linked files
 
 To obtain the LLVM bytecode and assembly files, execute the
-`obtain_project_files.sh` script (located in the folder `scripts`). When
-invoking the script, pass as arguments the folder of the Xen hypervisor (i.e.,
-`sources/xen/xen`) and the target folder (i.e., `target/xen_no_linked`).
+`obtain_project_files.sh` script (located in the folder
+`scripts`). When invoking the script, pass as arguments the folder of
+the Xen hypervisor (i.e., `sources/xen/xen`) and the target folder
+(i.e., `target/xen_no_linked`).
 
-The script compiles each source file in the hypervisor and it generates the
-corresponding LLVM bytecode and assembly files.
+The script compiles each source file in the hypervisor and it
+generates the corresponding LLVM bytecode and assembly files.
 
-
-
-
-### Obtaining linked files
+#### Obtaining linked files
 
 Then, run the `solve_dependecies.pl` script (located on `locality`)
 over the folder where the LLVM bytecode files are, that will create
 the assembly files without the missing dependencies on the project.
 
-Also, it can be ontained a single assembly file by running
-`solve_dependecies.pl` with the `-l` flag.
+Also, it can be obtained a single assembly file by running
+`solve_dependencies.pl` ith the `-l` flag (i.e.  `solve_dependencies
+-i indir -o outdir -l global.ll`)
+
+To obtain the assembly files, just run `llc` over the procuded `.ll`
+files.
 
 **For running `solve_dependecies.pl` the next programs must be
 installed: `sed`, `llvm-nm`, `llvm-as` and `llc`**
 
-[Marco: Is this step generating a single .s file?]
+### Preparing the experiments
 
-[Marco: Can we merge this step and the one above?]
+To run `check_security.sh`, previously you've to get the assembly
+files corresponding to the files that aren't linked yet by running
+`for file in $folder_no_linked_files; do; llc $file; done`
 
 ### Analyzing generated files
 
@@ -145,10 +149,15 @@ For analizing the generated files you must run `check_security.sh`
 with the next parameters:
 
 `time ./check_security.sh -i $folder_no_linked_files -r
-$folder_linked_files -o $output_directory -j $tmp_jobs_file -z
-$number_of_parallel instances -f "--parse-uns --noinit --track-all-pc
---bound-paths 25 --use-dump --no-show-def --nextpath-timeout 1000
---noninter-timeout 60000 --timeout 300000" -t 600`
+$linked_files -o $output_directory -g $global_assembly -j
+$tmp_jobs_file -z $number_of_parallel instances -f "--parse-uns
+--noinit --track-all-pc --bound-paths 25 --use-dump --no-show-def
+--nextpath-timeout 1000 --noninter-timeout 60000 --timeout 300000" -t
+600`
+
+**The linked files can be either the folder that contains the linked
+assembly files or an assembly file that contains all the functions
+linked**
 
 ## Naming scheme of the results
 
