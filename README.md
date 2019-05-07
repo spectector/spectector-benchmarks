@@ -96,32 +96,50 @@ The `sources/xen` folder mirrors the official Xen Project repository
 https://xenbits.xen.org/git-http/xen.git at the commit
 `4.10.0-shim-comet-3`.
 
+Run the command `git submodule update --init` in the repository's main
+folder to obtain hypervisor.
 
-To obtain the source files, you can simply run the following command
-`git submodule update --init`.
-
-Before compiling the hypervisor, it is necessary to (1) execute the
-`configure` file located in the xen project root folder to get the
-Makefile correctly, and (2) modify its Makefile located in the folder
-`xen` inside the xen project root folder as follows:
-    - Add `clang=y` at the first line
-    - Replace the line `+%.o %.i %.s: %.c FORCE` (line 253) with `+%.o
+Before compiling the hypervisor, it is necessary to: 
+1. Execute the `configure` file located in the `sources/xen` folder to get the
+`Makefile` correctly
+2. Modify the `Makefile` located in the `sources/xen/xen` folder as follows:
+    * Add `clang=y` in the first line
+    * Replace the line `+%.o %.i %.s: %.c FORCE` (line 253) with `+%.o
     %.i %.s %.ll: %.c FORCE`
 
-### Compiling the project
+[MARCO: I guess we need to run `make` at some point?]
 
-#### Obtaining no linked files
+### Generating the assembly files
 
-To obtain the LLVM bytecode and assembly files, execute the
+One can  generate the assembly files used in our experiments following the steps
+outlined below.
+
+#### 1. Generating LLVM intermediate bytecode
+As a first step, we generate the LLVM bytecode and assembly files corresponding
+to each of the source files in the hypervisor.
+
+To do so, execute the
 `obtain_project_files.sh` script (located in the folder
-`scripts`). When invoking the script, pass as arguments the folder of
+`scripts`) while passing as arguments the folder of
 the Xen hypervisor (i.e., `sources/xen/xen`) and the target folder
 (i.e., `target/xen_no_linked`).
+
+Concretely, from the repository's main folder run the following command:
+
+```
+    scripts/obtain_project_files.sh -i sources/xen/xen -o target/xen_no_linked
+```
 
 The script compiles each source file in the hypervisor and it
 generates the corresponding LLVM bytecode and assembly files.
 
-#### Obtaining linked files
+ **For Mac users:** the script `obtain_project_files.sh` uses the `grealpath`
+ command, which can be obtained, for instance, by executing `brew
+ install coreutils`.
+
+ [MARCO: Fix this!]
+
+#### 2. Obtaining linked files
 
 Then, run the `solve_dependecies.pl` script (located on `locality`)
 over the folder where the LLVM bytecode files are, that will create
