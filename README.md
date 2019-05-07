@@ -99,6 +99,15 @@ https://xenbits.xen.org/git-http/xen.git at the commit
 Run the command `git submodule update --init` in the repository's main
 folder to obtain hypervisor.
 
+
+
+### Generating the assembly files
+
+One can  generate the assembly files used in our experiments following the steps
+outlined below.
+
+#### 1. Preparation
+
 Before compiling the hypervisor, it is necessary to: 
 1. Execute the `configure` file located in the `sources/xen` folder to get the
 `Makefile` correctly
@@ -109,13 +118,8 @@ Before compiling the hypervisor, it is necessary to:
 
 [MARCO: I guess we need to run `make` at some point?]
 
-### Generating the assembly files
-
-One can  generate the assembly files used in our experiments following the steps
-outlined below.
-
-#### 1. Generating LLVM intermediate bytecode
-As a first step, we generate the LLVM bytecode and assembly files corresponding
+#### 2. Generating LLVM intermediate bytecode
+Next, we generate the LLVM bytecode and assembly files corresponding
 to each of the source files in the hypervisor.
 
 To do so, execute the
@@ -139,27 +143,32 @@ generates the corresponding LLVM bytecode and assembly files.
 
  [MARCO: Fix this!]
 
-#### 2. Obtaining linked files
+#### 3. Linking all the files together
 
-Then, run the `solve_dependecies.pl` script (located on `locality`)
-over the folder where the LLVM bytecode files are, that will create
-the assembly files without the missing dependencies on the project.
+Next, we solve the dependencies between files and we link all of them together. by running the `solve_dependecies.pl` script located in  the `scripts` folder.
 
-Also, it can be obtained a single assembly file by running
-`solve_dependencies.pl` ith the `-l` flag (i.e.  `solve_dependencies
--i indir -o outdir -l global.ll`)
+[Marco: Move `solve_dependecies.pl` to `scripts`]
 
-To obtain the assembly files, just run `llc` over the procuded `.ll`
-files.
+To do so, perform the following steps:
+1. Execute the `solve_dependecies.pl` script located in  the `scripts` folder on the folder `target/xen_no_linked` containing the `.ll` files. Concretely, run the following command from the repository's main folder:
 
-**For running `solve_dependecies.pl` the next programs must be
-installed: `sed`, `llvm-nm`, `llvm-as` and `llc`**
+``` 
+scripts/solve_dependencies.pl -i target/xen_no_linked -o target/xen -l global.ll
+```
+2. Run `llc` to generate the assembly file:
+```
+llc target/xen/global.ll
+```
 
-### Preparing the experiments
+**Note:** Executing the `solve_dependecies.pl` script requires the following programs to be installed in the system: `sed`, `llvm-nm`, `llvm-as` and `llc`.
+
+#### 4. Preparing the experiments
 
 To run `check_security.sh`, previously you've to get the assembly
 files corresponding to the files that aren't linked yet by running
 `for file in $folder_no_linked_files; do; llc $file; done`
+
+[Marco: Isn't this step already part of `obtain_project_files.sh`?]
 
 ### Analyzing generated files
 
