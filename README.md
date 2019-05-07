@@ -192,27 +192,26 @@ After the execution, the analysis' results can be found in the `$result_folder` 
 This folder  will contain the folder `out` (with the detailed logs for each analyzed function) and the
 file `stats.json` summarizing the results.  To avoid overwriting prior results, the original content of `$result_folder` is moved in `$result_folder\$current_time` where `$curren_time` is the timestamp of when the script is executed.
 
+### Visualizing the results
 
-## Visualizing the results
+The file `report.html` (located in [Marco:??]) implements a simple tool for navigating the 
+outcome of the experiments. To visualize the results, simply open the file `report.html` using your favorite browser.
 
-After the `check_security.sh` script is ran. The contents shown by default are
-the ones of the file `stats.json` and the folder `out` located on the folder
-`results`, but it can be customized to show the ones you want.
+The contents shown by default are the ones from the file `results/stats.json` and the
+folder `results/out`. 
 
-### Table with the results
+[MARCO: How can we make it point to arbitrary folder?]
 
-For visualizing the information in a table, open the `report.html` file on a
-navigator. It'll show a legend with the color correspondence to the status of
-the results and a table per compiler where each experiment is a cell of the
-table.
+**Note:** To use `report.html`, Javascript must be enabled in your browser.
 
-It's also produced a more detailed view for each run by clicking on the cell you
-want.
 
-### Graphs of the results
+
+### Generate the plots from Figure 8
 
 For showing graphs like the ones from figure 8, the files on the
 `dataAnalysis/analysis.py` folder must be used. When it's ran, it will generate
 pdf files with the graphs. An example of how this must be ran is the next:
 `./analysis.py --unsupported-as-skip results_skip/out
 --unsupported-as-skip-paths results_skip/out --mode skip --analysis paper`
+
+[@MARCO: clean up scripts!]
