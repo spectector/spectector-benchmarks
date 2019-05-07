@@ -112,7 +112,7 @@ done
 # Check if the output is a directory
 if ! [ -d $results ]; then
     printf "$results is not a directory\n"
-    exit 1
+    [[ "$(read -e -p 'Do you want to create results folder? [y/N]> '; echo $REPLY)" == [Yy]* ]] && mkdir results || exit 1
 fi
 
 jsonfile=$results/stats.json
