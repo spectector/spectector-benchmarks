@@ -78,7 +78,7 @@ necessary to visualize the information.
 
 ## Case study: Xen Project Hypervisor (Section IX)
 
-The benchmark used in the second case study of the paper (Section XI) is the Xen
+The benchmark used in the second case study of the paper (Section IX) is the Xen
 Project Hypervisor, whose code is available
 [here](https://xenbits.xen.org/git-http/xen.git).
 
