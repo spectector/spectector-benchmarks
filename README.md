@@ -121,12 +121,11 @@ Before compiling the hypervisor, it is necessary to:
 Next, we generate the LLVM bytecode and assembly files corresponding
 to each of the source files in the hypervisor.
 
-To do so, execute the `obtain_project_files.sh` script (located in the
-folder `scripts`) while passing as arguments the folder of the Xen
-hypervisor (i.e., `sources/xen/xen`) and the target folder (i.e.,
-`target/xen_no_linked`). The first run you will need to get the object
-files of the project to gnerate the rest of files, so pass `clean` as
-the last argument to the script.
+To do so, execute the `obtain_project_files.sh` script (located in the folder
+`scripts`) while passing as arguments the folder of the Xen hypervisor (i.e.,
+`sources/xen/xen`) and the target folder (i.e., `target/xen_no_linked`). For the
+next steps, we also need to generate the object files. Therefore, we pass
+`clean` as the last argument to the script.
 
 Concretely, from the repository's main folder run the following
 command:
@@ -189,12 +188,6 @@ to specify the folder where the analysis' results are stored.
 does not exists.  Hence, create the folder `$result_folder` folder
 before launching the experiments.
 
-
-**The linked files can be either the folder that contains the linked
-assembly files or an assembly file that contains all the functions
-linked**
-
-
 After the execution, the analysis' results can be found in the
 `$result_folder` folder.  This folder will contain the folder `out`
 (with the detailed logs for each analyzed function) and the file
@@ -212,20 +205,22 @@ experiments. To visualize the results, simply open the file
 
 The contents shown by default are the ones from the file
 `results/stats.json` and the folder `results/out`.
-
-Also, you can view an arbitrary json file by pointing to it:
-`report.html?stats_custom.json`
+To show the report associated with files stored in a  folder `$result_folder`, access the page 
+`report.html?$result_folder/stats.json`.
 
 **Note:** To use `report.html`, Javascript must be enabled in your
 browser.
 
 ### Generate the plots from Figure 8
 
-For showing graphs like the ones from figure 8, the files on the
-`dataAnalysis/analysis.py` folder must be used. When it's ran, it will
-generate pdf files with the graphs. An example of how this must be ran
-is the next: `./analysis.py --unsupported-as-skip results_skip/out
---unsupported-as-skip-paths results_skip/out --mode skip --analysis
-paper`
+The script `dataAnalysis/analysis.py` can be used to generate the plots from Figure 8.
 
-[@MARCO: clean up scripts!]
+From the repository's main folder, the script can be invoked as follows (where `$results_folder$` is the absolute path to the folder containing the results):
+```
+dataAnalysis/analysis.py --unsupported-as-skip $result_folder/out --unsupported-as-skip-paths  $result_folder/out --mode skip --analysis paper
+```
+
+Some of the metrics discussed in the paper (e.g., speedups and slowdowns) can be derived from `dataAnalysis/analysis.py` textual output.
+
+
+
