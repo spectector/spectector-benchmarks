@@ -2133,79 +2133,61 @@ def paperAnalysisSteps(data, paths, mode, prefix):
 
     toPDF(prefix+"_"+mode+"_paper.pdf", plots)
 
+
+def suicide(flag):
+    print("Pass a file with the "+flag+" option")
+    sys.exit(2)
+
+
 #############
 ############# MAIN
 #############
+
+usage_message = """Wrong usage. See below.
+Usage: dataAnalysis [options]
+Options:
+    --source <file>                     Source file
+    --sizes <file>                      JSON file with the function sizes
+    --unsupported-as-skip <folder>      Logs generated using unsupported-as-skip
+    --unsupported-as-stop <folder>      Logs generated using unsupported-as-stop
+    --unsupported-as-skip-path <folder> Logs generated using unsupported-as-skip (paths)
+    --unsupported-as-stop-path <folder> Logs generated using unsupported-as-stop (paths)
+    --mode  (skip|stop|merge)           Choose which data to plot
+    --analysis                          Choose analysis type
+    --prefix                            Prefix for output files (default is date)"""
 
 def main(argv):
     try:
         opts, args = getopt.getopt(argv,'h', ["source=","sizes=", "unsupported-as-skip=", "unsupported-as-stop=", "unsupported-as-skip-paths=", "unsupported-as-stop-paths=", "mode=", "analysis=", "prefix="])
     except getopt.GetoptError:
-        print("Wrong usage. See below.")
-        print("Usage: dataAnalysis [options]")
-        print("Options:")
-        print("     --source <file>                     Source file")
-        print("     --sizes <file>                      JSON file with the function sizes")
-        print("     --unsupported-as-skip <folder>      Logs generated using unsupported-as-skip")
-        print("     --unsupported-as-stop <folder>      Logs generated using unsupported-as-stop")
-        print("     --unsupported-as-skip-path <folder> Logs generated using unsupported-as-skip (paths)")
-        print("     --unsupported-as-stop-path <folder> Logs generated using unsupported-as-stop (paths)")
-        print("     --mode  (skip|stop|merge)           Choose which data to plot")
-        print("     --analysis                          Choose analysis type")
-        print("     --prefix                            Prefix for output files (default is date)")
+        print(usage_message)
         sys.exit(2)
 
+    opts = dict(opts)
+
     ### Initialized from cmd line
-    pathSrc = None
-    pathSize = None
-    pathStop = None
-    pathSkip = None
-    pathStopPaths = None
-    pathSkipPaths = None
-    merge = False
-    analysis = None
+    pathSrc = opts.get("--source", None)
+    pathSize = opts.get("--sizes", None)
+    pathStop = opts.get("--unsupported-as-stop", None)
+    pathSkip = opts.get("--unsupported-as-skip", None)
+    pathStopPaths = opts.get("--unsupported-as-stop-paths", None)
+    pathSkipPaths = opts.get("--unsupported-as-skip-paths", None)
+    analysis = opts.get("--analysis", None)
+    mode = opts.get("--mode", None)
+    prefix = opts.get("--prefix", datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S"))
+
+    for opt in opts:
+        if opt == '-h':
+            print(usage_message)
+            sys.exit()
+
     dataSkip = None
     dataStop = None
     dataSkipPaths = None
     dataStopPaths = None
-    pathSize = None
     sizes = None
-    prefix = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    for opt, arg in opts:
-        if opt == '-h':
-            print("Usage: dataAnalysis [options]")
-            print("Options:")
-            print("     --source <file>                     Source file")
-            print("     --sizes <file>                      JSON file with the function sizes")
-            print("     --unsupported-as-skip <folder>      Logs generated using unsupported-as-skip")
-            print("     --unsupported-as-stop <folder>      Logs generated using unsupported-as-stop")
-            print("     --unsupported-as-skip-path <folder> Logs generated using unsupported-as-skip (paths)")
-            print("     --unsupported-as-stop-path <folder> Logs generated using unsupported-as-stop (paths)")
-            print("     --mode  (skip|stop|merge)           Choose which data to plot")
-            print("     --analysis                          Choose analysis type")
-            print("     --prefix                            Prefix for output files (default is date)")
-            sys.exit()
-        elif opt == "--source":
-            pathSrc = arg
-        elif opt == "--sizes":
-            pathSize = arg
-        elif opt == "--unsupported-as-skip":
-            pathSkip = arg
-        elif opt == "--unsupported-as-stop":
-            pathStop = arg
-        elif opt == "--unsupported-as-skip-paths":
-            pathSkipPaths = arg
-        elif opt == "--unsupported-as-stop-paths":
-            pathStopPaths = arg
-        elif opt == "--mode":
-            mode = arg
-        elif opt == "--analysis":
-            analysis = arg
-        elif opt == "--prefix":
-            prefix = arg
-        else:
-            print("Unsupported option" + opt)
-            sys.exit(2)
+    
+   
 
 
 
@@ -2226,35 +2208,33 @@ def main(argv):
         sizes = loadSizes(pathSize)
     elif pathSrc is not None:
         sizes = sizesFromSource(pathSrc)
-    
-    
 
+    # Check modes
+    if mode == "skip":
+        if dataSkip is None:
+            suicide("--unsupported-as-skip")
+        data = dataSkip
+        pathData = dataSkipPaths
+    elif mode == "stop":
+        if dataStop is None:
+            suicide("--unsupported-as-stop")
+        data = dataStop
+        pathData = dataStopPaths
+    elif mode == "merge":
+        if dataSkip is None:
+            suicide("--unsupported-as-skip")
+        if dataStop is None:
+            suicide("--unsupported-as-stop")
+        data = merge1(dataSkip, dataStop)
+    else:
+        print("Unsupported mode")
+        sys.exit(2)
+    if len(data) == 0 or len(pathData) == 0:
+        print("There are no data to process")
+        sys.exit()
+
+    # Do the analysis
     if analysis == "all":
-        if mode == "skip":
-            if dataSkip is not None:
-                data = dataSkip
-            else:
-                print("Pass a file with the --unsupported-as-skip option")
-                sys.exit(2)
-        elif mode == "stop":
-            if dataStop is not None:
-                data = dataStop
-            else:
-                print("Pass a file with the --unsupported-as-stop option")
-                sys.exit(2)
-        elif mode == "merge":
-            if dataSkip is not None:
-                if dataStop is not None:
-                    data = merge1(dataSkip, dataStop)
-                else:
-                    print("Pass a file with the --unsupported-as-stop option")
-                    sys.exit(2)
-            else:
-                print("Pass a file with the --unsupported-as-skip option")
-                sys.exit(2)
-        else:
-            print("Unsupported mode")
-            sys.exit(2)
         print("Number of files: %d"%len(data))
         resultsAnalysis(data, unknownInstrMode=mode, reportName=prefix+"_"+mode+"_")
         pathAnalysis(data, unknownInstrMode=mode, reportName=prefix+"_"+mode+"_")
@@ -2262,124 +2242,23 @@ def main(argv):
         stepAnalysis(data, unknownInstrMode=mode, reportName=prefix+"_"+mode+"_")
         timeAnalysis(data, unknownInstrMode=mode, reportName=prefix+"_"+mode+"_")
     elif analysis == "sni":
-        if mode == "skip":
-            if dataSkip is not None:
-                data = dataSkip
-                pathData = dataSkipPaths
-            else:
-                print("Pass a file with the --unsupported-as-skip option")
-                sys.exit(2)
-        elif mode == "stop":
-            if dataStop is not None:
-                data = dataStop
-                pathData = dataStopPaths
-            else:
-                print("Pass a file with the --unsupported-as-stop option")
-                sys.exit(2)
-        elif mode == "merge":
-            if dataSkip is not None:
-                if dataStop is not None:
-                    data = merge1(dataSkip, dataStop)
-                else:
-                    print("Pass a file with the --unsupported-as-stop option")
-                    sys.exit(2)
-            else:
-                print("Pass a file with the --unsupported-as-skip option")
-                sys.exit(2)
-        else:
-            print("Unsupported mode")
-            sys.exit(2)
-        if len(data) == 0 or len(pathData) == 0:
-            print("There are no data to process")
-            sys.exit()
         sniAnalysis(data,pathData, mode, prefix)
     elif analysis == "paper":
-        if mode == "skip":
-            if dataSkip is not None:
-                data = dataSkip
-                pathData = dataSkipPaths
-            else:
-                print("Pass a file with the --unsupported-as-skip option")
-                sys.exit(2)
-        elif mode == "stop":
-            if dataStop is not None:
-                data = dataStop
-                pathData = dataStopPaths
-            else:
-                print("Pass a file with the --unsupported-as-stop option")
-                sys.exit(2)
-        elif mode == "merge":
-            if dataSkip is not None:
-                if dataStop is not None:
-                    data = merge1(dataSkip, dataStop)
-                else:
-                    print("Pass a file with the --unsupported-as-stop option")
-                    sys.exit(2)
-            else:
-                print("Pass a file with the --unsupported-as-skip option")
-                sys.exit(2)
-        else:
-            print("Unsupported mode")
-            sys.exit(2)
-        if len(data) == 0 or len(pathData) == 0:
-            print("There are no data to process")
-            sys.exit()
         paperAnalysisTrace(data,pathData, mode, prefix)
     elif analysis == "symb":
-        if mode == "skip":
-            if dataSkip is not None:
-                data = dataSkip
-                pathData = dataSkipPaths
-            else:
-                print("Pass a file with the --unsupported-as-skip option")
-                sys.exit(2)
-        elif mode == "stop":
-            if dataStop is not None:
-                data = dataStop
-                pathData = dataStopPaths
-            else:
-                print("Pass a file with the --unsupported-as-stop option")
-                sys.exit(2)
-        elif mode == "merge":
-            if dataSkip is not None:
-                if dataStop is not None:
-                    data = merge1(dataSkip, dataStop)
-                else:
-                    print("Pass a file with the --unsupported-as-stop option")
-                    sys.exit(2)
-            else:
-                print("Pass a file with the --unsupported-as-skip option")
-                sys.exit(2)
-        else:
-            print("Unsupported mode")
-            sys.exit(2)
-
-        if len(data) == 0 or len(pathData) == 0:
-            print("There are no data to process")
-            sys.exit()
         symbExecAnalysis(data, pathData ,mode, prefix)
     elif analysis == "fnct_size":
-        if dataSkip is not None:
-            if dataStop is not None:
-                if sizes is not None:
-                    ### PLOT BY FUNCTION SIZE
-                    data = merge1(dataSkip, dataStop)
-                    data = mergeSizes(data,sizes)
-                    if len(data) == 0:
-                        print("There are no data to process")
-                        sys.exit()
-                    locAnalysis(data, unknownInstrMode="merge", reportName=prefix+"_merge_")
-                    traceAnalysis(dataSkip, unknownInstrMode="skip", reportName=prefix+"_merge_")
-                    traceAnalysis(dataStop, unknownInstrMode="stop", reportName=prefix+"_merge_")
-                else:
-                    print("Pass either a file containing function sizes with the --sizes option or a source file with the --source option")
-                    sys.exit(2)
-            else:
-                print("Pass a file with the --unsupported-as-stop option")
-                sys.exit(2)
-        else:
-            print("Pass a file with the --unsupported-as-skip option")
+        if sizes is not None:
+            print("Pass either a file containing function sizes with the --sizes option or a source file with the --source option")
             sys.exit(2)
+        ### PLOT BY FUNCTION SIZE
+        data = mergeSizes(data,sizes)
+        if len(data) == 0:
+            print("There are no data to process")
+            sys.exit()
+        locAnalysis(data, unknownInstrMode="merge", reportName=prefix+"_merge_")
+        traceAnalysis(dataSkip, unknownInstrMode="skip", reportName=prefix+"_merge_")
+        traceAnalysis(dataStop, unknownInstrMode="stop", reportName=prefix+"_merge_")
     elif analysis == "coverage":
         fullCoverage = set({})
         fullCoverageBelow25= set({})
@@ -2414,12 +2293,9 @@ def main(argv):
                 soundCoverage.add(f)
 
         print("Sound full coverage: %d"%len(soundCoverage))
-
-       
     else:
         print("Unsupported analysis "+analysis)
         sys.exit(2)
 
 if __name__ == "__main__":
    main(sys.argv[1:])
-
