@@ -116,6 +116,8 @@ Before compiling the hypervisor, it is necessary to:
       %.i %.s %.ll: %.c FORCE`
 3. Modify the `Rules.mk` file located in the `sources/xen/xen` folder as follows:
     * Add `clang=y` in the first line
+    * Replace the line `CFLAGS += -Werror -Wredundant-decls -Wno-pointer-arith` with `CFLAGS += -Wredundant-decls -Wno-pointer-arith`
+    * Replace the line `CFLAGS += -pipe -g -D__XEN__ -include $(BASEDIR)/include/xen/config.h` with `CFLAGS += -pipe -D__XEN__ -include $(BASEDIR)/include/xen/config.h`
     * Add the following text after line 206:
         ```
         %.ll: %.c Makefile
