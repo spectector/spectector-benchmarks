@@ -99,8 +99,6 @@ https://xenbits.xen.org/git-http/xen.git at the commit
 Run the command `git submodule update --init` in the repository's main
 folder to obtain hypervisor.
 
-
-
 ### Generating the assembly files
 
 One can generate the assembly files used in our experiments following
@@ -111,11 +109,18 @@ the steps outlined below.
 Before compiling the hypervisor, it is necessary to:
 1. Execute the `configure` file located in the `sources/xen` folder to
    get the `Makefile` correctly
-2. Modify the `Makefile` located in the `sources/xen/xen` folder as
+2. Modify the `Makefile` file located in the `sources/xen/xen` folder as
    follows:
     * Add `clang=y` in the first line
     * Replace the line `+%.o %.i %.s: %.c FORCE` (line 253) with `+%.o
       %.i %.s %.ll: %.c FORCE`
+3. Modify the `Rules.mk` file located in the `sources/xen/xen` folder as follows:
+    * Add `clang=y` in the first line
+    * Add the following text after line 206:
+        ```
+        %.ll: %.c Makefile
+            $(CC) $(CFLAGS) -flto -fshort-wchar -S -emit-llvm $< -o $@
+        ```
 
 #### 2. Compiling the files in isolation
 Next, we generate the LLVM bytecode and assembly files corresponding
@@ -131,11 +136,14 @@ Concretely, from the repository's main folder run the following
 command:
 
 ```
-    scripts/obtain_project_files.sh -i sources/xen/xen -o target/xen_no_linked clean
+    scripts/obtain_project_files.sh sources/xen/xen target/xen_no_linked clean
 ```
 
 The script compiles each source file in the hypervisor and it
 generates the corresponding LLVM bytecode and assembly files.
+
+**Note:** If the folder `target/xen_no_linked` does not exist, you
+should create it before executing `scripts/obtain_project_files.sh`.
 
  **For Mac users:** the script `obtain_project_files.sh` uses the
  `grealpath` command, which can be obtained, for instance, by
@@ -144,7 +152,7 @@ generates the corresponding LLVM bytecode and assembly files.
 #### 3. Linking all the files together
 
 Next, we solve the dependencies between files and we link all of them
-together.  by running the `solve_dependecies.pl` script located in the
+together by running the `solve_dependecies.pl` script located in the
 `scripts` folder.
 
 To do so, perform the following steps:
@@ -163,7 +171,7 @@ llc target/xen/global.ll
 
 **Note:** Executing the `solve_dependecies.pl` script requires the
 following programs to be installed in the system: `sed`, `llvm-nm`,
-`llvm-as` and `llc`.
+`llvm-as` and `llc` (in addition to the Ciao environment).
 
 ### Running the experiments
 
@@ -193,7 +201,7 @@ After the execution, the analysis' results can be found in the
 (with the detailed logs for each analyzed function) and the file
 `stats.json` summarizing the results.  To avoid overwriting prior
 results, the original content of `$result_folder` is moved in
-`$result_folder\$current_time` where `$curren_time` is the timestamp
+`$result_folder\$current_time` where `$current_time` is the timestamp
 of when the script is executed.
 
 ### Visualizing the results
