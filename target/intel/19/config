@@ -1,0 +1,5 @@
+entries([main]).
+c([],[]).
+low([]).
+ign([]).
+heap(1024).

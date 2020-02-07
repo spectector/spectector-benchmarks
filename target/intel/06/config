@@ -1,0 +1,5 @@
+entries([victim_function_v06]).
+c([],[]).
+low([]).
+ign([]).
+heap(1024).

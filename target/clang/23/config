@@ -1,0 +1,5 @@
+entries([attacker_function]).
+c([],[]).
+low([]).
+ign([]).
+heap(1024).
