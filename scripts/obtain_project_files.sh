@@ -1,7 +1,7 @@
 #! /bin/bash
 
 function usage(){
-    printf "Usage: obtain_project_files.sh -i PROJECT_FOLDER -o OUTDIR [clean]"
+    printf "Usage: obtain_project_files.sh PROJECT_FOLDER OUTDIR [clean]"
 }
 
 if which grealpath > /dev/null 2>&1; then

@@ -986,6 +986,8 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
     plotted = set({})
     globalTimeouts = 0
     i = 0
+    j = 0
+    z = 0
     xSymb = []
     ySymb = []
     xNoSymb = []
@@ -1035,7 +1037,12 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
             if "time_solve" in path.keys():
                 val = path["time_solve"]
             else:
-                val = path["time_data"] + path["time_control"]
+                # val = path["time_data"] + path["time_control"]
+                # Sum the times for data check and ctrl check in a way that
+                # models the short-circuit evaluation implemented in Spectector
+                # (i.e., if data check finds a leak, there is no ctrl check)
+                val = path["time_data"] + ( 0 if result in {"data","dataUnk"} else path["time_control"])
+
         elif mode == "symbolic_time":
             val = path["symbolic_time"]
         elif mode == "symbolic_length":
@@ -1086,18 +1093,53 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
         plotted.add((xVal,yVal))
 
         if colorsMode == "status":
-            if result in {"safe", "safeUnk"}:
-                colors.append(green)
-            elif result in {"data","dataUnk"}: 
-                colors.append(darkRed) #%(brightRed)
-            elif result in {"control", "controlUnk"}:
-                colors.append(darkRed)
-            elif result == "timeout_sni":
-                i+=1
-                colors.append(blue)
+            if mode == "time_data":
+                if path["data_check"]:
+                    colors.append(darkRed)
+                else:
+                    if result in {"safe", "safeUnk"}:
+                        colors.append(green)
+                    # elif result == "timeout_sni":
+                    #     i+=1
+                    #     colors.append(blue)
+                    else:
+                        if path["time_data"] > 60000:
+                            i+=1
+                            j+=1
+                            colors.append(blue)
+                        else:
+                            z+=1
+                            colors.append(green)
+            elif mode == "time_control":
+                if path["control_check"]:
+                    colors.append(darkRed)
+                else:
+                    if result in {"safe", "safeUnk"}:
+                        colors.append(green)
+                    # elif result == "timeout_sni":
+                    #     i+=1
+                    #     colors.append(blue)
+                    else:
+                        if path["time_control"] > 60000:
+                            i+=1
+                            j+=1
+                            colors.append(blue)
+                        else:
+                            z+=1
+                            colors.append(green)
             else:
-                print("Unsupported status "+result)
-                assert False
+                if result in {"safe", "safeUnk"}:
+                    colors.append(green)
+                elif result in {"data","dataUnk"}: 
+                    colors.append(darkRed) #%(brightRed)
+                elif result in {"control", "controlUnk"}:
+                    colors.append(darkRed)
+                elif result == "timeout_sni":
+                    i+=1
+                    colors.append(blue)
+                else:
+                    print("Unsupported status "+result)
+                    assert False
         elif colorsMode == "symbolic_status":
             symbResult = path[colorsMode]
             if symbResult == "sat":
@@ -1125,6 +1167,8 @@ def scatterPlotPathsValue(data, mode, unknownInstrMode, title="", xLabel="", yLa
     
     print("Plotted %d data"%len(plotted))
     print("Plotted timeouts %d"%i)
+    print("Plotted estimated blues %d"%j)
+    print("Plotted estimated greens %d"%z)
     print("Ignored %d paths due to global timeouts"%globalTimeouts)
     fig = plt.figure()
     ax = plt.gca()
@@ -1246,9 +1290,15 @@ def doubleScatterPlotPathsValue(data, unknownInstrMode, title="", xLabel="", yLa
 
         if xValues == "sni_time":
             if "time_solve" in path.keys():
+                # print("SOLVE: %d CONTROL: %d DATA: %d"%(path["time_solve"], path["time_data"], path["time_control"]))
                 xVal = path["time_solve"]
             else:
-                xVal = path["time_data"] + path["time_control"]
+                # xVal = path["time_data"] + path["time_control"]
+                # Sum the times for data check and ctrl check in a way that
+                # models the short-circuit evaluation implemented in Spectector
+                # (i.e., if data check finds a leak, there is no ctrl check)
+                xVal = path["time_data"] + ( 0 if result in {"data","dataUnk"} else path["time_control"])
+
         elif xValues == "symbolic_time":
             xVal = path["symbolic_time"]
         elif xValues == "symbolic_length":
@@ -2293,6 +2343,7 @@ def main(argv):
                 soundCoverage.add(f)
 
         print("Sound full coverage: %d"%len(soundCoverage))
+        print(soundCoverage)
     else:
         print("Unsupported analysis "+analysis)
         sys.exit(2)
