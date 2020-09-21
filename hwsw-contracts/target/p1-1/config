@@ -1,0 +1,5 @@
+entries([_Z15victim_functionm]).
+c([],[]).
+low([]).
+ign([]).
+heap(1024).

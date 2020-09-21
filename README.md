@@ -1,10 +1,13 @@
-# <a name="benchmarks"></a> Reproducing the results from the paper "Spectector: Principled Detection of Speculative Information Flows"
+# <a name="benchmarks"></a> README
 
-This repository contains the benchmarks from the paper "Spectector:
+This repository contains the benchmarks from the papers "Spectector:
 Principled Detection of Speculative Information Flows" (available
-[here](https://spectector.github.io/papers/spectector.pdf)). Here we
-describe how to reproduce the experimental results from the
-Spectector's paper.
+[here](https://spectector.github.io/papers/spectector.pdf)) and 
+"Hardware/software contracts for secure speculation" (available
+[here](https://spectector.github.io/papers/hwsw-contracts.pdf)). 
+
+Here we describe how to reproduce the experimental results from the
+Spectector's paper. For the hardware/software contracts paper, see the `hwsw-contracts` folder.
 
 ## Case Study: Compiler countermeasures (Section VIII)
 
